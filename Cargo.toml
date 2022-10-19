@@ -8,8 +8,8 @@ readme = "README.md"
 
 [dependencies]
 chrono = "0.4"
-nom = "6"
 num_enum = "0.5.1"
 serialport = "4.0.0"
 thiserror = "1.0.20"
 uom = "0.30.0"
+nom = "7"
