@@ -1,3 +1,4 @@
+use super::ParseFromBytes;
 use crate::{rf_explorer::Message, Model};
 use nom::{
     bytes::complete::{tag, take},
@@ -7,9 +8,17 @@ use nom::{
 };
 use std::{str, str::FromStr};
 
-pub trait SetupInfo: Message + Sized {
-    fn new(main_model: Model, exp_model: Option<Model>, fw_version: String) -> Self;
+pub trait SetupInfo: Message + Sized + ParseFromBytes {
+    fn new(main_model: Model, exp_model: Model, fw_version: String) -> Self;
 
+    fn main_module_model(&self) -> Model;
+
+    fn expansion_module_model(&self) -> Model;
+
+    fn firmware_version(&self) -> &str;
+}
+
+impl<S: SetupInfo> ParseFromBytes for S {
     fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
@@ -18,12 +27,18 @@ pub trait SetupInfo: Message + Sized {
         let (bytes, main_model) =
             map_res(map_res(take(3u8), str::from_utf8), Model::from_str)(bytes)?;
 
+        if main_model == Model::None {
+            return Err(nom::Err::Error(nom::error::Error::new(
+                bytes,
+                nom::error::ErrorKind::Fail,
+            )));
+        }
+
         let (bytes, _) = tag(",")(bytes)?;
 
         // Parse the expansion model
-        let (bytes, exp_model) = map(map_res(take(3u8), str::from_utf8), |s| {
-            Model::from_str(s).ok()
-        })(bytes)?;
+        let (bytes, exp_model) =
+            map_res(map_res(take(3u8), str::from_utf8), Model::from_str)(bytes)?;
 
         let (bytes, _) = tag(",")(bytes)?;
 
