@@ -1,43 +1,17 @@
 use crate::{
-    rf_explorer::{parsers::*, Message, ParseFromBytes},
+    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 use nom::{bytes::complete::tag, IResult};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ConfigCw {
-    cw_freq_khz: f64,
-    total_steps: u32,
-    step_freq_khz: f64,
-    attenuation: Attenuation,
-    power_level: PowerLevel,
-    rf_power: RfPower,
-}
-
-impl ConfigCw {
-    pub fn cw_freq_khz(&self) -> f64 {
-        self.cw_freq_khz
-    }
-
-    pub fn total_steps(&self) -> u32 {
-        self.total_steps
-    }
-
-    pub fn step_freq_khz(&self) -> f64 {
-        self.step_freq_khz
-    }
-
-    pub fn attenuation(&self) -> Attenuation {
-        self.attenuation
-    }
-
-    pub fn power_level(&self) -> PowerLevel {
-        self.power_level
-    }
-
-    pub fn rf_power(&self) -> RfPower {
-        self.rf_power
-    }
+    pub cw_freq: Frequency,
+    pub total_steps: u32,
+    pub step_freq: Frequency,
+    pub attenuation: Attenuation,
+    pub power_level: PowerLevel,
+    pub rf_power: RfPower,
 }
 
 impl Message for ConfigCw {
@@ -55,7 +29,7 @@ impl ParseFromBytes for ConfigCw {
         let (bytes, _) = parse_comma(bytes)?;
 
         // The CW frequency is sent twice. Ignore the second occurrence.
-        let (bytes, _): (_, f64) = parse_frequency(7u8)(bytes)?;
+        let (bytes, _): (_, u64) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -88,9 +62,9 @@ impl ParseFromBytes for ConfigCw {
         Ok((
             bytes,
             ConfigCw {
-                cw_freq_khz,
+                cw_freq: Frequency::from_khz(cw_freq_khz),
                 total_steps,
-                step_freq_khz,
+                step_freq: Frequency::from_khz(step_freq_khz),
                 attenuation,
                 power_level,
                 rf_power,
@@ -107,11 +81,11 @@ mod tests {
     fn parse_config_cw() {
         let bytes = b"#C3-G:0186525,0186525,0005,0001000,0,3,0\r\n";
         let config_cw = ConfigCw::parse_from_bytes(bytes.as_ref()).unwrap().1;
-        assert_eq!(config_cw.cw_freq_khz(), 186_525.);
-        assert_eq!(config_cw.total_steps(), 5);
-        assert_eq!(config_cw.step_freq_khz(), 1000.);
-        assert_eq!(config_cw.attenuation(), Attenuation::On);
-        assert_eq!(config_cw.power_level(), PowerLevel::Highest);
-        assert_eq!(config_cw.rf_power(), RfPower::On);
+        assert_eq!(config_cw.cw_freq.as_khz(), 186_525);
+        assert_eq!(config_cw.total_steps, 5);
+        assert_eq!(config_cw.step_freq.as_khz(), 1_000);
+        assert_eq!(config_cw.attenuation, Attenuation::On);
+        assert_eq!(config_cw.power_level, PowerLevel::Highest);
+        assert_eq!(config_cw.rf_power, RfPower::On);
     }
 }

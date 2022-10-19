@@ -1,53 +1,21 @@
+use std::time::Duration;
+
 use crate::{
-    rf_explorer::{parsers::*, Message, ParseFromBytes},
+    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 use nom::{bytes::complete::tag, IResult};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ConfigAmpSweep {
-    cw_freq_khz: f64,
-    sweep_power_steps: u16,
-    start_attenuation: Attenuation,
-    start_power_level: PowerLevel,
-    stop_attenuation: Attenuation,
-    stop_power_level: PowerLevel,
-    rf_power: RfPower,
-    sweep_delay_ms: u16,
-}
-
-impl ConfigAmpSweep {
-    pub fn cw_freq_khz(&self) -> f64 {
-        self.cw_freq_khz
-    }
-
-    pub fn sweep_power_steps(&self) -> u16 {
-        self.sweep_power_steps
-    }
-
-    pub fn start_attenuation(&self) -> Attenuation {
-        self.start_attenuation
-    }
-
-    pub fn start_power_level(&self) -> PowerLevel {
-        self.start_power_level
-    }
-
-    pub fn stop_attenuation(&self) -> Attenuation {
-        self.stop_attenuation
-    }
-
-    pub fn stop_power_level(&self) -> PowerLevel {
-        self.stop_power_level
-    }
-
-    pub fn rf_power(&self) -> RfPower {
-        self.rf_power
-    }
-
-    pub fn sweep_delay_ms(&self) -> u16 {
-        self.sweep_delay_ms
-    }
+    pub cw_freq: Frequency,
+    pub sweep_power_steps: u16,
+    pub start_attenuation: Attenuation,
+    pub start_power_level: PowerLevel,
+    pub stop_attenuation: Attenuation,
+    pub stop_power_level: PowerLevel,
+    pub rf_power: RfPower,
+    pub sweep_delay: Duration,
 }
 
 impl Message for ConfigAmpSweep {
@@ -103,14 +71,14 @@ impl ParseFromBytes for ConfigAmpSweep {
         Ok((
             bytes,
             ConfigAmpSweep {
-                cw_freq_khz,
+                cw_freq: Frequency::from_khz(cw_freq_khz),
                 sweep_power_steps,
                 start_attenuation,
                 start_power_level,
                 stop_attenuation,
                 stop_power_level,
                 rf_power,
-                sweep_delay_ms,
+                sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
             },
         ))
     }
@@ -124,13 +92,13 @@ mod tests {
     fn parse_config() {
         let bytes = b"#C3-A:0186525,0000,0,0,1,3,0,00100\r\n";
         let config_amp_sweep = ConfigAmpSweep::parse_from_bytes(bytes.as_ref()).unwrap().1;
-        assert_eq!(config_amp_sweep.cw_freq_khz(), 186_525.);
-        assert_eq!(config_amp_sweep.sweep_power_steps(), 0);
-        assert_eq!(config_amp_sweep.start_attenuation(), Attenuation::On);
-        assert_eq!(config_amp_sweep.start_power_level(), PowerLevel::Lowest);
-        assert_eq!(config_amp_sweep.stop_attenuation(), Attenuation::Off);
-        assert_eq!(config_amp_sweep.stop_power_level(), PowerLevel::Highest);
-        assert_eq!(config_amp_sweep.rf_power(), RfPower::On);
-        assert_eq!(config_amp_sweep.sweep_delay_ms(), 100);
+        assert_eq!(config_amp_sweep.cw_freq.as_khz(), 186_525);
+        assert_eq!(config_amp_sweep.sweep_power_steps, 0);
+        assert_eq!(config_amp_sweep.start_attenuation, Attenuation::On);
+        assert_eq!(config_amp_sweep.start_power_level, PowerLevel::Lowest);
+        assert_eq!(config_amp_sweep.stop_attenuation, Attenuation::Off);
+        assert_eq!(config_amp_sweep.stop_power_level, PowerLevel::Highest);
+        assert_eq!(config_amp_sweep.rf_power, RfPower::On);
+        assert_eq!(config_amp_sweep.sweep_delay.as_millis(), 100);
     }
 }
