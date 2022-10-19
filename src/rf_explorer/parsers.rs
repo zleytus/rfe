@@ -21,6 +21,6 @@ where
     map_res(map_res(take(digits), str::from_utf8), T::from_str)
 }
 
-pub(crate) fn parse_frequency<'a>(digits: u8) -> impl FnMut(&'a [u8]) -> IResult<&'a [u8], f64> {
+pub(crate) fn parse_frequency<'a>(digits: u8) -> impl FnMut(&'a [u8]) -> IResult<&'a [u8], u64> {
     parse_num(digits)
 }
