@@ -26,3 +26,28 @@ impl AsRef<[u8]> for Command {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! assert_correct_size {
+        ($command:expr) => {
+            let command_bytes = $command.as_ref();
+            assert_eq!(command_bytes[1], command_bytes.len() as u8);
+        };
+    }
+
+    #[test]
+    fn correct_command_size_fields() {
+        assert_correct_size!(Command::RequestConfig);
+        assert_correct_size!(Command::RequestSerialNumber);
+        assert_correct_size!(Command::EnableLcd);
+        assert_correct_size!(Command::DisableLcd);
+        assert_correct_size!(Command::EnableDumpScreen);
+        assert_correct_size!(Command::DisableDumpScreen);
+        assert_correct_size!(Command::Hold);
+        assert_correct_size!(Command::Reboot);
+        assert_correct_size!(Command::PowerOff);
+    }
+}
