@@ -1,4 +1,5 @@
 use super::{Attenuation, PowerLevel};
+use crate::rf_explorer::Frequency;
 use std::time::Duration;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -6,7 +7,7 @@ pub(crate) enum Command {
     RfPowerOn,
     RfPowerOff,
     StartAmpSweep {
-        cw_freq_khz: f64,
+        cw_freq: Frequency,
         start_attenuation: Attenuation,
         start_power_level: PowerLevel,
         stop_attenuation: Attenuation,
@@ -14,48 +15,48 @@ pub(crate) enum Command {
         step_delay: Duration,
     },
     StartAmpSweepExp {
-        cw_freq_khz: f64,
+        cw_freq: Frequency,
         start_power_dbm: f64,
         step_power_db: f64,
         stop_power_dbm: f64,
         step_delay: Duration,
     },
     StartCw {
-        cw_freq_khz: f64,
+        cw_freq: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
     },
     StartCwExp {
-        cw_freq_khz: f64,
+        cw_freq: Frequency,
         power_dbm: f64,
     },
     StartFreqSweep {
-        start_freq_khz: f64,
+        start_freq: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
-        step_freq_khz: f64,
+        step_freq: Frequency,
         step_delay: Duration,
     },
     StartFreqSweepExp {
-        start_freq_khz: f64,
+        start_freq: Frequency,
         power_dbm: f64,
         sweep_steps: u16,
-        step_freq_khz: f64,
+        step_freq: Frequency,
         step_delay: Duration,
     },
     StartTracking {
-        start_freq_khz: f64,
+        start_freq: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
-        step_freq_khz: f64,
+        step_freq: Frequency,
     },
     StartTrackingExp {
-        start_freq_khz: f64,
+        start_freq: Frequency,
         power_dbm: f64,
         sweep_steps: u16,
-        step_freq_khz: f64,
+        step_freq: Frequency,
     },
     TrackingStep(u16),
 }
@@ -72,7 +73,7 @@ impl From<Command> for Vec<u8> {
             Command::RfPowerOn => vec![b'#', 5, b'C', b'P', b'1'],
             Command::RfPowerOff => vec![b'#', 5, b'C', b'P', b'0'],
             Command::StartAmpSweep {
-                cw_freq_khz,
+                cw_freq,
                 start_attenuation,
                 start_power_level,
                 stop_attenuation,
@@ -83,7 +84,7 @@ impl From<Command> for Vec<u8> {
                 command.extend(
                     format!(
                         "C3-A:{:07.0},{},{},{},{},{:05}",
-                        cw_freq_khz,
+                        cw_freq.as_khz(),
                         u8::from(start_attenuation),
                         u8::from(start_power_level),
                         u8::from(stop_attenuation),
@@ -95,7 +96,7 @@ impl From<Command> for Vec<u8> {
                 command
             }
             Command::StartAmpSweepExp {
-                cw_freq_khz,
+                cw_freq,
                 start_power_dbm,
                 step_power_db,
                 stop_power_dbm,
@@ -105,7 +106,7 @@ impl From<Command> for Vec<u8> {
                 command.extend(
                     format!(
                         "C5-A:{:07.0},{:+05.1},{:+05.1},{:05.1},{:05}",
-                        cw_freq_khz,
+                        cw_freq.as_khz(),
                         start_power_dbm,
                         step_power_db,
                         stop_power_dbm,
@@ -116,7 +117,7 @@ impl From<Command> for Vec<u8> {
                 command
             }
             Command::StartCw {
-                cw_freq_khz,
+                cw_freq,
                 attenuation,
                 power_level,
             } => {
@@ -124,7 +125,7 @@ impl From<Command> for Vec<u8> {
                 command.extend(
                     format!(
                         "C3-F:{:07.0},{},{}",
-                        cw_freq_khz,
+                        cw_freq.as_khz(),
                         u8::from(attenuation),
                         u8::from(power_level)
                     )
@@ -132,31 +133,29 @@ impl From<Command> for Vec<u8> {
                 );
                 command
             }
-            Command::StartCwExp {
-                cw_freq_khz,
-                power_dbm,
-            } => {
+            Command::StartCwExp { cw_freq, power_dbm } => {
                 let mut command = vec![b'#', 20];
-                command.extend(format!("C5-F:{:07.0},{:+05.1}", cw_freq_khz, power_dbm).bytes());
+                command
+                    .extend(format!("C5-F:{:07.0},{:+05.1}", cw_freq.as_khz(), power_dbm).bytes());
                 command
             }
             Command::StartFreqSweep {
-                start_freq_khz,
+                start_freq,
                 attenuation,
                 power_level,
                 sweep_steps,
-                step_freq_khz,
+                step_freq,
                 step_delay,
             } => {
                 let mut command = vec![b'#', 37];
                 command.extend(
                     format!(
                         "C3-F:{:07.0},{},{},{:04},{:07.0},{:05}",
-                        start_freq_khz,
+                        start_freq.as_khz(),
                         u8::from(attenuation),
                         u8::from(power_level),
                         sweep_steps,
-                        step_freq_khz,
+                        step_freq.as_khz(),
                         step_delay.as_millis()
                     )
                     .bytes(),
@@ -164,20 +163,20 @@ impl From<Command> for Vec<u8> {
                 command
             }
             Command::StartFreqSweepExp {
-                start_freq_khz,
+                start_freq,
                 power_dbm,
                 sweep_steps,
-                step_freq_khz,
+                step_freq,
                 step_delay,
             } => {
                 let mut command = vec![b'#', 39];
                 command.extend(
                     format!(
                         "C5-F:{:07.0},{:+05.1},{:04},{:07.0},{:05}",
-                        start_freq_khz,
+                        start_freq.as_khz(),
                         power_dbm,
                         sweep_steps,
-                        step_freq_khz,
+                        step_freq.as_khz(),
                         step_delay.as_millis()
                     )
                     .bytes(),
@@ -185,37 +184,40 @@ impl From<Command> for Vec<u8> {
                 command
             }
             Command::StartTracking {
-                start_freq_khz,
+                start_freq,
                 attenuation,
                 power_level,
                 sweep_steps,
-                step_freq_khz,
+                step_freq,
             } => {
                 let mut command = vec![b'#', 31];
                 command.extend(
                     format!(
                         "C3-T:{:07.0},{},{},{:04},{:07.0}",
-                        start_freq_khz,
+                        start_freq.as_khz(),
                         u8::from(attenuation),
                         u8::from(power_level),
                         sweep_steps,
-                        step_freq_khz
+                        step_freq.as_khz()
                     )
                     .bytes(),
                 );
                 command
             }
             Command::StartTrackingExp {
-                start_freq_khz,
+                start_freq,
                 power_dbm,
                 sweep_steps,
-                step_freq_khz,
+                step_freq,
             } => {
                 let mut command = vec![b'#', 33];
                 command.extend(
                     format!(
                         "C5-T:{:07.0},{:+05.1},{:04},{:07.0}",
-                        start_freq_khz, power_dbm, sweep_steps, step_freq_khz
+                        start_freq.as_khz(),
+                        power_dbm,
+                        sweep_steps,
+                        step_freq.as_khz()
                     )
                     .bytes(),
                 );

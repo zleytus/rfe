@@ -1,18 +1,19 @@
 use super::{CalcMode, DspMode, InputStage, WifiBand};
+use crate::rf_explorer::Frequency;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub(crate) enum Command {
     SetConfig {
-        start_freq_khz: f64,
-        stop_freq_khz: f64,
+        start_freq: Frequency,
+        stop_freq: Frequency,
         min_amp_dbm: i16,
         max_amp_dbm: i16,
     },
     SwitchModuleMain,
     SwitchModuleExp,
     StartTracking {
-        start_freq_khz: f64,
-        step_freq_khz: f64,
+        start_freq: Frequency,
+        step_freq: Frequency,
     },
     StartWifiAnalyzer(WifiBand),
     StopWifiAnalyzer,
@@ -35,8 +36,8 @@ impl From<Command> for Vec<u8> {
     fn from(command: Command) -> Self {
         match command {
             Command::SetConfig {
-                start_freq_khz,
-                stop_freq_khz,
+                start_freq,
+                stop_freq,
                 min_amp_dbm,
                 max_amp_dbm,
             } => {
@@ -44,7 +45,10 @@ impl From<Command> for Vec<u8> {
                 command.extend(
                     format!(
                         "C2-F:{:07.0},{:07.0},{:04},{:04}",
-                        start_freq_khz, stop_freq_khz, max_amp_dbm, min_amp_dbm
+                        start_freq.as_khz(),
+                        stop_freq.as_khz(),
+                        max_amp_dbm,
+                        min_amp_dbm
                     )
                     .bytes(),
                 );
@@ -53,12 +57,18 @@ impl From<Command> for Vec<u8> {
             Command::SwitchModuleMain => vec![b'#', 5, b'C', b'M', 0],
             Command::SwitchModuleExp => vec![b'#', 5, b'C', b'M', 1],
             Command::StartTracking {
-                start_freq_khz,
-                step_freq_khz,
+                start_freq,
+                step_freq,
             } => {
                 let mut command = vec![b'#', 22];
-                command
-                    .extend(format!("C3-K:{:07.0},{:07.0}", start_freq_khz, step_freq_khz).bytes());
+                command.extend(
+                    format!(
+                        "C3-K:{:07.0},{:07.0}",
+                        start_freq.as_khz(),
+                        step_freq.as_khz()
+                    )
+                    .bytes(),
+                );
                 command
             }
             Command::StartWifiAnalyzer(wifi_band) => vec![b'#', 5, b'C', b'W', u8::from(wifi_band)],
