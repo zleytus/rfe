@@ -9,7 +9,7 @@ use nom::{
 };
 use std::str;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct SerialNumber {
     serial_number: String,
 }
