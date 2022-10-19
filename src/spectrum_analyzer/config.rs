@@ -1,87 +1,63 @@
 use crate::{
-    rf_explorer::{parsers::*, Message, ParseFromBytes},
-    spectrum_analyzer::{parsers::*, CalcMode, Mode, RadioModule},
+    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
+    spectrum_analyzer::parsers::*,
 };
 use nom::{branch::alt, bytes::complete::tag, combinator::opt, IResult};
-use uom::si::{
-    f64::Frequency,
-    frequency::{hertz, kilohertz},
-};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
-pub struct Config {
-    start_freq_khz: f64,
-    step_freq_hz: f64,
-    max_amp_dbm: i16,
-    min_amp_dbm: i16,
-    sweep_points: u32,
-    active_radio_module: RadioModule,
-    mode: Mode,
-    min_freq_khz: f64,
-    max_freq_khz: f64,
-    max_span_khz: f64,
-    rbw_khz: Option<f64>,
-    amp_offset_db: Option<i16>,
-    calc_mode: Option<CalcMode>,
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
+#[repr(u8)]
+pub enum RadioModule {
+    #[default]
+    Main = 0,
+    Expansion,
 }
 
-impl Config {
-    pub fn start_freq(&self) -> Frequency {
-        Frequency::new::<kilohertz>(self.start_freq_khz)
-    }
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
+#[repr(u8)]
+pub enum Mode {
+    #[default]
+    SpectrumAnalyzer = 0,
+    RfGenerator = 1,
+    WifiAnalyzer = 2,
+    AnalyzerTracking = 5,
+    RfSniffer = 6,
+    CwTransmitter = 60,
+    SweepFrequency = 61,
+    SweepAmplitude = 62,
+    GeneratorTracking = 63,
+    Unknown = 255,
+}
 
-    pub fn stop_freq(&self) -> Frequency {
-        self.start_freq() + self.step_freq() * f64::from(self.sweep_points - 1)
-    }
+#[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive, Eq, PartialEq, Default)]
+#[repr(u8)]
+pub enum CalcMode {
+    #[default]
+    Normal = 0,
+    Max,
+    Avg,
+    Overwrite,
+    MaxHold,
+    MaxHistorical,
+    Unknown = 255,
+}
 
-    pub fn step_freq(&self) -> Frequency {
-        Frequency::new::<hertz>(self.step_freq_hz)
-    }
-
-    pub fn min_amp_dbm(&self) -> i16 {
-        self.min_amp_dbm
-    }
-
-    pub fn max_amp_dbm(&self) -> i16 {
-        self.max_amp_dbm
-    }
-
-    pub fn sweep_points(&self) -> u32 {
-        self.sweep_points
-    }
-
-    pub fn active_radio_module(&self) -> RadioModule {
-        self.active_radio_module
-    }
-
-    pub fn mode(&self) -> Mode {
-        self.mode
-    }
-
-    pub fn min_freq(&self) -> Frequency {
-        Frequency::new::<kilohertz>(self.min_freq_khz)
-    }
-
-    pub fn max_freq(&self) -> Frequency {
-        Frequency::new::<kilohertz>(self.max_freq_khz)
-    }
-
-    pub fn max_span(&self) -> Frequency {
-        Frequency::new::<kilohertz>(self.max_span_khz)
-    }
-
-    pub fn rbw(&self) -> Option<Frequency> {
-        self.rbw_khz
-            .map(|rbw_khz| Frequency::new::<kilohertz>(rbw_khz))
-    }
-
-    pub fn amp_offset_db(&self) -> Option<i16> {
-        self.amp_offset_db
-    }
-
-    pub fn calc_mode(&self) -> Option<CalcMode> {
-        self.calc_mode
-    }
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct Config {
+    pub start_freq: Frequency,
+    pub step_freq: Frequency,
+    pub stop_freq: Frequency,
+    pub max_amp_dbm: i16,
+    pub min_amp_dbm: i16,
+    pub sweep_points: u32,
+    pub active_radio_module: RadioModule,
+    pub mode: Mode,
+    pub min_freq: Frequency,
+    pub max_freq: Frequency,
+    pub max_span: Frequency,
+    pub rbw: Option<Frequency>,
+    pub amp_offset_db: Option<i16>,
+    pub calc_mode: Option<CalcMode>,
 }
 
 impl Message for Config {
@@ -167,17 +143,19 @@ impl ParseFromBytes for Config {
         Ok((
             bytes,
             Config {
-                start_freq_khz,
-                step_freq_hz,
+                start_freq: Frequency::from_khz(start_freq_khz),
+                stop_freq: Frequency::from_khz(start_freq_khz)
+                    + Frequency::from_hz(step_freq_hz * u64::from(sweep_points - 1)),
+                step_freq: Frequency::from_hz(step_freq_hz),
                 max_amp_dbm,
                 min_amp_dbm,
                 sweep_points,
                 active_radio_module,
                 mode,
-                min_freq_khz,
-                max_freq_khz,
-                max_span_khz,
-                rbw_khz,
+                min_freq: Frequency::from_khz(min_freq_khz),
+                max_freq: Frequency::from_khz(max_freq_khz),
+                max_span: Frequency::from_khz(max_span_khz),
+                rbw: rbw_khz.map(Frequency::from_khz),
                 amp_offset_db,
                 calc_mode,
             },
@@ -194,19 +172,19 @@ mod tests {
         let bytes =
             b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000,00200,0000,000";
         let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
-        assert_eq!(config.start_freq(), Frequency::new::<kilohertz>(5_249_000.));
-        assert_eq!(config.step_freq(), Frequency::new::<hertz>(196_428.));
-        assert_eq!(config.max_amp_dbm(), -30);
-        assert_eq!(config.min_amp_dbm(), -118);
-        assert_eq!(config.sweep_points(), 112);
-        assert_eq!(config.active_radio_module(), RadioModule::Main);
-        assert_eq!(config.mode(), Mode::SpectrumAnalyzer);
-        assert_eq!(config.min_freq(), Frequency::new::<kilohertz>(4_850_000.));
-        assert_eq!(config.max_freq(), Frequency::new::<kilohertz>(6_100_000.));
-        assert_eq!(config.max_span(), Frequency::new::<kilohertz>(600_000.));
-        assert_eq!(config.rbw(), Some(Frequency::new::<kilohertz>(200.)));
-        assert_eq!(config.amp_offset_db(), Some(0));
-        assert_eq!(config.calc_mode(), Some(CalcMode::Normal));
+        assert_eq!(config.start_freq.as_hz(), 5_249_000_000);
+        assert_eq!(config.step_freq.as_hz(), 196_428);
+        assert_eq!(config.max_amp_dbm, -30);
+        assert_eq!(config.min_amp_dbm, -118);
+        assert_eq!(config.sweep_points, 112);
+        assert_eq!(config.active_radio_module, RadioModule::Main);
+        assert_eq!(config.mode, Mode::SpectrumAnalyzer);
+        assert_eq!(config.min_freq.as_hz(), 4_850_000_000);
+        assert_eq!(config.max_freq.as_hz(), 6_100_000_000);
+        assert_eq!(config.max_span.as_hz(), 600_000_000);
+        assert_eq!(config.rbw, Some(200_000.into()));
+        assert_eq!(config.amp_offset_db, Some(0));
+        assert_eq!(config.calc_mode, Some(CalcMode::Normal));
     }
 
     #[test]
@@ -214,28 +192,28 @@ mod tests {
         let bytes =
             b"#C2-F:0096000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
         let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
-        assert_eq!(config.start_freq(), Frequency::new::<kilohertz>(96_000.));
-        assert_eq!(config.step_freq(), Frequency::new::<hertz>(90072.));
-        assert_eq!(config.max_amp_dbm(), -10);
-        assert_eq!(config.min_amp_dbm(), -120);
-        assert_eq!(config.sweep_points(), 112);
-        assert_eq!(config.active_radio_module(), RadioModule::Main);
-        assert_eq!(config.mode(), Mode::SpectrumAnalyzer);
-        assert_eq!(config.min_freq(), Frequency::new::<kilohertz>(50.));
-        assert_eq!(config.max_freq(), Frequency::new::<kilohertz>(960000.));
-        assert_eq!(config.max_span(), Frequency::new::<kilohertz>(959950.));
-        assert_eq!(config.rbw(), Some(Frequency::new::<kilohertz>(110.)));
-        assert_eq!(config.amp_offset_db(), Some(0));
-        assert_eq!(config.calc_mode(), Some(CalcMode::Normal));
+        assert_eq!(config.start_freq.as_hz(), 96_000_000);
+        assert_eq!(config.step_freq.as_hz(), 90_072);
+        assert_eq!(config.max_amp_dbm, -10);
+        assert_eq!(config.min_amp_dbm, -120);
+        assert_eq!(config.sweep_points, 112);
+        assert_eq!(config.active_radio_module, RadioModule::Main);
+        assert_eq!(config.mode, Mode::SpectrumAnalyzer);
+        assert_eq!(config.min_freq.as_hz(), 50_000);
+        assert_eq!(config.max_freq.as_hz(), 960_000_000);
+        assert_eq!(config.max_span.as_hz(), 959_950_000);
+        assert_eq!(config.rbw, Some(110_000.into()));
+        assert_eq!(config.amp_offset_db, Some(0));
+        assert_eq!(config.calc_mode, Some(CalcMode::Normal));
     }
 
     #[test]
     fn parse_config_without_rbw_amp_offset_calc_mode() {
         let bytes = b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000";
         let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
-        assert_eq!(config.rbw(), None);
-        assert_eq!(config.amp_offset_db(), None);
-        assert_eq!(config.calc_mode(), None);
+        assert_eq!(config.rbw, None);
+        assert_eq!(config.amp_offset_db, None);
+        assert_eq!(config.calc_mode, None);
     }
 
     #[test]

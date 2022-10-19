@@ -1,78 +1,50 @@
+use std::time::Duration;
+
 use crate::{
-    rf_explorer::{parsers::*, Message, ParseFromBytes},
-    signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
+    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
+    signal_generator::parsers::*,
 };
 use nom::{bytes::complete::tag, IResult};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
+pub enum Attenuation {
+    On = 0,
+    Off,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
+pub enum PowerLevel {
+    Lowest = 0,
+    Low,
+    High,
+    Highest,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
+pub enum RfPower {
+    On = 0,
+    Off,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Config {
-    start_freq_khz: f64,
-    cw_freq_khz: f64,
-    total_steps: u32,
-    freq_step_khz: f64,
-    attenuation: Attenuation,
-    power_level: PowerLevel,
-    sweep_power_steps: u16,
-    start_attenuation: Attenuation,
-    start_power_level: PowerLevel,
-    stop_attenuation: Attenuation,
-    stop_power_level: PowerLevel,
-    rf_power: RfPower,
-    sweep_delay_ms: u16,
-}
-
-impl Config {
-    pub fn start_freq_khz(&self) -> f64 {
-        self.start_freq_khz
-    }
-
-    pub fn cw_freq_khz(&self) -> f64 {
-        self.cw_freq_khz
-    }
-
-    pub fn total_steps(&self) -> u32 {
-        self.total_steps
-    }
-
-    pub fn freq_step_khz(&self) -> f64 {
-        self.freq_step_khz
-    }
-
-    pub fn attenuation(&self) -> Attenuation {
-        self.attenuation
-    }
-
-    pub fn power_level(&self) -> PowerLevel {
-        self.power_level
-    }
-
-    pub fn sweep_power_steps(&self) -> u16 {
-        self.sweep_power_steps
-    }
-
-    pub fn start_attenuation(&self) -> Attenuation {
-        self.start_attenuation
-    }
-
-    pub fn start_power_level(&self) -> PowerLevel {
-        self.start_power_level
-    }
-
-    pub fn stop_attenuation(&self) -> Attenuation {
-        self.stop_attenuation
-    }
-
-    pub fn stop_power_level(&self) -> PowerLevel {
-        self.stop_power_level
-    }
-
-    pub fn rf_power(&self) -> RfPower {
-        self.rf_power
-    }
-
-    pub fn sweep_delay_ms(&self) -> u16 {
-        self.sweep_delay_ms
-    }
+    pub start_freq: Frequency,
+    pub cw_freq: Frequency,
+    pub total_steps: u32,
+    pub step_freq: Frequency,
+    pub attenuation: Attenuation,
+    pub power_level: PowerLevel,
+    pub sweep_power_steps: u16,
+    pub start_attenuation: Attenuation,
+    pub start_power_level: PowerLevel,
+    pub stop_attenuation: Attenuation,
+    pub stop_power_level: PowerLevel,
+    pub rf_power: RfPower,
+    pub sweep_delay: Duration,
 }
 
 impl Message for Config {
@@ -100,7 +72,7 @@ impl ParseFromBytes for Config {
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, freq_step_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, step_freq_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -153,10 +125,10 @@ impl ParseFromBytes for Config {
         Ok((
             bytes,
             Config {
-                start_freq_khz,
-                cw_freq_khz,
+                start_freq: Frequency::from_khz(start_freq_khz),
+                cw_freq: Frequency::from_khz(cw_freq_khz),
                 total_steps,
-                freq_step_khz,
+                step_freq: Frequency::from_khz(step_freq_khz),
                 attenuation,
                 power_level,
                 sweep_power_steps,
@@ -165,7 +137,7 @@ impl ParseFromBytes for Config {
                 stop_attenuation,
                 stop_power_level,
                 rf_power,
-                sweep_delay_ms,
+                sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
             },
         ))
     }
@@ -179,18 +151,18 @@ mod tests {
     fn parse_config() {
         let bytes = b"#C3-*:0510000,0186525,0005,0001000,0,3,0000,0,0,1,3,0,00100\r\n";
         let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
-        assert_eq!(config.start_freq_khz(), 510_000.);
-        assert_eq!(config.cw_freq_khz(), 186_525.);
-        assert_eq!(config.total_steps(), 5);
-        assert_eq!(config.freq_step_khz(), 1000.);
-        assert_eq!(config.attenuation(), Attenuation::On);
-        assert_eq!(config.power_level(), PowerLevel::Highest);
-        assert_eq!(config.sweep_power_steps(), 0);
-        assert_eq!(config.start_attenuation(), Attenuation::On);
-        assert_eq!(config.start_power_level(), PowerLevel::Lowest);
-        assert_eq!(config.stop_attenuation(), Attenuation::Off);
-        assert_eq!(config.stop_power_level(), PowerLevel::Highest);
-        assert_eq!(config.rf_power(), RfPower::On);
-        assert_eq!(config.sweep_delay_ms(), 100);
+        assert_eq!(config.start_freq.as_hz(), 510_000_000);
+        assert_eq!(config.cw_freq.as_hz(), 186_525_000);
+        assert_eq!(config.total_steps, 5);
+        assert_eq!(config.step_freq.as_hz(), 1_000_000);
+        assert_eq!(config.attenuation, Attenuation::On);
+        assert_eq!(config.power_level, PowerLevel::Highest);
+        assert_eq!(config.sweep_power_steps, 0);
+        assert_eq!(config.start_attenuation, Attenuation::On);
+        assert_eq!(config.start_power_level, PowerLevel::Lowest);
+        assert_eq!(config.stop_attenuation, Attenuation::Off);
+        assert_eq!(config.stop_power_level, PowerLevel::Highest);
+        assert_eq!(config.rf_power, RfPower::On);
+        assert_eq!(config.sweep_delay.as_millis(), 100);
     }
 }
