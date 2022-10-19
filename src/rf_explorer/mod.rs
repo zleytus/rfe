@@ -1,4 +1,5 @@
 mod command;
+mod device;
 mod frequency;
 mod message;
 mod model;
@@ -10,6 +11,7 @@ mod serial_port;
 mod setup_info;
 
 pub(crate) use command::Command;
+pub use device::Device;
 pub use frequency::Frequency;
 pub use message::{Message, ParseFromBytes};
 pub use model::Model;

@@ -28,7 +28,7 @@ pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortRea
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum ConnectionError {
+pub enum ConnectionError {
     #[error(transparent)]
     Io(#[from] io::Error),
 
@@ -39,5 +39,5 @@ pub(crate) enum ConnectionError {
     SerialPort(#[from] serialport::Error),
 }
 
-pub(crate) type ConnectionResult<T> = Result<T, ConnectionError>;
+pub type ConnectionResult<T> = Result<T, ConnectionError>;
 pub(crate) type SerialPortReader = BufReader<Box<dyn SerialPort>>;
