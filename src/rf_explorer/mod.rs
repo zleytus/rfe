@@ -1,4 +1,5 @@
 mod command;
+mod frequency;
 mod message;
 mod model;
 pub(crate) mod parsers;
@@ -9,6 +10,7 @@ mod serial_port;
 mod setup_info;
 
 pub(crate) use command::Command;
+pub use frequency::Frequency;
 pub use message::{Message, ParseFromBytes};
 pub use model::Model;
 pub(crate) use rf_explorer::RfeResult;
