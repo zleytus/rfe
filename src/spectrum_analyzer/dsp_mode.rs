@@ -9,6 +9,7 @@ pub enum DspMode {
     Auto = 0,
     Filter,
     Fast,
+    NoImg,
 }
 
 impl Message for DspMode {
