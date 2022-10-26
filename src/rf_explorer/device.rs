@@ -13,7 +13,7 @@ pub trait Device: Sized {
 
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Self>;
 
-    fn send_command(&mut self, command: impl AsRef<[u8]>) -> io::Result<()>;
+    fn send_bytes(&mut self, bytes: impl AsRef<[u8]>) -> io::Result<()>;
 
     fn setup_info(&self) -> &Self::SetupInfo;
 
