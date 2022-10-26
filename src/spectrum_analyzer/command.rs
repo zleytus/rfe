@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::{CalcMode, DspMode, InputStage, WifiBand};
 use crate::rf_explorer::Frequency;
 
@@ -26,14 +28,8 @@ pub(crate) enum Command {
     SetSweepPointsLarge(u16),
 }
 
-impl Command {
-    pub fn to_vec(&self) -> Vec<u8> {
-        Vec::from(self.clone())
-    }
-}
-
-impl From<Command> for Vec<u8> {
-    fn from(command: Command) -> Self {
+impl From<Command> for Cow<'static, [u8]> {
+    fn from(command: Command) -> Cow<'static, [u8]> {
         match command {
             Command::SetConfig {
                 start_freq,
@@ -52,10 +48,10 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
-            Command::SwitchModuleMain => vec![b'#', 5, b'C', b'M', 0],
-            Command::SwitchModuleExp => vec![b'#', 5, b'C', b'M', 1],
+            Command::SwitchModuleMain => Cow::Borrowed(&[b'#', 5, b'C', b'M', 0]),
+            Command::SwitchModuleExp => Cow::Borrowed(&[b'#', 5, b'C', b'M', 1]),
             Command::StartTracking {
                 start_freq,
                 step_freq,
@@ -69,31 +65,39 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
-            Command::StartWifiAnalyzer(wifi_band) => vec![b'#', 5, b'C', b'W', u8::from(wifi_band)],
-            Command::StopWifiAnalyzer => vec![b'#', 5, b'C', b'W', 0],
-            Command::SetCalcMode(calc_mode) => vec![b'#', 5, b'C', b'+', u8::from(calc_mode)],
+            Command::StartWifiAnalyzer(wifi_band) => {
+                Cow::Owned(vec![b'#', 5, b'C', b'W', u8::from(wifi_band)])
+            }
+            Command::StopWifiAnalyzer => Cow::Owned(vec![b'#', 5, b'C', b'W', 0]),
+            Command::SetCalcMode(calc_mode) => {
+                Cow::Owned(vec![b'#', 5, b'C', b'+', u8::from(calc_mode)])
+            }
             Command::TrackingStep(steps) => {
                 let steps_bytes = steps.to_be_bytes();
-                vec![b'#', 5, b'k', steps_bytes[0], steps_bytes[1]]
+                Cow::Owned(vec![b'#', 5, b'k', steps_bytes[0], steps_bytes[1]])
             }
-            Command::SetDsp(dsp_mode) => vec![b'#', 5, b'C', b'p', u8::from(dsp_mode)],
-            Command::SetOffsetDB(offset_db) => vec![b'#', 5, b'C', b'O', offset_db as u8],
-            Command::SetInputStage(input_stage) => vec![b'#', 4, b'a', u8::from(input_stage)],
+            Command::SetDsp(dsp_mode) => Cow::Owned(vec![b'#', 5, b'C', b'p', u8::from(dsp_mode)]),
+            Command::SetOffsetDB(offset_db) => {
+                Cow::Owned(vec![b'#', 5, b'C', b'O', offset_db as u8])
+            }
+            Command::SetInputStage(input_stage) => {
+                Cow::Owned(vec![b'#', 4, b'a', u8::from(input_stage)])
+            }
             Command::SetSweepPointsExt(sweep_points) => {
-                vec![b'#', 5, b'C', b'J', ((sweep_points / 16) - 1) as u8]
+                Cow::Owned(vec![b'#', 5, b'C', b'J', ((sweep_points / 16) - 1) as u8])
             }
             Command::SetSweepPointsLarge(sweep_points) => {
                 let sweep_point_bytes = sweep_points.to_be_bytes();
-                vec![
+                Cow::Owned(vec![
                     b'#',
                     6,
                     b'C',
                     b'j',
                     sweep_point_bytes[0],
                     sweep_point_bytes[1],
-                ]
+                ])
             }
         }
     }

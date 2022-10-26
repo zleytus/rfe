@@ -1,4 +1,6 @@
 use super::Command;
+use std::borrow::Cow;
+
 use serialport::{
     DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortType, StopBits,
     UsbPortInfo,
@@ -42,7 +44,7 @@ pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortRea
         .stop_bits(StopBits::One)
         .timeout(Duration::from_secs(1))
         .open()?;
-    serial_port.write_all(Command::RequestConfig.as_ref())?;
+    serial_port.write_all(&Cow::from(Command::RequestConfig))?;
     Ok(SerialPortReader::new(serial_port))
 }
 

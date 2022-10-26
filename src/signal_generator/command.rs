@@ -1,6 +1,6 @@
 use super::{Attenuation, PowerLevel};
 use crate::rf_explorer::Frequency;
-use std::time::Duration;
+use std::{borrow::Cow, time::Duration};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub(crate) enum Command {
@@ -61,17 +61,11 @@ pub(crate) enum Command {
     TrackingStep(u16),
 }
 
-impl Command {
-    pub fn to_vec(&self) -> Vec<u8> {
-        Vec::from(self.clone())
-    }
-}
-
-impl From<Command> for Vec<u8> {
-    fn from(command: Command) -> Self {
+impl From<Command> for Cow<'static, [u8]> {
+    fn from(command: Command) -> Cow<'static, [u8]> {
         match command {
-            Command::RfPowerOn => vec![b'#', 5, b'C', b'P', b'1'],
-            Command::RfPowerOff => vec![b'#', 5, b'C', b'P', b'0'],
+            Command::RfPowerOn => Cow::Borrowed(&[b'#', 5, b'C', b'P', b'1'][..]),
+            Command::RfPowerOff => Cow::Borrowed(&[b'#', 5, b'C', b'P', b'0']),
             Command::StartAmpSweep {
                 cw_freq,
                 start_attenuation,
@@ -93,7 +87,7 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
             Command::StartAmpSweepExp {
                 cw_freq,
@@ -114,7 +108,7 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
             Command::StartCw {
                 cw_freq,
@@ -131,13 +125,13 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
             Command::StartCwExp { cw_freq, power_dbm } => {
                 let mut command = vec![b'#', 20];
                 command
                     .extend(format!("C5-F:{:07.0},{:+05.1}", cw_freq.as_khz(), power_dbm).bytes());
-                command
+                Cow::Owned(command)
             }
             Command::StartFreqSweep {
                 start_freq,
@@ -160,7 +154,7 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
             Command::StartFreqSweepExp {
                 start_freq,
@@ -181,7 +175,7 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
             Command::StartTracking {
                 start_freq,
@@ -202,7 +196,7 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
             Command::StartTrackingExp {
                 start_freq,
@@ -221,11 +215,11 @@ impl From<Command> for Vec<u8> {
                     )
                     .bytes(),
                 );
-                command
+                Cow::Owned(command)
             }
             Command::TrackingStep(steps) => {
                 let steps_bytes = steps.to_be_bytes();
-                vec![b'#', 5, b'k', steps_bytes[0], steps_bytes[1]]
+                Cow::Owned(vec![b'#', 5, b'k', steps_bytes[0], steps_bytes[1]])
             }
         }
     }
