@@ -8,7 +8,7 @@ pub trait Device: Sized {
     const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
     const READ_SETUP_CONFIG_TIMEOUT: Duration = Duration::from_secs(1);
 
-    type SetupInfo: super::SetupInfo;
+    type SetupInfo: super::Message;
     type Config: super::Message;
 
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Self>;

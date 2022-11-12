@@ -10,13 +10,12 @@ mod tracking_status;
 pub(crate) use command::Command;
 pub use config::{CalcMode, Config, Mode, RadioModule};
 pub use dsp_mode::DspMode;
-pub use setup_info::SetupInfo;
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
 
 use crate::rf_explorer::{
     self, Callback, ConnectionResult, Device, Error, Frequency, Model, ParseFromBytes, Result,
-    RfExplorer, SerialNumber, SerialPortReader,
+    RfExplorer, SerialNumber, SerialPortReader, SetupInfo,
 };
 use num_enum::IntoPrimitive;
 use serialport::SerialPortInfo;
@@ -153,8 +152,8 @@ impl SpectrumAnalyzer {
 }
 
 impl Device for SpectrumAnalyzer {
-    type SetupInfo = SetupInfo;
     type Config = Config;
+    type SetupInfo = SetupInfo<SpectrumAnalyzer>;
 
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Self> {
         let mut serial_port = rf_explorer::open(serial_port_info)?;
@@ -188,7 +187,7 @@ impl Device for SpectrumAnalyzer {
             .write_all(bytes.as_ref())
     }
 
-    fn setup_info(&self) -> &Self::SetupInfo {
+    fn setup_info(&self) -> &SetupInfo<Self> {
         &self.setup_info
     }
 
@@ -206,6 +205,21 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Returns a copy of the spectrum analyzer's current config.
     pub fn config(&self) -> Config {
         *self.device.config.lock().unwrap()
+    }
+
+    /// Returns the `Model` of the RF Explorer's main module.
+    pub fn main_module_model(&self) -> Model {
+        self.device.setup_info().main_module_model
+    }
+
+    /// Returns the `Model` of the RF Explorer's expansion module.
+    pub fn expansion_module_model(&self) -> Model {
+        self.device.setup_info().expansion_module_model
+    }
+
+    /// Returns the RF Explorer's firmware version.
+    pub fn firmware_version(&self) -> &str {
+        &self.device.setup_info().firmware_version
     }
 
     /// Returns the spectrum analyzer's DSP mode.

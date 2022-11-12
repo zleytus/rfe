@@ -78,21 +78,6 @@ impl<D: Device> RfExplorer<D> {
         self.device.send_bytes(bytes)
     }
 
-    /// Returns the `Model` of the RF Explorer's main module.
-    pub fn main_module_model(&self) -> Model {
-        self.device.setup_info().main_module_model()
-    }
-
-    /// Returns the `Model` of the RF Explorer's expansion module.
-    pub fn expansion_module_model(&self) -> Model {
-        self.device.setup_info().expansion_module_model()
-    }
-
-    /// Returns the RF Explorer's firmware version.
-    pub fn firmware_version(&self) -> &str {
-        self.device.setup_info().firmware_version()
-    }
-
     /// Returns the RF Explorer's serial number.
     pub fn serial_number(&mut self) -> Result<SerialNumber> {
         // If we've already received a serial number, return it without
