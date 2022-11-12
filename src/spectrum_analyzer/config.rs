@@ -1,11 +1,10 @@
-use std::fmt::Display;
-
 use crate::{
     rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
     spectrum_analyzer::parsers::*,
 };
 use nom::{branch::alt, bytes::complete::tag, combinator::opt, IResult};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use std::fmt::Display;
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
@@ -92,6 +91,8 @@ pub struct Config {
     pub start_freq: Frequency,
     pub step_freq: Frequency,
     pub stop_freq: Frequency,
+    pub center_freq: Frequency,
+    pub span_freq: Frequency,
     pub max_amp_dbm: i16,
     pub min_amp_dbm: i16,
     pub sweep_points: u32,
@@ -185,13 +186,18 @@ impl ParseFromBytes for Config {
         // Consume \n or \r\n line endings and make sure there aren't any bytes left afterwards
         let (bytes, _) = parse_opt_line_ending(bytes)?;
 
+        let start_freq = Frequency::from_khz(start_freq_khz);
+        let step_freq = Frequency::from_hz(step_freq_hz);
+        let stop_freq = start_freq + (step_freq * u64::from(sweep_points - 1));
+
         Ok((
             bytes,
             Config {
-                start_freq: Frequency::from_khz(start_freq_khz),
-                stop_freq: Frequency::from_khz(start_freq_khz)
-                    + Frequency::from_hz(step_freq_hz * u64::from(sweep_points - 1)),
-                step_freq: Frequency::from_hz(step_freq_hz),
+                start_freq,
+                stop_freq,
+                step_freq,
+                center_freq: (start_freq + stop_freq) / 2,
+                span_freq: stop_freq - start_freq,
                 max_amp_dbm,
                 min_amp_dbm,
                 sweep_points,
@@ -219,6 +225,9 @@ mod tests {
         let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
         assert_eq!(config.start_freq.as_hz(), 5_249_000_000);
         assert_eq!(config.step_freq.as_hz(), 196_428);
+        assert_eq!(config.stop_freq.as_hz(), 5_270_803_508);
+        assert_eq!(config.center_freq.as_hz(), 525_9901_754);
+        assert_eq!(config.span_freq.as_hz(), 21_803_508);
         assert_eq!(config.max_amp_dbm, -30);
         assert_eq!(config.min_amp_dbm, -118);
         assert_eq!(config.sweep_points, 112);
