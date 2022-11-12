@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
     spectrum_analyzer::parsers::*,
@@ -11,6 +13,16 @@ pub enum RadioModule {
     #[default]
     Main = 0,
     Expansion,
+}
+
+impl Display for RadioModule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let radio_module = match self {
+            RadioModule::Main => "Main",
+            RadioModule::Expansion => "Expansion",
+        };
+        write!(f, "{radio_module}")
+    }
 }
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
@@ -29,6 +41,24 @@ pub enum Mode {
     Unknown = 255,
 }
 
+impl Display for Mode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mode = match self {
+            Mode::SpectrumAnalyzer => "Spectrum Analyzer",
+            Mode::RfGenerator => "RF Generator",
+            Mode::WifiAnalyzer => "Wi-Fi Analyzer",
+            Mode::AnalyzerTracking => "Analyzer Tracking",
+            Mode::RfSniffer => "RF Sniffer",
+            Mode::CwTransmitter => "CW Transmitter",
+            Mode::SweepFrequency => "Sweep Frequency",
+            Mode::SweepAmplitude => "Sweep Amplitude",
+            Mode::GeneratorTracking => "Generator Tracking",
+            Mode::Unknown => "Unknown",
+        };
+        write!(f, "{mode}")
+    }
+}
+
 #[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
 pub enum CalcMode {
@@ -40,6 +70,21 @@ pub enum CalcMode {
     MaxHold,
     MaxHistorical,
     Unknown = 255,
+}
+
+impl Display for CalcMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let calc_mode = match self {
+            CalcMode::Normal => "Normal",
+            CalcMode::Max => "Max",
+            CalcMode::Avg => "Average",
+            CalcMode::Overwrite => "Overwrite",
+            CalcMode::MaxHold => "Max Hold",
+            CalcMode::MaxHistorical => "Max Historical",
+            CalcMode::Unknown => "Unknown",
+        };
+        write!(f, "{calc_mode}")
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
