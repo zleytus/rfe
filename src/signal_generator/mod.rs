@@ -242,7 +242,7 @@ impl RfExplorer<SignalGenerator> {
     /// Starts the signal generator's amplitude sweep mode.
     pub fn start_amp_sweep(
         &mut self,
-        cw_hz: u64,
+        cw: impl Into<Frequency>,
         start_attenuation: Attenuation,
         start_power_level: PowerLevel,
         stop_attenuation: Attenuation,
@@ -250,7 +250,7 @@ impl RfExplorer<SignalGenerator> {
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartAmpSweep {
-            cw_freq: Frequency::from_hz(cw_hz),
+            cw_freq: cw.into(),
             start_attenuation,
             start_power_level,
             stop_attenuation,
@@ -262,14 +262,14 @@ impl RfExplorer<SignalGenerator> {
     /// Starts the signal generator's amplitude sweep mode using the expansion module.
     pub fn start_amp_sweep_exp(
         &mut self,
-        cw_hz: u64,
+        cw: impl Into<Frequency>,
         start_power_dbm: f64,
         step_power_db: f64,
         stop_power_dbm: f64,
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartAmpSweepExp {
-            cw_freq: Frequency::from_hz(cw_hz),
+            cw_freq: cw.into(),
             start_power_dbm,
             step_power_db,
             stop_power_dbm,
@@ -280,21 +280,21 @@ impl RfExplorer<SignalGenerator> {
     /// Starts the signal generator's CW mode.
     pub fn start_cw(
         &mut self,
-        cw_hz: u64,
+        cw: impl Into<Frequency>,
         attenuation: Attenuation,
         power_level: PowerLevel,
     ) -> io::Result<()> {
         self.send_command(Command::StartCw {
-            cw_freq: Frequency::from_hz(cw_hz),
+            cw_freq: cw.into(),
             attenuation,
             power_level,
         })
     }
 
     /// Starts the signal generator's CW mode using the expansion module.
-    pub fn start_cw_exp(&mut self, cw_hz: u64, power_dbm: f64) -> io::Result<()> {
+    pub fn start_cw_exp(&mut self, cw: impl Into<Frequency>, power_dbm: f64) -> io::Result<()> {
         self.send_command(Command::StartCwExp {
-            cw_freq: Frequency::from_hz(cw_hz),
+            cw_freq: cw.into(),
             power_dbm,
         })
     }
@@ -302,7 +302,7 @@ impl RfExplorer<SignalGenerator> {
     /// Starts the signal generator's frequency sweep mode.
     pub fn start_freq_sweep(
         &mut self,
-        start_hz: u64,
+        start: impl Into<Frequency>,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
@@ -310,7 +310,7 @@ impl RfExplorer<SignalGenerator> {
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartFreqSweep {
-            start_freq: Frequency::from_hz(start_hz),
+            start_freq: start.into(),
             attenuation,
             power_level,
             sweep_steps,
@@ -322,17 +322,17 @@ impl RfExplorer<SignalGenerator> {
     /// Starts the signal generator's frequency sweep mode using the expansion module.
     pub fn start_freq_sweep_exp(
         &mut self,
-        start_hz: u64,
+        start: impl Into<Frequency>,
         power_dbm: f64,
         sweep_steps: u16,
-        step_hz: u64,
+        step: impl Into<Frequency>,
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartFreqSweepExp {
-            start_freq: Frequency::from_hz(start_hz),
+            start_freq: start.into(),
             power_dbm,
             sweep_steps,
-            step_freq: Frequency::from_hz(step_hz),
+            step_freq: step.into(),
             step_delay,
         })
     }
@@ -340,34 +340,34 @@ impl RfExplorer<SignalGenerator> {
     /// Starts the signal generator's tracking mode.
     pub fn start_tracking(
         &mut self,
-        start_hz: u64,
+        start: impl Into<Frequency>,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
-        step_hz: u64,
+        step: impl Into<Frequency>,
     ) -> io::Result<()> {
         self.send_command(Command::StartTracking {
-            start_freq: Frequency::from_hz(start_hz),
+            start_freq: start.into(),
             attenuation,
             power_level,
             sweep_steps,
-            step_freq: Frequency::from_hz(step_hz),
+            step_freq: step.into(),
         })
     }
 
     /// Starts the signal generator's tracking mode using the expansion module.
     pub fn start_tracking_exp(
         &mut self,
-        start_hz: u64,
+        start: impl Into<Frequency>,
         power_dbm: f64,
         sweep_steps: u16,
-        step_hz: u64,
+        step: impl Into<Frequency>,
     ) -> io::Result<()> {
         self.send_command(Command::StartTrackingExp {
-            start_freq: Frequency::from_hz(start_hz),
+            start_freq: start.into(),
             power_dbm,
             sweep_steps,
-            step_freq: Frequency::from_hz(step_hz),
+            step_freq: step.into(),
         })
     }
 
