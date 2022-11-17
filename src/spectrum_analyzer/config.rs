@@ -2,6 +2,7 @@ use crate::{
     rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
     spectrum_analyzer::parsers::*,
 };
+use chrono::{DateTime, Utc};
 use nom::{branch::alt, bytes::complete::tag, combinator::opt, IResult};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::fmt::Display;
@@ -104,6 +105,7 @@ pub struct Config {
     pub rbw: Option<Frequency>,
     pub amp_offset_db: Option<i16>,
     pub calc_mode: Option<CalcMode>,
+    pub timestamp: DateTime<Utc>,
 }
 
 impl Message for Config {
@@ -209,6 +211,7 @@ impl ParseFromBytes for Config {
                 rbw: rbw_khz.map(Frequency::from_khz),
                 amp_offset_db,
                 calc_mode,
+                timestamp: Utc::now(),
             },
         ))
     }
