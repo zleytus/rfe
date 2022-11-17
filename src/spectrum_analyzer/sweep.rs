@@ -113,6 +113,15 @@ impl_sweep_data!(
 );
 impl_sweep_data!(SweepDataLarge, b"$z", length_data(be_u16));
 
+impl Default for Sweep {
+    fn default() -> Self {
+        Sweep::Standard(SweepDataStandard {
+            amplitudes_dbm: Vec::default(),
+            timestamp: DateTime::default(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
