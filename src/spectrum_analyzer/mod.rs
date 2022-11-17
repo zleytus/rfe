@@ -55,6 +55,7 @@ pub struct SpectrumAnalyzer {
 
 impl SpectrumAnalyzer {
     const MIN_MAX_AMP_RANGE_DBM: RangeInclusive<i16> = -120..=35;
+    const EEOT_BYTES: [u8; 5] = [255, 254, 255, 254, 0];
 
     /// Spawns a new thread to read messages from the spectrum analyzer.
     fn start_read_thread(&mut self) {
@@ -102,7 +103,15 @@ impl SpectrumAnalyzer {
                     message_buf.clear();
                     continue;
                 } else if let Err(nom::Err::Incomplete(_)) = parse_sweep_result {
-                    continue;
+                    // Check for Early-End-of-Transmission (EEOT) byte sequence
+                    if let Some(eeot_index) = message_buf
+                        .windows(5)
+                        .position(|window| window == Self::EEOT_BYTES)
+                    {
+                        message_buf.drain(0..eeot_index + 5);
+                    } else {
+                        continue;
+                    }
                 }
 
                 // Try to parse a config from the message we received
