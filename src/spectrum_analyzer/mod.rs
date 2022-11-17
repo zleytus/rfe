@@ -2,6 +2,7 @@ mod command;
 mod config;
 mod dsp_mode;
 mod ffi;
+mod input_stage;
 mod parsers;
 mod setup_info;
 mod sweep;
@@ -10,6 +11,7 @@ mod tracking_status;
 pub(crate) use command::Command;
 pub use config::{CalcMode, Config, Mode, RadioModule};
 pub use dsp_mode::DspMode;
+pub use input_stage::InputStage;
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
 
@@ -30,16 +32,6 @@ use std::{
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
 #[repr(u8)]
-pub enum InputStage {
-    Bypass = b'0',
-    Attenuator30dB = b'1',
-    Lna25dB = b'2',
-    Attenuator60dB = b'3',
-    Lna12dB = b'4',
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
-#[repr(u8)]
 pub enum WifiBand {
     TwoPointFourGhz = 1,
     FiveGhz,
@@ -56,6 +48,7 @@ pub struct SpectrumAnalyzer {
     dsp_mode: Arc<Mutex<Option<DspMode>>>,
     serial_number: Arc<Mutex<Option<SerialNumber>>>,
     tracking_status: Arc<Mutex<Option<TrackingStatus>>>,
+    input_stage: Arc<Mutex<Option<InputStage>>>,
     setup_info: SetupInfo,
     port_name: String,
 }
@@ -76,6 +69,7 @@ impl SpectrumAnalyzer {
         let dsp_mode = self.dsp_mode.clone();
         let serial_number = self.serial_number.clone();
         let tracking_status = self.tracking_status.clone();
+        let input_stage = self.input_stage.clone();
 
         self.read_thread_handle = Some(thread::spawn(move || {
             let mut message_buf = Vec::new();
@@ -143,6 +137,13 @@ impl SpectrumAnalyzer {
                     continue;
                 }
 
+                // Try to parse an input stage message from the message we received
+                if let Ok((_, new_input_stage)) = InputStage::parse_from_bytes(&message_buf) {
+                    input_stage.lock().unwrap().replace(new_input_stage);
+                    message_buf.clear();
+                    continue;
+                }
+
                 // We weren't able to parse the message we received so clear the message buffer and read again
                 message_buf.clear();
             }
@@ -172,6 +173,7 @@ impl Device for SpectrumAnalyzer {
             dsp_mode: Arc::new(Mutex::new(None)),
             serial_number: Arc::new(Mutex::new(None)),
             tracking_status: Arc::new(Mutex::new(None)),
+            input_stage: Arc::new(Mutex::new(None)),
             setup_info,
             port_name: serial_port_info.port_name.clone(),
         };
@@ -236,6 +238,10 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Returns the status of tracking mode (enabled or disabled).
     pub fn tracking_status(&self) -> Option<TrackingStatus> {
         *self.device.tracking_status.lock().unwrap()
+    }
+
+    pub fn input_stage(&self) -> Option<InputStage> {
+        *self.device.input_stage.lock().unwrap()
     }
 
     /// Returns which radio module is active (main or expansion)
