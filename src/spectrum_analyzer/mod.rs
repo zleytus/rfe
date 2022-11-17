@@ -442,12 +442,36 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.
-    pub fn set_sweep_points(&mut self, sweep_points: u16) -> io::Result<()> {
-        if sweep_points <= 4096 {
-            self.send_command(Command::SetSweepPointsExt(sweep_points))
-        } else {
-            self.send_command(Command::SetSweepPointsLarge(sweep_points))
+    pub fn set_sweep_points(&mut self, sweep_points: u16) -> Result<Config> {
+        // Only 'Plus' models can set the number of points in a sweep
+        if !self.active_module_model().is_plus_model() {
+            return Err(Error::InvalidOperation(
+                "Only RF Explorer 'Plus' models support setting the number of sweep points"
+                    .to_string(),
+            ));
         }
+
+        // Store a copy of the original config to help determine when we've received a new config
+        let original_config = self.config();
+
+        if sweep_points <= 4096 {
+            self.send_command(Command::SetSweepPointsExt(sweep_points))?;
+        } else {
+            self.send_command(Command::SetSweepPointsLarge(sweep_points))?;
+        }
+
+        // Wait to see if we receive a new config in response
+        let start_time = Instant::now();
+        while start_time.elapsed() < SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT {
+            let new_config = self.config();
+            // If the new config is different than the old config it means we received a new config
+            // in reponse to our command
+            if new_config != original_config {
+                return Ok(new_config);
+            }
+        }
+
+        Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
     }
 
     /// Sets the spectrum analyzer's calculator mode.
