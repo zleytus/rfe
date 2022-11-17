@@ -57,6 +57,7 @@ pub struct SpectrumAnalyzer {
     serial_number: Arc<Mutex<Option<SerialNumber>>>,
     tracking_status: Arc<Mutex<Option<TrackingStatus>>>,
     setup_info: SetupInfo,
+    port_name: String,
 }
 
 impl SpectrumAnalyzer {
@@ -172,6 +173,7 @@ impl Device for SpectrumAnalyzer {
             serial_number: Arc::new(Mutex::new(None)),
             tracking_status: Arc::new(Mutex::new(None)),
             setup_info,
+            port_name: serial_port_info.port_name.clone(),
         };
 
         spectrum_analyzer.start_read_thread();
@@ -185,6 +187,10 @@ impl Device for SpectrumAnalyzer {
             .unwrap()
             .get_mut()
             .write_all(bytes.as_ref())
+    }
+
+    fn port_name(&self) -> &str {
+        &self.port_name
     }
 
     fn setup_info(&self) -> &SetupInfo<Self> {

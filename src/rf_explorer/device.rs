@@ -15,6 +15,8 @@ pub trait Device: Sized {
 
     fn send_bytes(&mut self, bytes: impl AsRef<[u8]>) -> io::Result<()>;
 
+    fn port_name(&self) -> &str;
+
     fn setup_info(&self) -> &Self::SetupInfo;
 
     fn serial_number(&self) -> Option<SerialNumber>;

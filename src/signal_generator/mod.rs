@@ -46,6 +46,7 @@ pub struct SignalGenerator {
     serial_number: Arc<Mutex<Option<SerialNumber>>>,
     temperature: Arc<Mutex<Option<Temperature>>>,
     setup_info: SetupInfo<Self>,
+    port_name: String,
 }
 
 impl SignalGenerator {
@@ -174,6 +175,7 @@ impl Device for SignalGenerator {
             serial_number: Arc::new(Mutex::new(None)),
             temperature: Arc::new(Mutex::new(None)),
             setup_info,
+            port_name: serial_port_info.port_name.clone(),
         };
 
         signal_generator.start_read_thread();
@@ -187,6 +189,10 @@ impl Device for SignalGenerator {
             .unwrap()
             .get_mut()
             .write_all(bytes.as_ref())
+    }
+
+    fn port_name(&self) -> &str {
+        &self.port_name
     }
 
     fn setup_info(&self) -> &SetupInfo<Self> {

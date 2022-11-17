@@ -78,6 +78,10 @@ impl<D: Device> RfExplorer<D> {
         self.device.send_bytes(bytes)
     }
 
+    pub fn port_name(&self) -> &str {
+        self.device.port_name()
+    }
+
     /// Returns the RF Explorer's serial number.
     pub fn serial_number(&mut self) -> Result<SerialNumber> {
         // If we've already received a serial number, return it without
