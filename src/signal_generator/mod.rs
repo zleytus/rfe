@@ -69,6 +69,7 @@ impl SignalGenerator {
 
         self.read_thread_handle = Some(thread::spawn(move || {
             let mut message_buf = Vec::new();
+            *is_reading.lock().unwrap() = true;
             while *is_reading.lock().unwrap() {
                 let read_message_result = serial_port
                     .lock()
@@ -162,7 +163,7 @@ impl Device for SignalGenerator {
 
         let mut signal_generator = SignalGenerator {
             serial_port: Arc::new(Mutex::new(serial_port)),
-            is_reading: Arc::new(Mutex::new(true)),
+            is_reading: Arc::new(Mutex::new(false)),
             read_thread_handle: None,
             config: Arc::new(Mutex::new(config)),
             config_callback: Arc::new(Mutex::new(None)),
@@ -179,6 +180,9 @@ impl Device for SignalGenerator {
         };
 
         signal_generator.start_read_thread();
+
+        // Wait until the read thread has started before returning
+        while !*signal_generator.is_reading.lock().unwrap() {}
 
         Ok(signal_generator)
     }

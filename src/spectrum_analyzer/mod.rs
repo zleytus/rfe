@@ -73,6 +73,7 @@ impl SpectrumAnalyzer {
 
         self.read_thread_handle = Some(thread::spawn(move || {
             let mut message_buf = Vec::new();
+            *is_reading.lock().unwrap() = true;
             while *is_reading.lock().unwrap() {
                 let read_message_result = serial_port
                     .lock()
@@ -164,7 +165,7 @@ impl Device for SpectrumAnalyzer {
 
         let mut spectrum_analyzer = SpectrumAnalyzer {
             serial_port: Arc::new(Mutex::new(serial_port)),
-            is_reading: Arc::new(Mutex::new(true)),
+            is_reading: Arc::new(Mutex::new(false)),
             read_thread_handle: None,
             config: Arc::new(Mutex::new(config)),
             config_callback: Arc::new(Mutex::new(None)),
@@ -179,6 +180,9 @@ impl Device for SpectrumAnalyzer {
         };
 
         spectrum_analyzer.start_read_thread();
+
+        // Wait until the read thread has started before returning
+        while !*spectrum_analyzer.is_reading.lock().unwrap() {}
 
         Ok(spectrum_analyzer)
     }
