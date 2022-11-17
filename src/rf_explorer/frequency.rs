@@ -197,6 +197,18 @@ impl Div<u64> for Frequency {
     }
 }
 
+impl Div<Frequency> for Frequency {
+    type Output = u64;
+
+    fn div(self, rhs: Frequency) -> Self::Output {
+        if rhs.as_hz() == 0 {
+            panic!("Cannot divide a frequency by zero.")
+        }
+
+        self.as_hz() / rhs.as_hz()
+    }
+}
+
 impl From<u64> for Frequency {
     fn from(freq_hz: u64) -> Self {
         Frequency::from_hz(freq_hz)
