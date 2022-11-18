@@ -443,7 +443,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.
-    pub fn set_sweep_points(&mut self, sweep_points: u16) -> Result<Config> {
+    pub fn set_sweep_points(&mut self, sweep_points: u16) -> Result<()> {
         // Only 'Plus' models can set the number of points in a sweep
         if !self.active_module_model().is_plus_model() {
             return Err(Error::InvalidOperation(
@@ -469,7 +469,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         let start_time = Instant::now();
         while start_time.elapsed() < SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT {
             if self.config().sweep_points == expected_sweep_points {
-                return Ok(self.config());
+                return Ok(());
             }
         }
 
