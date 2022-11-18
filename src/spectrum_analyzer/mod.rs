@@ -55,6 +55,7 @@ pub struct SpectrumAnalyzer {
 
 impl SpectrumAnalyzer {
     const MIN_MAX_AMP_RANGE_DBM: RangeInclusive<i16> = -120..=35;
+    const MIN_SWEEP_POINTS: u16 = 112;
     const EEOT_BYTES: [u8; 5] = [255, 254, 255, 254, 0];
 
     /// Spawns a new thread to read messages from the spectrum analyzer.
@@ -451,23 +452,24 @@ impl RfExplorer<SpectrumAnalyzer> {
             ));
         }
 
-        // Store a copy of the original config to help determine when we've received a new config
-        let original_config = self.config();
-
         if sweep_points <= 4096 {
             self.send_command(Command::SetSweepPointsExt(sweep_points))?;
         } else {
             self.send_command(Command::SetSweepPointsLarge(sweep_points))?;
         }
 
-        // Wait to see if we receive a new config in response
+        // The requested number of sweep points gets rounded down to a number that's a multiple of 16
+        let expected_sweep_points = u32::from(if sweep_points < 112 {
+            SpectrumAnalyzer::MIN_SWEEP_POINTS
+        } else {
+            (sweep_points / 16) * 16
+        });
+
+        // Wait until the current config shows the requested number of sweep points
         let start_time = Instant::now();
         while start_time.elapsed() < SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT {
-            let new_config = self.config();
-            // If the new config is different than the old config it means we received a new config
-            // in reponse to our command
-            if new_config != original_config {
-                return Ok(new_config);
+            if self.config().sweep_points == expected_sweep_points {
+                return Ok(self.config());
             }
         }
 
