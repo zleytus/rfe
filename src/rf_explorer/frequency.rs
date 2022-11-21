@@ -147,6 +147,10 @@ impl Frequency {
     pub fn as_ghz_f64(&self) -> f64 {
         f64::Frequency::new::<hertz>(self.freq.get::<hertz>() as f64).get::<gigahertz>()
     }
+
+    pub fn abs_diff(self, other: Frequency) -> Frequency {
+        Frequency::from_hz(self.as_hz().abs_diff(other.as_hz()))
+    }
 }
 
 impl Add for Frequency {
