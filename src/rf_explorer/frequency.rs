@@ -1,12 +1,12 @@
+use std::fmt::Debug;
 use std::ops::{Add, Div, Mul, Sub};
-
 use uom::si::{
     f32, f64,
     frequency::{gigahertz, hertz, kilohertz, megahertz},
     u64,
 };
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Frequency {
     freq: u64::Frequency,
 }
@@ -212,6 +212,14 @@ impl Div<Frequency> for Frequency {
 impl From<u64> for Frequency {
     fn from(freq_hz: u64) -> Self {
         Frequency::from_hz(freq_hz)
+    }
+}
+
+impl Debug for Frequency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Frequency")
+            .field("hz", &self.as_hz())
+            .finish()
     }
 }
 
