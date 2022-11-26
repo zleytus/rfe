@@ -10,9 +10,10 @@ use nom::{
     number::complete::{be_u16, u8 as nom_u8},
     IResult,
 };
+use std::fmt::Debug;
 use std::ops::{Add, AddAssign};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Sweep {
     Standard(SweepDataStandard),
     Ext(SweepDataExt),
@@ -119,6 +120,15 @@ impl Default for Sweep {
             amplitudes_dbm: Vec::default(),
             timestamp: DateTime::default(),
         })
+    }
+}
+
+impl Debug for Sweep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Sweep")
+            .field("amplitudes", &self.amplitudes_dbm())
+            .field("timestamp", &self.timestamp())
+            .finish()
     }
 }
 
