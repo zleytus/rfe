@@ -27,7 +27,7 @@ use std::{
     ops::RangeInclusive,
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
@@ -222,6 +222,21 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Returns a copy of the latest sweep received by the spectrum analyzer.
     pub fn latest_sweep(&self) -> Option<Sweep> {
         self.device.sweep.lock().unwrap().clone()
+    }
+
+    /// Waits for the RF Explorer to measure its next `Sweep`.
+    pub fn wait_for_next_sweep(&self, timeout: Duration) -> Result<Sweep> {
+        let previous_sweep = self.latest_sweep();
+
+        let start_time = Instant::now();
+        while start_time.elapsed() < timeout {
+            let potential_next_sweep = self.device.sweep.lock().unwrap();
+            if *potential_next_sweep != previous_sweep && potential_next_sweep.is_some() {
+                return Ok(potential_next_sweep.clone().unwrap());
+            }
+        }
+
+        Err(Error::TimedOut(timeout))
     }
 
     /// Returns a copy of the spectrum analyzer's current config.
