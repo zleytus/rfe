@@ -5,13 +5,15 @@
 ## Example
 
 ``` rust
+use rfe::RfExplorer;
+use std::time::Duration;
+
 fn main() {
-    if let Some(spectrum_analyzer) = rfe::first_spectrum_analyzer() {
-        println!("{:?}", spectrum_analyzer);
-        println!("{:?}", spectrum_analyzer.last_sweep());
-    } else {
-        println!("No spectrum analyzers connected");
-    }
+    let mut rfe = RfExplorer::connect().expect("RF Explorer should be connected");
+    rfe.set_start_stop(90_000_000, 110_000_000).unwrap();
+
+    println!("{:#?}", rfe.config());
+    println!("{:#?}", rfe.wait_for_next_sweep(Duration::from_secs(2)));
 }
 ```
 
