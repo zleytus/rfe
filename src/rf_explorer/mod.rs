@@ -1,7 +1,6 @@
 mod command;
 mod device;
 mod error;
-pub(crate) mod ffi;
 mod frequency;
 mod message;
 mod model;

@@ -3,7 +3,6 @@ mod config;
 mod config_amp_sweep;
 mod config_cw;
 mod config_freq_sweep;
-mod ffi;
 mod parsers;
 mod setup_info;
 mod temperature;

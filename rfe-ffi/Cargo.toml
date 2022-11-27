@@ -1,0 +1,14 @@
+[package]
+name = "rfe-ffi"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+cbindgen = "0.24"
+
+[dependencies]
+rfe = { path = "../" }
+
+[lib]
+name = "rfe"
+crate-type = ["cdylib", "staticlib"]

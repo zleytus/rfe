@@ -1,7 +1,6 @@
 mod command;
 mod config;
 mod dsp_mode;
-mod ffi;
 mod input_stage;
 mod parsers;
 mod setup_info;
