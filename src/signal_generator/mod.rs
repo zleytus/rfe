@@ -434,6 +434,7 @@ impl Drop for SignalGenerator {
 impl Debug for SignalGenerator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SignalGenerator")
+            .field("port_name", &self.port_name)
             .field("setup_info", &self.setup_info)
             .field("config", &self.config)
             .finish()

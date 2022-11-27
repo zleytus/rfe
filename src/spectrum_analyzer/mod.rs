@@ -605,6 +605,7 @@ impl Drop for SpectrumAnalyzer {
 impl Debug for SpectrumAnalyzer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SpectrumAnalyzer")
+            .field("port_name", &self.port_name)
             .field("setup_info", &self.setup_info)
             .field("config", &self.config.lock().unwrap())
             .finish()
