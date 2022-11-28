@@ -17,22 +17,28 @@ fn main() {
 }
 ```
 
-## Setup
-
-``` toml
-# Cargo.toml
-[dependencies]
-rfe = { git = "https://github.com/zatchl/rfe" }
-```
+## Requirements
 
 ### Windows and macOS
 
-* Download and install the appropriate [Silicon Labs CP210x USB driver](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers)
+Download and install the appropriate [Silicon Labs CP210x USB driver](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers)
 
 ### Linux
 
-* The Silicon Labs CP210x driver is included in the kernel
-* Make sure the current user has read/write access to the RF Explorer
-  * `ls -l /dev/ttyUSB*` to find the RF Explorer's group owner
-  * `groups` to see if the current user is a member of the group
-  * `gpasswd -a <user> <group>` to add the user to the group
+#### Install `pkg-config` and `udev` header files
+
+| Distro             | Command                                           |
+|--------------------|---------------------------------------------------|
+| Debian/Ubuntu      | `apt install pkg-config libudev-dev`              |
+| Fedora/CentOS/RHEL | `dnf install pkgconf-pkg-config systemd-devel`    |
+| openSUSE           | `zypper install pkgconf-pkg-config systemd-devel` |
+| Arch/Manjaro       | `pacman -Syu pkgconf systemd`                     |
+
+#### Add yourself to the `dialout` or `uucp` group to get permission to access the RF Explorer
+
+| Distro             | Command                         |
+|--------------------|---------------------------------|
+| Debian/Ubuntu      | `gpasswd -a <username> dialout` |
+| Fedora/CentOS/RHEL | `gpasswd -a <username> dialout` |
+| openSUSE           | `gpasswd -a <username> dialout` |
+| Arch/Manjaro       | `gpasswd -a <username> uucp`    |
