@@ -2,7 +2,7 @@
 
 `rfe` is a library for communicating with [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers and signal generators.
 
-## Example
+## Usage
 
 ``` rust
 use rfe::RfExplorer;
