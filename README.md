@@ -6,14 +6,12 @@
 
 ``` rust
 use rfe::RfExplorer;
-use std::time::Duration;
 
 fn main() {
-    let mut rfe = RfExplorer::connect().expect("RF Explorer should be connected");
-    rfe.set_start_stop(90_000_000, 110_000_000).unwrap();
-
-    println!("{:#?}", rfe.config());
-    println!("{:#?}", rfe.wait_for_next_sweep(Duration::from_secs(2)));
+    let rfe = RfExplorer::connect().unwrap();
+    loop {
+        println!("{:?}\n", rfe.wait_for_next_sweep());
+    }
 }
 ```
 
