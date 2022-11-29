@@ -15,5 +15,5 @@ fn main() {
 
     cbindgen::generate_with_config(crate_dir, config)
         .expect("Unable to generate bindings")
-        .write_to_file("rfe.h");
+        .write_to_file("include/rfe.h");
 }
