@@ -440,7 +440,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         &mut self,
         start_freq: impl Into<Frequency>,
         stop_freq: impl Into<Frequency>,
-    ) -> Result<Config> {
+    ) -> Result<()> {
         let config = self.config();
         self.set_config(
             start_freq.into(),
@@ -455,14 +455,14 @@ impl RfExplorer<SpectrumAnalyzer> {
         &mut self,
         center_freq: impl Into<Frequency>,
         span_freq: impl Into<Frequency>,
-    ) -> Result<Config> {
+    ) -> Result<()> {
         let center_freq = center_freq.into();
         let span_freq = span_freq.into();
         self.set_start_stop(center_freq - span_freq / 2, center_freq + span_freq / 2)
     }
 
     /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
-    pub fn set_min_max_amps(&mut self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<Config> {
+    pub fn set_min_max_amps(&mut self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         let config = self.config();
         self.set_config(
             config.start_freq,
@@ -479,7 +479,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         stop_freq: Frequency,
         min_amp_dbm: i16,
         max_amp_dbm: i16,
-    ) -> Result<Config> {
+    ) -> Result<()> {
         self.validate_start_stop(start_freq, stop_freq)?;
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
