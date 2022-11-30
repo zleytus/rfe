@@ -10,6 +10,11 @@ fn main() {
             prefix_with_name: true,
             ..Default::default()
         },
+        parse: cbindgen::ParseConfig {
+            parse_deps: true,
+            include: Some(vec!["rfe".to_string()]),
+            ..Default::default()
+        },
         ..Default::default()
     };
 
