@@ -82,25 +82,8 @@ impl<D: Device> RfExplorer<D> {
     }
 
     /// Returns the RF Explorer's serial number.
-    pub fn serial_number(&mut self) -> Result<SerialNumber> {
-        // If we've already received a serial number, return it without
-        // requesting the RF Explorer sends it again
-        if let Some(sn) = self.device.serial_number() {
-            return Ok(sn);
-        }
-
-        // Send the command to request the RF Explorer's serial number
-        self.send_command(Command::RequestSerialNumber)?;
-
-        // Wait to see if we receive a serial number
-        let start_time = Instant::now();
-        while start_time.elapsed() <= D::COMMAND_RESPONSE_TIMEOUT {
-            if let Some(sn) = self.device.serial_number() {
-                return Ok(sn);
-            }
-        }
-
-        Err(Error::TimedOut(D::COMMAND_RESPONSE_TIMEOUT))
+    pub fn serial_number(&mut self) -> SerialNumber {
+        self.device.serial_number()
     }
 
     /// Turns on the RF Explorer's LCD screen.

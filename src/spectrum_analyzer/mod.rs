@@ -45,10 +45,10 @@ pub struct SpectrumAnalyzer {
     sweep_condvar_pair: Arc<(Mutex<Option<Sweep>>, Condvar)>,
     sweep_callback: Arc<Mutex<Callback<Sweep>>>,
     dsp_mode_condvar_pair: Arc<(Mutex<Option<DspMode>>, Condvar)>,
-    serial_number: Arc<Mutex<Option<SerialNumber>>>,
     tracking_status_condvar_pair: Arc<(Mutex<Option<TrackingStatus>>, Condvar)>,
     input_stage: Arc<Mutex<Option<InputStage>>>,
     setup_info: SetupInfo,
+    serial_number: SerialNumber,
     port_name: String,
 }
 
@@ -70,7 +70,6 @@ impl SpectrumAnalyzer {
         let config_condvar_pair = self.config_condvar_pair.clone();
         let config_callback = self.config_callback.clone();
         let dsp_mode_condvar_pair = self.dsp_mode_condvar_pair.clone();
-        let serial_number = self.serial_number.clone();
         let tracking_status_condvar_pair = self.tracking_status_condvar_pair.clone();
         let input_stage = self.input_stage.clone();
 
@@ -86,12 +85,15 @@ impl SpectrumAnalyzer {
 
                 // Time out errors are recoverable so we should try to read again
                 // Other errors are not recoverable and we should exit the thread
-                if let Err(error) = read_message_result {
-                    match error.kind() {
-                        ErrorKind::TimedOut => continue,
-                        _ => break,
+                match read_message_result {
+                    Ok(bytes_read) => trace!("Read {} bytes", bytes_read),
+                    Err(e) if e.kind() == ErrorKind::TimedOut => {
+                        continue;
                     }
-                }
+                    Err(e) => {
+                        break;
+                    }
+                };
 
                 // Try to parse a sweep from the message we received
                 let parse_sweep_result = Sweep::parse_from_bytes(&message_buf);
@@ -136,13 +138,6 @@ impl SpectrumAnalyzer {
                     continue;
                 }
 
-                // Try to parse a serial number message from the message we received
-                if let Ok((_, new_serial_number)) = SerialNumber::parse_from_bytes(&message_buf) {
-                    serial_number.lock().unwrap().replace(new_serial_number);
-                    message_buf.clear();
-                    continue;
-                }
-
                 // Try to parse a tracking status message from the message we received
                 if let Ok((_, tracking_status)) = TrackingStatus::parse_from_bytes(&message_buf) {
                     *tracking_status_condvar_pair.0.lock().unwrap() = Some(tracking_status);
@@ -175,7 +170,8 @@ impl Device for SpectrumAnalyzer {
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Self> {
         let mut serial_port = rf_explorer::open(serial_port_info)?;
 
-        let (config, setup_info) = SpectrumAnalyzer::read_setup_and_config(&mut serial_port)?;
+        let (config, setup_info, serial_number) =
+            SpectrumAnalyzer::read_initial_messages(&mut serial_port)?;
 
         let mut spectrum_analyzer = SpectrumAnalyzer {
             serial_port: Arc::new(Mutex::new(serial_port)),
@@ -186,10 +182,10 @@ impl Device for SpectrumAnalyzer {
             sweep_condvar_pair: Arc::new((Mutex::new(None), Condvar::new())),
             sweep_callback: Arc::new(Mutex::new(None)),
             dsp_mode_condvar_pair: Arc::new((Mutex::new(None), Condvar::new())),
-            serial_number: Arc::new(Mutex::new(None)),
             tracking_status_condvar_pair: Arc::new((Mutex::new(None), Condvar::new())),
             input_stage: Arc::new(Mutex::new(None)),
             setup_info,
+            serial_number,
             port_name: serial_port_info.port_name.clone(),
         };
 
@@ -236,8 +232,8 @@ impl Device for SpectrumAnalyzer {
         &self.setup_info
     }
 
-    fn serial_number(&self) -> Option<SerialNumber> {
-        self.serial_number.lock().unwrap().clone()
+    fn serial_number(&self) -> SerialNumber {
+        self.serial_number.clone()
     }
 }
 
@@ -702,6 +698,7 @@ impl Debug for SpectrumAnalyzer {
             .field("port_name", &self.port_name)
             .field("setup_info", &self.setup_info)
             .field("config", &self.config_condvar_pair.0.lock().unwrap())
+            .field("serial_number", &self.serial_number)
             .finish()
     }
 }

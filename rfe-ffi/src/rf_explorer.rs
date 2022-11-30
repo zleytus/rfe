@@ -189,21 +189,17 @@ pub unsafe extern "C" fn rfe_serial_number(
         _ => return RfExplorerResult::InvalidOperationError,
     };
 
-    if let Ok(serial_number) = serial_number {
-        let serial_number = CString::new(serial_number.as_str()).unwrap_or_default();
-        let serial_number =
-            slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len());
+    let serial_number = CString::new(serial_number.as_str()).unwrap_or_default();
+    let serial_number =
+        slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len());
 
-        if buf_len < serial_number.len() {
-            return RfExplorerResult::InvalidInputError;
-        }
-
-        let serial_number_buf = slice::from_raw_parts_mut(serial_number_buf, buf_len);
-        serial_number_buf[..serial_number.len()].copy_from_slice(serial_number);
-        RfExplorerResult::Success
-    } else {
-        serial_number.into()
+    if buf_len < serial_number.len() {
+        return RfExplorerResult::InvalidInputError;
     }
+
+    let serial_number_buf = slice::from_raw_parts_mut(serial_number_buf, buf_len);
+    serial_number_buf[..serial_number.len()].copy_from_slice(serial_number);
+    RfExplorerResult::Success
 }
 
 #[no_mangle]

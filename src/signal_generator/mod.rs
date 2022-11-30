@@ -42,9 +42,9 @@ pub struct SignalGenerator {
     config_cw_callback: Arc<Mutex<Callback<ConfigCw>>>,
     config_freq_sweep: Arc<Mutex<Option<ConfigFreqSweep>>>,
     config_freq_sweep_callback: Arc<Mutex<Callback<ConfigFreqSweep>>>,
-    serial_number: Arc<Mutex<Option<SerialNumber>>>,
     temperature: Arc<Mutex<Option<Temperature>>>,
     setup_info: SetupInfo<Self>,
+    serial_number: SerialNumber,
     port_name: String,
 }
 
@@ -63,7 +63,6 @@ impl SignalGenerator {
         let config_cw_callback = self.config_cw_callback.clone();
         let config_freq_sweep = self.config_freq_sweep.clone();
         let config_freq_sweep_callback = self.config_freq_sweep_callback.clone();
-        let serial_number = self.serial_number.clone();
         let temperature = self.temperature.clone();
 
         self.read_thread_handle = Some(thread::spawn(move || {
@@ -128,13 +127,6 @@ impl SignalGenerator {
                     continue;
                 }
 
-                // Try to parse a serial number message from the message we received
-                if let Ok((_, new_serial_number)) = SerialNumber::parse_from_bytes(&message_buf) {
-                    *serial_number.lock().unwrap() = Some(new_serial_number);
-                    message_buf.clear();
-                    continue;
-                }
-
                 // Try to parse a temperature messagefrom the message we received
                 if let Ok((_, new_temperature)) = Temperature::parse_from_bytes(&message_buf) {
                     *temperature.lock().unwrap() = Some(new_temperature);
@@ -158,7 +150,8 @@ impl Device for SignalGenerator {
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Self> {
         let mut serial_port = rf_explorer::open(serial_port_info)?;
 
-        let (config, setup_info) = SignalGenerator::read_setup_and_config(&mut serial_port)?;
+        let (config, setup_info, serial_number) =
+            SignalGenerator::read_initial_messages(&mut serial_port)?;
 
         let mut signal_generator = SignalGenerator {
             serial_port: Arc::new(Mutex::new(serial_port)),
@@ -172,9 +165,9 @@ impl Device for SignalGenerator {
             config_amp_sweep_callback: Arc::new(Mutex::new(None)),
             config_freq_sweep: Arc::new(Mutex::new(None)),
             config_freq_sweep_callback: Arc::new(Mutex::new(None)),
-            serial_number: Arc::new(Mutex::new(None)),
             temperature: Arc::new(Mutex::new(None)),
             setup_info,
+            serial_number,
             port_name: serial_port_info.port_name.clone(),
         };
 
@@ -202,8 +195,8 @@ impl Device for SignalGenerator {
         &self.setup_info
     }
 
-    fn serial_number(&self) -> Option<SerialNumber> {
-        self.serial_number.lock().unwrap().clone()
+    fn serial_number(&self) -> SerialNumber {
+        self.serial_number.clone()
     }
 }
 
@@ -437,6 +430,7 @@ impl Debug for SignalGenerator {
             .field("port_name", &self.port_name)
             .field("setup_info", &self.setup_info)
             .field("config", &self.config)
+            .field("serial_number", &self.serial_number)
             .finish()
     }
 }

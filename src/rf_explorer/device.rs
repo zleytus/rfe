@@ -19,18 +19,22 @@ pub trait Device: Sized {
 
     fn setup_info(&self) -> &Self::SetupInfo;
 
-    fn serial_number(&self) -> Option<SerialNumber>;
+    fn serial_number(&self) -> SerialNumber;
 
-    /// Attempts to read the SetupInfo and Config sent by the RF Explorer when we connect to it.
-    fn read_setup_and_config(
+    /// Attempts to read the `SetupInfo`, `Config`, and `SerialNumber` sent by the RF Explorer when we connect to it.
+    fn read_initial_messages(
         serial_port: &mut SerialPortReader,
-    ) -> ConnectionResult<(Self::Config, Self::SetupInfo)> {
-        let (mut initial_config, mut initial_setup_info) = (None, None);
+    ) -> ConnectionResult<(Self::Config, Self::SetupInfo, SerialNumber)> {
+        let (mut initial_config, mut initial_setup_info, mut initial_serial_number) =
+            (None, None, None);
         let mut message_buf = Vec::new();
         let start_time = Instant::now();
 
         while start_time.elapsed() < Self::READ_SETUP_CONFIG_TIMEOUT {
-            if initial_config.is_some() && initial_setup_info.is_some() {
+            if initial_config.is_some()
+                && initial_setup_info.is_some()
+                && initial_serial_number.is_some()
+            {
                 break;
             }
 
@@ -54,12 +58,25 @@ pub trait Device: Sized {
                 }
             }
 
+            if initial_serial_number.is_none() {
+                if let Ok((_, serial_number)) =
+                    SerialNumber::parse_from_bytes(message_buf.as_slice())
+                {
+                    initial_serial_number = Some(serial_number);
+                    message_buf.clear();
+                    continue;
+                }
+            }
+
             message_buf.clear();
         }
 
-        match (initial_config, initial_setup_info) {
-            (Some(config), Some(setup_info)) => Ok((config, setup_info)),
-            _ => Err(ConnectionError::NotAnRfExplorer),
+        if let (Some(config), Some(setup_info), Some(serial_number)) =
+            (initial_config, initial_setup_info, initial_serial_number)
+        {
+            Ok((config, setup_info, serial_number))
+        } else {
+            Err(ConnectionError::NotAnRfExplorer)
         }
     }
 }
