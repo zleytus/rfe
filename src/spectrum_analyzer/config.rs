@@ -122,7 +122,7 @@ impl ParseFromBytes for Config {
 
         let (bytes, _) = parse_comma(bytes)?;
 
-        // Parse the stop frequency
+        // Parse the step frequency
         let (bytes, step_freq_hz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
