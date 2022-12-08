@@ -3,9 +3,10 @@ use nom::{bytes::complete::tag, combinator::map_res, IResult};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::convert::TryFrom;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
 pub enum DspMode {
+    #[default]
     Auto = 0,
     Filter,
     Fast,
