@@ -545,7 +545,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         }
 
         // The requested number of sweep points gets rounded down to a number that's a multiple of 16
-        let expected_sweep_points = u32::from(if sweep_points < 112 {
+        let expected_sweep_points = u16::from(if sweep_points < 112 {
             SpectrumAnalyzer::MIN_SWEEP_POINTS
         } else {
             (sweep_points / 16) * 16

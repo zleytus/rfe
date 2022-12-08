@@ -96,7 +96,7 @@ pub struct Config {
     pub span_freq: Frequency,
     pub max_amp_dbm: i16,
     pub min_amp_dbm: i16,
-    pub sweep_points: u32,
+    pub sweep_points: u16,
     pub active_radio_module: RadioModule,
     pub mode: Mode,
     pub min_freq: Frequency,
