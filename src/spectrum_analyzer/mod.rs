@@ -2,6 +2,7 @@ mod command;
 mod config;
 mod dsp_mode;
 mod input_stage;
+mod message;
 mod parsers;
 mod setup_info;
 mod sweep;
@@ -11,6 +12,7 @@ pub(crate) use command::Command;
 pub use config::{CalcMode, Config, Mode, RadioModule};
 pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
+pub use message::Message;
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
 
