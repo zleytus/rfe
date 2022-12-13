@@ -5,7 +5,7 @@ use crate::{
 use nom::{bytes::complete::tag, IResult};
 use std::time::Duration;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ConfigFreqSweep {
     pub start_freq: Frequency,
     pub total_steps: u32,
