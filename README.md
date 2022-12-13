@@ -23,7 +23,7 @@ Download and install the appropriate [Silicon Labs CP210x USB driver](https://ww
 
 ### Linux
 
-#### Install `pkg-config` and `udev` header files
+Install `pkg-config` and `udev` header files
 
 | Distro             | Command                                           |
 |--------------------|---------------------------------------------------|
@@ -32,7 +32,7 @@ Download and install the appropriate [Silicon Labs CP210x USB driver](https://ww
 | openSUSE           | `zypper install pkgconf-pkg-config systemd-devel` |
 | Arch/Manjaro       | `pacman -Syu pkgconf systemd`                     |
 
-#### Add yourself to the `dialout` or `uucp` group to get permission to access the RF Explorer
+Add yourself to the `dialout` or `uucp` group to get permission to access the RF Explorer
 
 | Distro             | Command                         |
 |--------------------|---------------------------------|
