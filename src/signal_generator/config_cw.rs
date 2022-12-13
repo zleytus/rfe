@@ -4,7 +4,7 @@ use crate::{
 };
 use nom::{bytes::complete::tag, IResult};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ConfigCw {
     pub cw_freq: Frequency,
     pub total_steps: u32,
