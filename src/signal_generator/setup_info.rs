@@ -1,4 +1,4 @@
-use crate::{rf_explorer::SetupInfo, SignalGenerator};
+use crate::{common::SetupInfo, SignalGenerator};
 
 impl SetupInfo<SignalGenerator> {
     pub const PREFIX: &'static [u8] = b"#C3-M:";
@@ -31,7 +31,7 @@ impl Eq for SetupInfo<SignalGenerator> {}
 
 #[cfg(test)]
 mod tests {
-    use crate::rf_explorer::SetupInfo;
+    use crate::common::SetupInfo;
     use crate::{Model, SignalGenerator};
 
     #[test]

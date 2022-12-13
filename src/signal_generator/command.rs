@@ -1,5 +1,5 @@
 use super::{Attenuation, PowerLevel};
-use crate::rf_explorer::Frequency;
+use crate::common::Frequency;
 use std::{borrow::Cow, time::Duration};
 
 #[derive(Debug, Copy, Clone, PartialEq)]

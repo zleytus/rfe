@@ -1,4 +1,4 @@
-use crate::{rf_explorer::SetupInfo, SpectrumAnalyzer};
+use crate::{common::SetupInfo, SpectrumAnalyzer};
 
 impl SetupInfo<SpectrumAnalyzer> {
     pub const PREFIX: &'static [u8] = b"#C2-M:";
@@ -31,7 +31,7 @@ impl Eq for SetupInfo<SpectrumAnalyzer> {}
 
 #[cfg(test)]
 mod tests {
-    use crate::rf_explorer::SetupInfo;
+    use crate::common::SetupInfo;
     use crate::{Model, SpectrumAnalyzer};
 
     #[test]

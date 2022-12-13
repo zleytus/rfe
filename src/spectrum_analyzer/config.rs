@@ -1,5 +1,5 @@
 use crate::{
-    rf_explorer::{parsers::*, Frequency},
+    common::{parsers::*, Frequency},
     spectrum_analyzer::parsers::*,
 };
 use chrono::{DateTime, Utc};

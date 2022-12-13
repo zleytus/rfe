@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use super::{CalcMode, DspMode, InputStage, WifiBand};
-use crate::rf_explorer::Frequency;
+use crate::common::Frequency;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub(crate) enum Command {

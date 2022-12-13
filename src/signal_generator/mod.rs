@@ -17,7 +17,7 @@ pub use message::Message;
 pub use temperature::Temperature;
 
 use crate::{
-    rf_explorer::{
+    common::{
         self, Callback, ConnectionError, ConnectionResult, Device, Frequency, SerialNumber,
         SerialPortReader, SetupInfo,
     },
@@ -54,7 +54,7 @@ impl Device for SignalGenerator {
     type Message = crate::signal_generator::Message;
 
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>> {
-        let serial_port = rf_explorer::open(serial_port_info)?;
+        let serial_port = common::open(serial_port_info)?;
 
         let device = Arc::new(SignalGenerator {
             serial_port: Arc::new(Mutex::new(serial_port)),

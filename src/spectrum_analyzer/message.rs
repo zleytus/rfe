@@ -3,7 +3,7 @@ use super::{
     Config, DspMode, InputStage, SetupInfo, Sweep, TrackingStatus,
 };
 use crate::{
-    rf_explorer::{ScreenData, SerialNumber},
+    common::{ScreenData, SerialNumber},
     SpectrumAnalyzer,
 };
 use nom::error::{Error, ErrorKind};
@@ -20,7 +20,7 @@ pub enum Message {
     TrackingStatus(TrackingStatus),
 }
 
-impl crate::rf_explorer::Message for Message {
+impl crate::common::Message for Message {
     fn parse(bytes: &[u8]) -> Result<Message, nom::Err<Error<&[u8]>>> {
         if bytes.starts_with(Config::PREFIX) {
             Ok(Message::Config(Config::parse(bytes)?.1))

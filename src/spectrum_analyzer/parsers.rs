@@ -1,5 +1,5 @@
 use super::{CalcMode, Mode, RadioModule};
-use crate::rf_explorer::parsers::*;
+use crate::common::parsers::*;
 use nom::{combinator::map_res, IResult};
 use std::convert::TryFrom;
 

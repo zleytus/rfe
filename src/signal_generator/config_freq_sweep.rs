@@ -1,5 +1,5 @@
 use crate::{
-    rf_explorer::{parsers::*, Frequency},
+    common::{parsers::*, Frequency},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 use nom::{bytes::complete::tag, IResult};
