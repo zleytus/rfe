@@ -19,6 +19,16 @@ impl Clone for SetupInfo<SignalGenerator> {
     }
 }
 
+impl PartialEq for SetupInfo<SignalGenerator> {
+    fn eq(&self, other: &Self) -> bool {
+        self.main_module_model == other.main_module_model
+            && self.expansion_module_model == other.expansion_module_model
+            && self.firmware_version == other.firmware_version
+    }
+}
+
+impl Eq for SetupInfo<SignalGenerator> {}
+
 #[cfg(test)]
 mod tests {
     use crate::rf_explorer::SetupInfo;

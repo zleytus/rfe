@@ -19,6 +19,16 @@ impl Clone for SetupInfo<SpectrumAnalyzer> {
     }
 }
 
+impl PartialEq for SetupInfo<SpectrumAnalyzer> {
+    fn eq(&self, other: &Self) -> bool {
+        self.main_module_model == other.main_module_model
+            && self.expansion_module_model == other.expansion_module_model
+            && self.firmware_version == other.firmware_version
+    }
+}
+
+impl Eq for SetupInfo<SpectrumAnalyzer> {}
+
 #[cfg(test)]
 mod tests {
     use crate::rf_explorer::SetupInfo;
