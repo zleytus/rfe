@@ -1,12 +1,11 @@
-use std::time::Duration;
-
 use crate::{
-    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
+    rf_explorer::{parsers::*, Frequency},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 use nom::{bytes::complete::tag, IResult};
+use std::time::Duration;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct ConfigAmpSweep {
     pub cw_freq: Frequency,
     pub sweep_power_steps: u16,
@@ -18,12 +17,10 @@ pub struct ConfigAmpSweep {
     pub sweep_delay: Duration,
 }
 
-impl Message for ConfigAmpSweep {
-    const PREFIX: &'static [u8] = b"#C3-A:";
-}
+impl ConfigAmpSweep {
+    pub const PREFIX: &'static [u8] = b"#C3-A:";
 
-impl ParseFromBytes for ConfigAmpSweep {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -91,7 +88,7 @@ mod tests {
     #[test]
     fn parse_config() {
         let bytes = b"#C3-A:0186525,0000,0,0,1,3,0,00100\r\n";
-        let config_amp_sweep = ConfigAmpSweep::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let config_amp_sweep = ConfigAmpSweep::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(config_amp_sweep.cw_freq.as_khz(), 186_525);
         assert_eq!(config_amp_sweep.sweep_power_steps, 0);
         assert_eq!(config_amp_sweep.start_attenuation, Attenuation::On);
