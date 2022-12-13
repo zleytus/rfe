@@ -32,7 +32,7 @@ pub enum RfPower {
     Off,
 }
 
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct Config {
     pub start_freq: Frequency,
     pub cw_freq: Frequency,
