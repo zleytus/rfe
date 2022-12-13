@@ -9,9 +9,10 @@ use nom::{
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, Default)]
 #[repr(u8)]
 pub enum TrackingStatus {
+    #[default]
     Disabled = 0,
     Enabled,
 }
