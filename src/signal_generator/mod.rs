@@ -18,170 +18,125 @@ pub use temperature::Temperature;
 
 use crate::{
     rf_explorer::{
-        self, Callback, ConnectionResult, Device, Frequency, ParseFromBytes, SerialNumber,
+        self, Callback, ConnectionError, ConnectionResult, Device, Frequency, SerialNumber,
         SerialPortReader, SetupInfo,
     },
-    Model, RfExplorer,
+    RfExplorer,
 };
 use serialport::SerialPortInfo;
 use std::{
     fmt::Debug,
-    io::{self, BufRead, ErrorKind},
-    sync::{Arc, Mutex},
-    thread::{self, JoinHandle},
+    io::{self, BufRead},
+    sync::{Arc, Condvar, Mutex},
+    thread::JoinHandle,
     time::Duration,
 };
 
 pub struct SignalGenerator {
     serial_port: Arc<Mutex<SerialPortReader>>,
     is_reading: Arc<Mutex<bool>>,
-    read_thread_handle: Option<JoinHandle<()>>,
-    config: Arc<Mutex<Config>>,
+    read_thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
+    config: Arc<(Mutex<Option<Config>>, Condvar)>,
     config_callback: Arc<Mutex<Callback<Config>>>,
-    config_amp_sweep: Arc<Mutex<Option<ConfigAmpSweep>>>,
+    config_amp_sweep: Arc<(Mutex<Option<ConfigAmpSweep>>, Condvar)>,
     config_amp_sweep_callback: Arc<Mutex<Callback<ConfigAmpSweep>>>,
-    config_cw: Arc<Mutex<Option<ConfigCw>>>,
+    config_cw: Arc<(Mutex<Option<ConfigCw>>, Condvar)>,
     config_cw_callback: Arc<Mutex<Callback<ConfigCw>>>,
-    config_freq_sweep: Arc<Mutex<Option<ConfigFreqSweep>>>,
+    config_freq_sweep: Arc<(Mutex<Option<ConfigFreqSweep>>, Condvar)>,
     config_freq_sweep_callback: Arc<Mutex<Callback<ConfigFreqSweep>>>,
-    temperature: Arc<Mutex<Option<Temperature>>>,
-    setup_info: SetupInfo<Self>,
-    serial_number: SerialNumber,
+    temperature: Arc<(Mutex<Option<Temperature>>, Condvar)>,
+    setup_info: Arc<(Mutex<Option<SetupInfo<Self>>>, Condvar)>,
+    serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
     port_name: String,
 }
 
-impl SignalGenerator {
-    /// Spawns a new thread to read messages from the signal generator
-    fn start_read_thread(&mut self) {
-        assert!(self.read_thread_handle.is_none());
-
-        let is_reading = self.is_reading.clone();
-        let serial_port = self.serial_port.clone();
-        let config = self.config.clone();
-        let config_callback = self.config_callback.clone();
-        let config_amp_sweep = self.config_amp_sweep.clone();
-        let config_amp_sweep_callback = self.config_amp_sweep_callback.clone();
-        let config_cw = self.config_cw.clone();
-        let config_cw_callback = self.config_cw_callback.clone();
-        let config_freq_sweep = self.config_freq_sweep.clone();
-        let config_freq_sweep_callback = self.config_freq_sweep_callback.clone();
-        let temperature = self.temperature.clone();
-
-        self.read_thread_handle = Some(thread::spawn(move || {
-            let mut message_buf = Vec::new();
-            *is_reading.lock().unwrap() = true;
-            while *is_reading.lock().unwrap() {
-                let read_message_result = serial_port
-                    .lock()
-                    .unwrap()
-                    .read_until(b'\n', &mut message_buf);
-
-                // Time out errors are recoverable so we should try to read again
-                // Other errors are not recoverable and we should exit the thread
-                if let Err(error) = read_message_result {
-                    match error.kind() {
-                        ErrorKind::TimedOut => continue,
-                        _ => break,
-                    }
-                }
-
-                // Try to parse a config from the message we received
-                if let Ok((_, new_config)) = Config::parse_from_bytes(&message_buf) {
-                    let mut config = config.lock().unwrap();
-                    *config = new_config;
-                    if let Some(cb) = config_callback.lock().unwrap().as_mut() {
-                        cb(*config);
-                    }
-                    message_buf.clear();
-                    continue;
-                }
-
-                // Try to parse a new amplitude sweep mode config from the message we received
-                if let Ok((_, new_config)) = ConfigAmpSweep::parse_from_bytes(&message_buf) {
-                    let mut config_amp_sweep = config_amp_sweep.lock().unwrap();
-                    *config_amp_sweep = Some(new_config);
-                    if let Some(cb) = config_amp_sweep_callback.lock().unwrap().as_mut() {
-                        cb(config_amp_sweep.unwrap());
-                    }
-                    message_buf.clear();
-                    continue;
-                }
-
-                // Try to parse a new CW mode config from the message we received
-                if let Ok((_, new_config)) = ConfigCw::parse_from_bytes(&message_buf) {
-                    let mut config_cw = config_cw.lock().unwrap();
-                    *config_cw = Some(new_config);
-                    if let Some(cb) = config_cw_callback.lock().unwrap().as_mut() {
-                        cb(config_cw.unwrap());
-                    }
-                    message_buf.clear();
-                    continue;
-                }
-
-                // Try to parse a new frequency sweep mode config from the message we received
-                if let Ok((_, new_config)) = ConfigFreqSweep::parse_from_bytes(&message_buf) {
-                    let mut config_freq_sweep = config_freq_sweep.lock().unwrap();
-                    *config_freq_sweep = Some(new_config);
-                    if let Some(cb) = config_freq_sweep_callback.lock().unwrap().as_mut() {
-                        cb(config_freq_sweep.unwrap());
-                    }
-                    message_buf.clear();
-                    continue;
-                }
-
-                // Try to parse a temperature messagefrom the message we received
-                if let Ok((_, new_temperature)) = Temperature::parse_from_bytes(&message_buf) {
-                    *temperature.lock().unwrap() = Some(new_temperature);
-                    message_buf.clear();
-                    continue;
-                }
-
-                // We weren't able to parse the message we received so clear the message buffer and read again
-                message_buf.clear();
-            }
-
-            *is_reading.lock().unwrap() = false;
-        }));
-    }
-}
-
 impl Device for SignalGenerator {
-    type Config = Config;
-    type SetupInfo = SetupInfo<SignalGenerator>;
+    type Message = crate::signal_generator::Message;
 
-    fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Self> {
-        let mut serial_port = rf_explorer::open(serial_port_info)?;
+    fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>> {
+        let serial_port = rf_explorer::open(serial_port_info)?;
 
-        let (config, setup_info, serial_number) =
-            SignalGenerator::read_initial_messages(&mut serial_port)?;
-
-        let mut signal_generator = SignalGenerator {
+        let device = Arc::new(SignalGenerator {
             serial_port: Arc::new(Mutex::new(serial_port)),
-            is_reading: Arc::new(Mutex::new(false)),
-            read_thread_handle: None,
-            config: Arc::new(Mutex::new(config)),
+            is_reading: Arc::new(Mutex::new(true)),
+            read_thread_handle: Arc::new(Mutex::new(None)),
+            config: Arc::new((Mutex::new(None), Condvar::new())),
             config_callback: Arc::new(Mutex::new(None)),
-            config_cw: Arc::new(Mutex::new(None)),
+            config_cw: Arc::new((Mutex::new(None), Condvar::new())),
             config_cw_callback: Arc::new(Mutex::new(None)),
-            config_amp_sweep: Arc::new(Mutex::new(None)),
+            config_amp_sweep: Arc::new((Mutex::new(None), Condvar::new())),
             config_amp_sweep_callback: Arc::new(Mutex::new(None)),
-            config_freq_sweep: Arc::new(Mutex::new(None)),
+            config_freq_sweep: Arc::new((Mutex::new(None), Condvar::new())),
             config_freq_sweep_callback: Arc::new(Mutex::new(None)),
-            temperature: Arc::new(Mutex::new(None)),
-            setup_info,
-            serial_number,
+            temperature: Arc::new((Mutex::new(None), Condvar::new())),
+            setup_info: Arc::new((Mutex::new(None), Condvar::new())),
+            serial_number: Arc::new((Mutex::new(None), Condvar::new())),
             port_name: serial_port_info.port_name.clone(),
-        };
+        });
 
-        signal_generator.start_read_thread();
+        *device.read_thread_handle.lock().unwrap() =
+            Some(SignalGenerator::spawn_read_thread(device.clone()));
 
-        // Wait until the read thread has started before returning
-        while !*signal_generator.is_reading.lock().unwrap() {}
+        // Wait to receive a Config before considering this a valid RF Explorer signal generator
+        let (lock, cvar) = &*device.config;
+        let (_, timeout_result) = cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SignalGenerator::RECEIVE_FIRST_CONFIG_TIMEOUT,
+                |config| config.is_none(),
+            )
+            .unwrap();
 
-        Ok(signal_generator)
+        if !timeout_result.timed_out() {
+            Ok(device)
+        } else {
+            Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
+        }
     }
 
-    fn send_bytes<'a>(&mut self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
+    fn read_line(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        self.serial_port.lock().unwrap().read_until(b'\n', buf)
+    }
+
+    fn is_reading(&self) -> bool {
+        *self.is_reading.lock().unwrap()
+    }
+
+    fn process_message(&self, message: Message) {
+        match message {
+            Message::Config(config) => {
+                *self.config.0.lock().unwrap() = Some(config);
+                self.config.1.notify_one();
+            }
+            Message::ConfigAmpSweep(config) => {
+                *self.config_amp_sweep.0.lock().unwrap() = Some(config);
+                self.config_amp_sweep.1.notify_one();
+            }
+            Message::ConfigCw(config) => {
+                *self.config_cw.0.lock().unwrap() = Some(config);
+                self.config_cw.1.notify_one();
+            }
+            Message::ConfigFreqSweep(config) => {
+                *self.config_freq_sweep.0.lock().unwrap() = Some(config);
+                self.config_freq_sweep.1.notify_one();
+            }
+            Message::SerialNumber(serial_number) => {
+                *self.serial_number.0.lock().unwrap() = Some(serial_number);
+                self.serial_number.1.notify_one();
+            }
+            Message::SetupInfo(setup_info) => {
+                *self.setup_info.0.lock().unwrap() = Some(setup_info);
+                self.setup_info.1.notify_one();
+            }
+            Message::Temperature(temperature) => {
+                *self.temperature.0.lock().unwrap() = Some(temperature);
+                self.temperature.1.notify_one();
+            }
+            _ => (),
+        }
+    }
+
+    fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
         self.serial_port
             .lock()
             .unwrap()
@@ -193,59 +148,74 @@ impl Device for SignalGenerator {
         &self.port_name
     }
 
-    fn setup_info(&self) -> &SetupInfo<Self> {
-        &self.setup_info
+    fn setup_info(&self) -> SetupInfo<Self> {
+        self.setup_info
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .unwrap_or_default()
     }
 
     fn serial_number(&self) -> SerialNumber {
-        self.serial_number.clone()
+        self.serial_number
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .unwrap_or_default()
+    }
+}
+
+impl Drop for SignalGenerator {
+    fn drop(&mut self) {
+        *self.is_reading.lock().unwrap() = false;
+        if let Some(read_handle) = self.read_thread_handle.lock().unwrap().take() {
+            let _ = read_handle.join();
+        }
+    }
+}
+
+impl Debug for SignalGenerator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SignalGenerator")
+            .field("port_name", &self.port_name)
+            .field("setup_info", &self.setup_info)
+            .field("config", &self.config)
+            .field("serial_number", &self.serial_number)
+            .finish()
     }
 }
 
 impl RfExplorer<SignalGenerator> {
     /// Returns the signal generator's configuration.
     pub fn config(&self) -> Config {
-        *self.device.config.lock().unwrap()
-    }
-
-    /// Returns the `Model` of the RF Explorer's main module.
-    pub fn main_module_model(&self) -> Model {
-        self.device.setup_info().main_module_model
-    }
-
-    /// Returns the `Model` of the RF Explorer's expansion module.
-    pub fn expansion_module_model(&self) -> Model {
-        self.device.setup_info().expansion_module_model
-    }
-
-    /// Returns the RF Explorer's firmware version.
-    pub fn firmware_version(&self) -> &str {
-        &self.device.setup_info().firmware_version
+        self.device.config.0.lock().unwrap().unwrap_or_default()
     }
 
     /// Returns the signal generator's amplitude sweep mode configuration.
     pub fn config_amp_sweep(&self) -> Option<ConfigAmpSweep> {
-        *self.device.config_amp_sweep.lock().unwrap()
+        *self.device.config_amp_sweep.0.lock().unwrap()
     }
 
     /// Returns the signal generator's CW mode configuration.
     pub fn config_cw(&self) -> Option<ConfigCw> {
-        *self.device.config_cw.lock().unwrap()
+        *self.device.config_cw.0.lock().unwrap()
     }
 
     /// Returns the signal generator's frequency sweep mode configuration.
     pub fn config_freq_sweep(&self) -> Option<ConfigFreqSweep> {
-        *self.device.config_freq_sweep.lock().unwrap()
+        *self.device.config_freq_sweep.0.lock().unwrap()
     }
 
     /// Returns the signal generator's temperature.
     pub fn temperature(&self) -> Option<Temperature> {
-        *self.device.temperature.lock().unwrap()
+        *self.device.temperature.0.lock().unwrap()
     }
 
     /// Starts the signal generator's amplitude sweep mode.
     pub fn start_amp_sweep(
-        &mut self,
+        &self,
         cw: impl Into<Frequency>,
         start_attenuation: Attenuation,
         start_power_level: PowerLevel,
@@ -265,7 +235,7 @@ impl RfExplorer<SignalGenerator> {
 
     /// Starts the signal generator's amplitude sweep mode using the expansion module.
     pub fn start_amp_sweep_exp(
-        &mut self,
+        &self,
         cw: impl Into<Frequency>,
         start_power_dbm: f64,
         step_power_db: f64,
@@ -283,7 +253,7 @@ impl RfExplorer<SignalGenerator> {
 
     /// Starts the signal generator's CW mode.
     pub fn start_cw(
-        &mut self,
+        &self,
         cw: impl Into<Frequency>,
         attenuation: Attenuation,
         power_level: PowerLevel,
@@ -296,7 +266,7 @@ impl RfExplorer<SignalGenerator> {
     }
 
     /// Starts the signal generator's CW mode using the expansion module.
-    pub fn start_cw_exp(&mut self, cw: impl Into<Frequency>, power_dbm: f64) -> io::Result<()> {
+    pub fn start_cw_exp(&self, cw: impl Into<Frequency>, power_dbm: f64) -> io::Result<()> {
         self.send_command(Command::StartCwExp {
             cw_freq: cw.into(),
             power_dbm,
@@ -305,7 +275,7 @@ impl RfExplorer<SignalGenerator> {
 
     /// Starts the signal generator's frequency sweep mode.
     pub fn start_freq_sweep(
-        &mut self,
+        &self,
         start: impl Into<Frequency>,
         attenuation: Attenuation,
         power_level: PowerLevel,
@@ -325,7 +295,7 @@ impl RfExplorer<SignalGenerator> {
 
     /// Starts the signal generator's frequency sweep mode using the expansion module.
     pub fn start_freq_sweep_exp(
-        &mut self,
+        &self,
         start: impl Into<Frequency>,
         power_dbm: f64,
         sweep_steps: u16,
@@ -343,7 +313,7 @@ impl RfExplorer<SignalGenerator> {
 
     /// Starts the signal generator's tracking mode.
     pub fn start_tracking(
-        &mut self,
+        &self,
         start: impl Into<Frequency>,
         attenuation: Attenuation,
         power_level: PowerLevel,
@@ -361,7 +331,7 @@ impl RfExplorer<SignalGenerator> {
 
     /// Starts the signal generator's tracking mode using the expansion module.
     pub fn start_tracking_exp(
-        &mut self,
+        &self,
         start: impl Into<Frequency>,
         power_dbm: f64,
         sweep_steps: u16,
@@ -376,63 +346,37 @@ impl RfExplorer<SignalGenerator> {
     }
 
     /// Jumps to a new frequency using the tracking step frequency.
-    pub fn tracking_step(&mut self, steps: u16) -> io::Result<()> {
+    pub fn tracking_step(&self, steps: u16) -> io::Result<()> {
         self.send_command(Command::TrackingStep(steps))
     }
 
     /// Sets the callback that is called when the signal generator receives a `Config`.
-    pub fn set_config_callback(&mut self, cb: impl FnMut(Config) + Send + 'static) {
+    pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
         *self.device.config_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Sets the callback that is called when the signal generator receives a `ConfigAmpSweep`.
-    pub fn set_config_amp_sweep_callback(
-        &mut self,
-        cb: impl FnMut(ConfigAmpSweep) + Send + 'static,
-    ) {
+    pub fn set_config_amp_sweep_callback(&self, cb: impl FnMut(ConfigAmpSweep) + Send + 'static) {
         *self.device.config_amp_sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Sets the callback that is called when the signal generator receives a `ConfigCw`.
-    pub fn set_config_cw_callback(&mut self, cb: impl FnMut(ConfigCw) + Send + 'static) {
+    pub fn set_config_cw_callback(&self, cb: impl FnMut(ConfigCw) + Send + 'static) {
         *self.device.config_cw_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Sets the callback that is called when the signal generator receives a `ConfigFreqSweep`.
-    pub fn set_config_freq_sweep_callback(
-        &mut self,
-        cb: impl FnMut(ConfigFreqSweep) + Send + 'static,
-    ) {
+    pub fn set_config_freq_sweep_callback(&self, cb: impl FnMut(ConfigFreqSweep) + Send + 'static) {
         *self.device.config_freq_sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Turns on RF power with the current power and frequency configuration.
-    pub fn rf_power_on(&mut self) -> io::Result<()> {
+    pub fn rf_power_on(&self) -> io::Result<()> {
         self.send_command(Command::RfPowerOn)
     }
 
     /// Turns off RF power.
-    pub fn rf_power_off(&mut self) -> io::Result<()> {
+    pub fn rf_power_off(&self) -> io::Result<()> {
         self.send_command(Command::RfPowerOff)
-    }
-}
-
-impl Drop for SignalGenerator {
-    fn drop(&mut self) {
-        *self.is_reading.lock().unwrap() = false;
-        if let Some(read_handle) = self.read_thread_handle.take() {
-            let _ = read_handle.join();
-        }
-    }
-}
-
-impl Debug for SignalGenerator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SignalGenerator")
-            .field("port_name", &self.port_name)
-            .field("setup_info", &self.setup_info)
-            .field("config", &self.config)
-            .field("serial_number", &self.serial_number)
-            .finish()
     }
 }

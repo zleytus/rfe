@@ -17,19 +17,20 @@ pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
 
 use crate::rf_explorer::{
-    self, Callback, ConnectionError, ConnectionResult, Device, Error, Frequency, Model,
-    ParseFromBytes, Result, RfExplorer, SerialNumber, SerialPortReader, SetupInfo,
+    self, Callback, ConnectionError, ConnectionResult, Device, Error, Frequency, Model, Result,
+    RfExplorer, SerialNumber, SerialPortReader, SetupInfo,
 };
 use num_enum::IntoPrimitive;
 use serialport::SerialPortInfo;
 use std::{
     fmt::Debug,
-    io::{self, BufRead, ErrorKind},
+    io::{self, BufRead},
     ops::RangeInclusive,
     sync::{Arc, Condvar, Mutex},
-    thread::{self, JoinHandle},
+    thread::JoinHandle,
     time::Duration,
 };
+use tracing::{debug, error, info, warn};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
 #[repr(u8)]
@@ -40,185 +41,116 @@ pub enum WifiBand {
 
 pub struct SpectrumAnalyzer {
     serial_port: Arc<Mutex<SerialPortReader>>,
-    is_reading_condvar_pair: Arc<(Mutex<bool>, Condvar)>,
-    read_thread_handle: Option<JoinHandle<()>>,
-    config_condvar_pair: Arc<(Mutex<Config>, Condvar)>,
+    is_reading: Arc<Mutex<bool>>,
+    read_thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
+    config: Arc<(Mutex<Option<Config>>, Condvar)>,
     config_callback: Arc<Mutex<Callback<Config>>>,
-    sweep_condvar_pair: Arc<(Mutex<Option<Sweep>>, Condvar)>,
+    sweep: Arc<(Mutex<Option<Sweep>>, Condvar)>,
     sweep_callback: Arc<Mutex<Callback<Sweep>>>,
-    dsp_mode_condvar_pair: Arc<(Mutex<Option<DspMode>>, Condvar)>,
-    tracking_status_condvar_pair: Arc<(Mutex<Option<TrackingStatus>>, Condvar)>,
-    input_stage: Arc<Mutex<Option<InputStage>>>,
-    setup_info: SetupInfo,
-    serial_number: SerialNumber,
+    dsp_mode: Arc<(Mutex<Option<DspMode>>, Condvar)>,
+    tracking_status: Arc<(Mutex<Option<TrackingStatus>>, Condvar)>,
+    input_stage: Arc<(Mutex<Option<InputStage>>, Condvar)>,
+    setup_info: Arc<(Mutex<Option<SetupInfo>>, Condvar)>,
+    serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
     port_name: String,
 }
 
-impl SpectrumAnalyzer {
-    const MIN_MAX_AMP_RANGE_DBM: RangeInclusive<i16> = -120..=35;
-    const MIN_SWEEP_POINTS: u16 = 112;
-    const EEOT_BYTES: [u8; 5] = [255, 254, 255, 254, 0];
-    const NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
-    const START_READ_THREAD_TIMEOUT: Duration = Duration::from_secs(1);
-
-    /// Spawns a new thread to read messages from the spectrum analyzer.
-    fn start_read_thread(&mut self) {
-        assert!(self.read_thread_handle.is_none());
-
-        let is_reading_condvar_pair = self.is_reading_condvar_pair.clone();
-        let serial_port = self.serial_port.clone();
-        let sweep_condvar_pair = self.sweep_condvar_pair.clone();
-        let sweep_callback = self.sweep_callback.clone();
-        let config_condvar_pair = self.config_condvar_pair.clone();
-        let config_callback = self.config_callback.clone();
-        let dsp_mode_condvar_pair = self.dsp_mode_condvar_pair.clone();
-        let tracking_status_condvar_pair = self.tracking_status_condvar_pair.clone();
-        let input_stage = self.input_stage.clone();
-
-        self.read_thread_handle = Some(thread::spawn(move || {
-            let mut message_buf = Vec::new();
-            *is_reading_condvar_pair.0.lock().unwrap() = true;
-            is_reading_condvar_pair.1.notify_all();
-            while *is_reading_condvar_pair.0.lock().unwrap() {
-                let read_message_result = serial_port
-                    .lock()
-                    .unwrap()
-                    .read_until(b'\n', &mut message_buf);
-
-                // Time out errors are recoverable so we should try to read again
-                // Other errors are not recoverable and we should exit the thread
-                match read_message_result {
-                    Ok(bytes_read) => trace!("Read {} bytes", bytes_read),
-                    Err(e) if e.kind() == ErrorKind::TimedOut => {
-                        continue;
-                    }
-                    Err(e) => {
-                        break;
-                    }
-                };
-
-                // Try to parse a sweep from the message we received
-                let parse_sweep_result = Sweep::parse_from_bytes(&message_buf);
-                if let Ok((_, sweep)) = parse_sweep_result {
-                    *sweep_condvar_pair.0.lock().unwrap() = Some(sweep);
-                    if let Some(cb) = sweep_callback.lock().unwrap().as_mut() {
-                        if let Some(sweep) = sweep_condvar_pair.0.lock().unwrap().as_ref() {
-                            cb(sweep.clone());
-                        }
-                    }
-                    sweep_condvar_pair.1.notify_one();
-                    message_buf.clear();
-                    continue;
-                } else if let Err(nom::Err::Incomplete(_)) = parse_sweep_result {
-                    // Check for Early-End-of-Transmission (EEOT) byte sequence
-                    if let Some(eeot_index) = message_buf
-                        .windows(5)
-                        .position(|window| window == Self::EEOT_BYTES)
-                    {
-                        message_buf.drain(0..eeot_index + 5);
-                    } else {
-                        continue;
-                    }
-                }
-
-                // Try to parse a config from the message we received
-                if let Ok((_, config)) = Config::parse_from_bytes(&message_buf) {
-                    *config_condvar_pair.0.lock().unwrap() = config;
-                    if let Some(cb) = config_callback.lock().unwrap().as_mut() {
-                        cb(*config_condvar_pair.0.lock().unwrap());
-                    }
-                    config_condvar_pair.1.notify_one();
-                    message_buf.clear();
-                    continue;
-                }
-
-                // Try to parse a DSP mode message from the message we received
-                if let Ok((_, dsp_mode)) = DspMode::parse_from_bytes(&message_buf) {
-                    *dsp_mode_condvar_pair.0.lock().unwrap() = Some(dsp_mode);
-                    dsp_mode_condvar_pair.1.notify_one();
-                    message_buf.clear();
-                    continue;
-                }
-
-                // Try to parse a tracking status message from the message we received
-                if let Ok((_, tracking_status)) = TrackingStatus::parse_from_bytes(&message_buf) {
-                    *tracking_status_condvar_pair.0.lock().unwrap() = Some(tracking_status);
-                    tracking_status_condvar_pair.1.notify_one();
-                    message_buf.clear();
-                    continue;
-                }
-
-                // Try to parse an input stage message from the message we received
-                if let Ok((_, new_input_stage)) = InputStage::parse_from_bytes(&message_buf) {
-                    input_stage.lock().unwrap().replace(new_input_stage);
-                    message_buf.clear();
-                    continue;
-                }
-
-                // We weren't able to parse the message we received so clear the message buffer and read again
-                message_buf.clear();
-            }
-
-            *is_reading_condvar_pair.0.lock().unwrap() = false;
-            is_reading_condvar_pair.1.notify_all();
-        }));
-    }
-}
-
 impl Device for SpectrumAnalyzer {
-    type Config = Config;
-    type SetupInfo = SetupInfo<SpectrumAnalyzer>;
+    type Message = crate::spectrum_analyzer::Message;
 
-    fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Self> {
-        let mut serial_port = rf_explorer::open(serial_port_info)?;
+    #[tracing::instrument]
+    fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>> {
+        let serial_port = rf_explorer::open(serial_port_info)?;
 
-        let (config, setup_info, serial_number) =
-            SpectrumAnalyzer::read_initial_messages(&mut serial_port)?;
-
-        let mut spectrum_analyzer = SpectrumAnalyzer {
+        let device = Arc::new(SpectrumAnalyzer {
             serial_port: Arc::new(Mutex::new(serial_port)),
-            is_reading_condvar_pair: Arc::new((Mutex::new(false), Condvar::new())),
-            read_thread_handle: None,
-            config_condvar_pair: Arc::new((Mutex::new(config), Condvar::new())),
+            is_reading: Arc::new(Mutex::new(true)),
+            read_thread_handle: Arc::new(Mutex::new(None)),
+            config: Arc::new((Mutex::new(None), Condvar::new())),
             config_callback: Arc::new(Mutex::new(None)),
-            sweep_condvar_pair: Arc::new((Mutex::new(None), Condvar::new())),
+            sweep: Arc::new((Mutex::new(None), Condvar::new())),
             sweep_callback: Arc::new(Mutex::new(None)),
-            dsp_mode_condvar_pair: Arc::new((Mutex::new(None), Condvar::new())),
-            tracking_status_condvar_pair: Arc::new((Mutex::new(None), Condvar::new())),
-            input_stage: Arc::new(Mutex::new(None)),
-            setup_info,
-            serial_number,
+            dsp_mode: Arc::new((Mutex::new(None), Condvar::new())),
+            tracking_status: Arc::new((Mutex::new(None), Condvar::new())),
+            input_stage: Arc::new((Mutex::new(None), Condvar::new())),
+            setup_info: Arc::new((Mutex::new(None), Condvar::new())),
+            serial_number: Arc::new((Mutex::new(None), Condvar::new())),
             port_name: serial_port_info.port_name.clone(),
-        };
+        });
 
-        spectrum_analyzer.start_read_thread();
+        *device.read_thread_handle.lock().unwrap() =
+            Some(SpectrumAnalyzer::spawn_read_thread(device.clone()));
 
-        // Check if the read thread has already started
-        let is_reading = spectrum_analyzer.is_reading_condvar_pair.0.lock().unwrap();
-        if *is_reading {
-            drop(is_reading);
-            return Ok(spectrum_analyzer);
-        }
-
-        // Wait until the read thread has started before returning
-        let condvar = &spectrum_analyzer.is_reading_condvar_pair.1;
-        let (is_reading, timeout_result) = condvar
+        // Wait to receive a Config before considering this a valid RF Explorer spectrum analyzer
+        let (lock, cvar) = &*device.config;
+        let (_, timeout_result) = cvar
             .wait_timeout_while(
-                is_reading,
-                SpectrumAnalyzer::START_READ_THREAD_TIMEOUT,
-                |is_reading| !*is_reading,
+                lock.lock().unwrap(),
+                SpectrumAnalyzer::RECEIVE_FIRST_CONFIG_TIMEOUT,
+                |config| config.is_none(),
             )
             .unwrap();
-        drop(is_reading);
 
         if !timeout_result.timed_out() {
-            Ok(spectrum_analyzer)
+            Ok(device)
         } else {
             Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
         }
     }
 
-    fn send_bytes(&mut self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
+    fn read_line(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        self.serial_port.lock().unwrap().read_until(b'\n', buf)
+    }
+
+    fn is_reading(&self) -> bool {
+        *self.is_reading.lock().unwrap()
+    }
+
+    fn process_message(&self, message: Message) {
+        match message {
+            Message::Config(config) => {
+                *self.config.0.lock().unwrap() = Some(config);
+                self.config.1.notify_one();
+                if let Some(ref mut cb) = *self.config_callback.lock().unwrap() {
+                    cb(config);
+                }
+            }
+            Message::Sweep(sweep) => {
+                *self.sweep.0.lock().unwrap() = Some(sweep);
+                self.sweep.1.notify_one();
+                if let Some(ref mut cb) = *self.sweep_callback.lock().unwrap() {
+                    if let Some(ref sweep) = *self.sweep.0.lock().unwrap() {
+                        cb(sweep.clone());
+                    }
+                }
+            }
+            Message::DspMode(dsp_mode) => {
+                *self.dsp_mode.0.lock().unwrap() = Some(dsp_mode);
+                self.dsp_mode.1.notify_one();
+            }
+            Message::InputStage(input_stage) => {
+                *self.input_stage.0.lock().unwrap() = Some(input_stage);
+                self.input_stage.1.notify_one();
+            }
+            Message::TrackingStatus(tracking_status) => {
+                *self.tracking_status.0.lock().unwrap() = Some(tracking_status);
+                self.tracking_status.1.notify_one();
+            }
+            Message::SerialNumber(serial_number) => {
+                *self.serial_number.0.lock().unwrap() = Some(serial_number);
+                self.serial_number.1.notify_one();
+            }
+            Message::SetupInfo(setup_info) => {
+                *self.setup_info.0.lock().unwrap() = Some(setup_info);
+                self.setup_info.1.notify_one();
+            }
+            _ => (),
+        }
+    }
+
+    #[tracing::instrument(skip(self, bytes))]
+    fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
+        debug!("Sending bytes: {:?}", bytes.as_ref());
         self.serial_port
             .lock()
             .unwrap()
@@ -230,39 +162,73 @@ impl Device for SpectrumAnalyzer {
         &self.port_name
     }
 
-    fn setup_info(&self) -> &SetupInfo<Self> {
-        &self.setup_info
+    fn setup_info(&self) -> SetupInfo<Self> {
+        self.setup_info
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .unwrap_or_default()
     }
 
     fn serial_number(&self) -> SerialNumber {
-        self.serial_number.clone()
+        self.serial_number
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .unwrap_or_default()
+    }
+}
+
+impl Drop for SpectrumAnalyzer {
+    fn drop(&mut self) {
+        *self.is_reading.lock().unwrap() = false;
+        if let Some(read_handle) = self.read_thread_handle.lock().unwrap().take() {
+            let _ = read_handle.join();
+        }
+    }
+}
+
+impl Debug for SpectrumAnalyzer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SpectrumAnalyzer")
+            .field("port_name", &self.port_name)
+            .field("setup_info", &self.setup_info)
+            .field("config", &self.config)
+            .field("serial_number", &self.serial_number)
+            .finish()
     }
 }
 
 impl RfExplorer<SpectrumAnalyzer> {
-    /// Returns a copy of the latest sweep received by the spectrum analyzer.
+    const MIN_MAX_AMP_RANGE_DBM: RangeInclusive<i16> = -120..=35;
+    const MIN_SWEEP_POINTS: u16 = 112;
+    const NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
+
+    /// Returns a copy of the latest sweep measured by the RF Explorer.
     pub fn latest_sweep(&self) -> Option<Sweep> {
-        self.device.sweep_condvar_pair.0.lock().unwrap().clone()
+        self.device.sweep.0.lock().unwrap().clone()
     }
 
     /// Waits for the RF Explorer to measure its next `Sweep`.
     pub fn wait_for_next_sweep(&self) -> Result<Sweep> {
-        self.wait_for_next_sweep_with_timeout(SpectrumAnalyzer::NEXT_SWEEP_TIMEOUT)
+        self.wait_for_next_sweep_with_timeout(Self::NEXT_SWEEP_TIMEOUT)
     }
 
     /// Waits for the RF Explorer to measure its next `Sweep` or for the timeout duration to elapse.
     pub fn wait_for_next_sweep_with_timeout(&self, timeout: Duration) -> Result<Sweep> {
         let previous_sweep = self.latest_sweep();
 
-        let (sweep, cond_var) = &*self.device.sweep_condvar_pair;
-        let (sweep, timeout_result) = cond_var
+        let (sweep, cond_var) = &*self.device.sweep;
+        let (_, timeout_result) = cond_var
             .wait_timeout_while(sweep.lock().unwrap(), timeout, |sweep| {
                 *sweep == previous_sweep || sweep.is_none()
             })
             .unwrap();
 
         if !timeout_result.timed_out() {
-            Ok(sweep.clone().unwrap())
+            Ok(self.latest_sweep().clone().unwrap())
         } else {
             Err(Error::TimedOut(timeout))
         }
@@ -270,36 +236,21 @@ impl RfExplorer<SpectrumAnalyzer> {
 
     /// Returns a copy of the spectrum analyzer's current config.
     pub fn config(&self) -> Config {
-        *self.device.config_condvar_pair.0.lock().unwrap()
-    }
-
-    /// Returns the `Model` of the RF Explorer's main module.
-    pub fn main_module_model(&self) -> Model {
-        self.device.setup_info().main_module_model
-    }
-
-    /// Returns the `Model` of the RF Explorer's expansion module.
-    pub fn expansion_module_model(&self) -> Model {
-        self.device.setup_info().expansion_module_model
-    }
-
-    /// Returns the RF Explorer's firmware version.
-    pub fn firmware_version(&self) -> &str {
-        &self.device.setup_info().firmware_version
+        self.device.config.0.lock().unwrap().unwrap_or_default()
     }
 
     /// Returns the spectrum analyzer's DSP mode.
     pub fn dsp_mode(&self) -> Option<DspMode> {
-        *self.device.dsp_mode_condvar_pair.0.lock().unwrap()
+        *self.device.dsp_mode.0.lock().unwrap()
     }
 
     /// Returns the status of tracking mode (enabled or disabled).
     pub fn tracking_status(&self) -> Option<TrackingStatus> {
-        *self.device.tracking_status_condvar_pair.0.lock().unwrap()
+        *self.device.tracking_status.0.lock().unwrap()
     }
 
     pub fn input_stage(&self) -> Option<InputStage> {
-        *self.device.input_stage.lock().unwrap()
+        *self.device.input_stage.0.lock().unwrap()
     }
 
     /// Returns which radio module is active (main or expansion)
@@ -336,22 +287,26 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Switches the spectrum analyzer's active module to the main module.
+    #[tracing::instrument]
     pub fn use_main_module(&mut self) -> Result<()> {
         self.send_command(Command::SwitchModuleMain)?;
 
         // Check if the RF Explorer is already using the main module
-        let config = self.device.config_condvar_pair.0.lock().unwrap();
-        if config.active_radio_module == RadioModule::Main {
+        if self.config().active_radio_module == RadioModule::Main {
             return Ok(());
         }
 
         // Wait until the config shows that the main module is active
-        let condvar = &self.device.config_condvar_pair.1;
+        let (lock, condvar) = &*self.device.config;
         let (_, timeout_result) = condvar
             .wait_timeout_while(
-                config,
+                lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| config.active_radio_module != RadioModule::Main,
+                |config| {
+                    !config
+                        .filter(|config| config.active_radio_module == RadioModule::Main)
+                        .is_some()
+                },
             )
             .unwrap();
 
@@ -363,22 +318,26 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Switches the spectrum analyzer's active module to the expansion module.
+    #[tracing::instrument]
     pub fn use_expansion_module(&mut self) -> Result<()> {
         self.send_command(Command::SwitchModuleExp)?;
 
         // Check if the RF Explorer is already using the main module
-        let config = self.device.config_condvar_pair.0.lock().unwrap();
-        if config.active_radio_module == RadioModule::Expansion {
+        if self.config().active_radio_module == RadioModule::Expansion {
             return Ok(());
         }
 
         // Wait until the config shows that the expansion module is active
-        let condvar = &self.device.config_condvar_pair.1;
+        let (lock, condvar) = &*self.device.config;
         let (_, timeout_result) = condvar
             .wait_timeout_while(
-                config,
+                lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| config.active_radio_module != RadioModule::Expansion,
+                |config| {
+                    !config
+                        .filter(|config| config.active_radio_module == RadioModule::Expansion)
+                        .is_some()
+                },
             )
             .unwrap();
 
@@ -390,20 +349,23 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Starts the spectrum analyzer's Wi-Fi analyzer.
-    pub fn start_wifi_analyzer(&mut self, wifi_band: WifiBand) -> io::Result<()> {
+    #[tracing::instrument]
+    pub fn start_wifi_analyzer(&self, wifi_band: WifiBand) -> io::Result<()> {
         self.send_command(Command::StartWifiAnalyzer(wifi_band))
     }
 
     /// Stops the spectrum analyzer's Wi-Fi analyzer.
+    #[tracing::instrument(skip(self))]
     pub fn stop_wifi_analyzer(&mut self) -> io::Result<()> {
         self.send_command(Command::StopWifiAnalyzer)
     }
 
     /// Requests the spectrum analyzer enter tracking mode.
-    pub fn request_tracking(&mut self, start_hz: u64, step_hz: u64) -> Result<TrackingStatus> {
+    #[tracing::instrument(skip(self))]
+    pub fn request_tracking(&self, start_hz: u64, step_hz: u64) -> Result<TrackingStatus> {
         // Set the tracking status to None so we can tell whether or not we've received a new
         // tracking status message by checking for Some
-        *self.device.tracking_status_condvar_pair.0.lock().unwrap() = None;
+        *self.device.tracking_status.0.lock().unwrap() = None;
 
         // Send the command to enter tracking mode
         self.send_command(Command::StartTracking {
@@ -412,30 +374,31 @@ impl RfExplorer<SpectrumAnalyzer> {
         })?;
 
         // Wait to see if we receive a tracking status message in response
-        let condvar = &self.device.tracking_status_condvar_pair.1;
+        let (lock, condvar) = &*self.device.tracking_status;
         let (tracking_status, timeout_result) = condvar
             .wait_timeout_while(
-                self.device.tracking_status_condvar_pair.0.lock().unwrap(),
+                lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
                 |tracking_status| tracking_status.is_some(),
             )
             .unwrap();
 
         if !timeout_result.timed_out() {
-            Ok(tracking_status.unwrap())
+            Ok(tracking_status.unwrap_or_default())
         } else {
             Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
         }
     }
 
     /// Steps over the tracking step frequency and makes a measurement.
-    pub fn tracking_step(&mut self, step: u16) -> io::Result<()> {
+    #[tracing::instrument(skip(self))]
+    pub fn tracking_step(&self, step: u16) -> io::Result<()> {
         self.send_command(Command::TrackingStep(step))
     }
 
     /// Sets the start and stop frequency of sweeps measured by the spectrum analyzer.
     pub fn set_start_stop(
-        &mut self,
+        &self,
         start_freq: impl Into<Frequency>,
         stop_freq: impl Into<Frequency>,
     ) -> Result<()> {
@@ -448,9 +411,22 @@ impl RfExplorer<SpectrumAnalyzer> {
         )
     }
 
+    /// Sets the start frequency, stop frequency, and number of points of sweeps measured by the spectrum analyzer.
+    pub fn set_start_stop_sweep_points(
+        &self,
+        start: impl Into<Frequency>,
+        stop: impl Into<Frequency>,
+        sweep_points: u16,
+    ) -> Result<()> {
+        let (start, stop) = (start.into(), stop.into());
+        let config = self.config();
+        self.set_sweep_points(sweep_points)?;
+        self.set_config(start, stop, config.min_amp_dbm, config.max_amp_dbm)
+    }
+
     /// Sets the center frequency and span of sweeps measured by the spectrum analyzer.
     pub fn set_center_span(
-        &mut self,
+        &self,
         center_freq: impl Into<Frequency>,
         span_freq: impl Into<Frequency>,
     ) -> Result<()> {
@@ -459,8 +435,20 @@ impl RfExplorer<SpectrumAnalyzer> {
         self.set_start_stop(center_freq - span_freq / 2, center_freq + span_freq / 2)
     }
 
+    /// Sets the center frequency, span, and number of points of sweeps measured by the spectrum analyzer.
+    pub fn set_center_span_sweep_points(
+        &self,
+        center: impl Into<Frequency>,
+        span: impl Into<Frequency>,
+        sweep_points: u16,
+    ) -> Result<()> {
+        let (center, span) = (center.into(), span.into());
+        self.set_start_stop_sweep_points(center - span / 2, center + span / 2, sweep_points)
+    }
+
     /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
-    pub fn set_min_max_amps(&mut self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
+    #[tracing::instrument(skip(self))]
+    pub fn set_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         let config = self.config();
         self.set_config(
             config.start_freq,
@@ -471,17 +459,21 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the spectrum analyzer's configuration.
+    #[tracing::instrument(skip(self))]
     fn set_config(
-        &mut self,
+        &self,
         start_freq: Frequency,
         stop_freq: Frequency,
         min_amp_dbm: i16,
         max_amp_dbm: i16,
     ) -> Result<()> {
+        info!("Validating start and stop frequencies");
         self.validate_start_stop(start_freq, stop_freq)?;
+        info!("Validating min and max amplitudes");
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
         // Send the command to change the config
+        info!("Sending 'SetConfig' command");
         self.send_command(Command::SetConfig {
             start_freq,
             stop_freq,
@@ -498,18 +490,18 @@ impl RfExplorer<SpectrumAnalyzer> {
         };
 
         // Check if the current config already contains the requested values
-        let config = self.device.config_condvar_pair.0.lock().unwrap();
-        if config_contains_requested_values(&config) {
+        if config_contains_requested_values(&self.config()) {
             return Ok(());
         }
 
         // Wait until the current config contains the requested values
-        let condvar = &self.device.config_condvar_pair.1;
+        info!("Waiting to receive updated config");
+        let (lock, condvar) = &*self.device.config;
         let (_, timeout_result) = condvar
             .wait_timeout_while(
-                config,
+                lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| !config_contains_requested_values(config),
+                |config| !config.filter(config_contains_requested_values).is_some(),
             )
             .unwrap();
 
@@ -531,7 +523,8 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.
-    pub fn set_sweep_points(&mut self, sweep_points: u16) -> Result<()> {
+    #[tracing::instrument]
+    pub fn set_sweep_points(&self, sweep_points: u16) -> Result<()> {
         // Only 'Plus' models can set the number of points in a sweep
         if !self.active_module_model().is_plus_model() {
             return Err(Error::InvalidOperation(
@@ -540,6 +533,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             ));
         }
 
+        info!("Sending 'SetSweepPoints' command");
         if sweep_points <= 4096 {
             self.send_command(Command::SetSweepPointsExt(sweep_points))?;
         } else {
@@ -548,23 +542,28 @@ impl RfExplorer<SpectrumAnalyzer> {
 
         // The requested number of sweep points gets rounded down to a number that's a multiple of 16
         let expected_sweep_points = u16::from(if sweep_points < 112 {
-            SpectrumAnalyzer::MIN_SWEEP_POINTS
+            Self::MIN_SWEEP_POINTS
         } else {
             (sweep_points / 16) * 16
         });
 
         // Check if the current config already contains the requested sweep points
-        let (config, cond_var) = &*self.device.config_condvar_pair;
-        if config.lock().unwrap().sweep_points == expected_sweep_points {
+        if self.config().sweep_points == expected_sweep_points {
             return Ok(());
         }
 
         // Wait until the current config contains the requested sweep points
-        let (_, timeout_result) = cond_var
+        info!("Waiting to receive updated config");
+        let (lock, condvar) = &*self.device.config;
+        let (_, timeout_result) = condvar
             .wait_timeout_while(
-                config.lock().unwrap(),
+                lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| config.sweep_points != expected_sweep_points,
+                |config| {
+                    !config
+                        .filter(|config| config.sweep_points == expected_sweep_points)
+                        .is_some()
+                },
             )
             .unwrap();
 
@@ -577,36 +576,41 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the spectrum analyzer's calculator mode.
+    #[tracing::instrument]
     pub fn set_calc_mode(&mut self, calc_mode: CalcMode) -> io::Result<()> {
         self.send_command(Command::SetCalcMode(calc_mode))
     }
 
     /// Sets the spectrum analyzer's input stage.
+    #[tracing::instrument]
     pub fn set_input_stage(&mut self, input_stage: InputStage) -> io::Result<()> {
         self.send_command(Command::SetInputStage(input_stage))
     }
 
     /// Adds or subtracts an offset to the amplitudes in each sweep.
+    #[tracing::instrument]
     pub fn set_offset_db(&mut self, offset_db: i8) -> io::Result<()> {
         self.send_command(Command::SetOffsetDB(offset_db))
     }
 
     /// Sets the spectrum analyzer's DSP mode.
+    #[tracing::instrument]
     pub fn set_dsp_mode(&mut self, dsp_mode: DspMode) -> Result<()> {
-        // Set the DSP mode to None so we can tell whether or not we've received a new DSP mode by
-        // checking for Some
-        *self.device.dsp_mode_condvar_pair.0.lock().unwrap() = None;
+        // Check to see if the DspMode is already set to the desired value
+        if *self.device.dsp_mode.0.lock().unwrap() == Some(dsp_mode) {
+            return Ok(());
+        }
 
         // Send the command to set the DSP mode
         self.send_command(Command::SetDsp(dsp_mode))?;
 
         // Wait to see if we receive a DSP mode message in response
-        let condvar = &self.device.dsp_mode_condvar_pair.1;
+        let (lock, condvar) = &*self.device.dsp_mode;
         let (_, timeout_result) = condvar
             .wait_timeout_while(
-                self.device.dsp_mode_condvar_pair.0.lock().unwrap(),
+                lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |dsp_mode| dsp_mode.is_some(),
+                |new_dsp_mode| *new_dsp_mode != Some(dsp_mode),
             )
             .unwrap();
 
@@ -617,6 +621,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         }
     }
 
+    #[tracing::instrument]
     fn validate_start_stop(&self, start_freq: Frequency, stop_freq: Frequency) -> Result<()> {
         if start_freq >= stop_freq {
             return Err(Error::InvalidInput(
@@ -656,51 +661,33 @@ impl RfExplorer<SpectrumAnalyzer> {
         Ok(())
     }
 
+    #[tracing::instrument]
     fn validate_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         // The bottom amplitude must be less than the top amplitude
         if min_amp_dbm >= max_amp_dbm {
+            error!("");
             return Err(Error::InvalidInput(
                 "The minimum amplitude must be less than the maximum amplitude".to_string(),
             ));
         }
 
         // The top and bottom amplitude must be within the RF Explorer's min and max amplitude range
-        if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(&min_amp_dbm) {
+        if !Self::MIN_MAX_AMP_RANGE_DBM.contains(&min_amp_dbm) {
             return Err(Error::InvalidInput(format!(
                 "The amplitude {} dBm is not within the RF Explorer's amplitude range of {}-{} dBm",
                 min_amp_dbm,
-                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.start(),
-                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.end()
+                Self::MIN_MAX_AMP_RANGE_DBM.start(),
+                Self::MIN_MAX_AMP_RANGE_DBM.end()
             )));
-        } else if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(&max_amp_dbm) {
+        } else if !Self::MIN_MAX_AMP_RANGE_DBM.contains(&max_amp_dbm) {
             return Err(Error::InvalidInput(format!(
                 "The amplitude {} dBm is not within the RF Explorer's amplitude range of {}-{} dBm",
                 max_amp_dbm,
-                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.start(),
-                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.end()
+                Self::MIN_MAX_AMP_RANGE_DBM.start(),
+                Self::MIN_MAX_AMP_RANGE_DBM.end()
             )));
         }
 
         Ok(())
-    }
-}
-
-impl Drop for SpectrumAnalyzer {
-    fn drop(&mut self) {
-        *self.is_reading_condvar_pair.0.lock().unwrap() = false;
-        if let Some(read_handle) = self.read_thread_handle.take() {
-            let _ = read_handle.join();
-        }
-    }
-}
-
-impl Debug for SpectrumAnalyzer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SpectrumAnalyzer")
-            .field("port_name", &self.port_name)
-            .field("setup_info", &self.setup_info)
-            .field("config", &self.config_condvar_pair.0.lock().unwrap())
-            .field("serial_number", &self.serial_number)
-            .finish()
     }
 }

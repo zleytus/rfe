@@ -22,11 +22,11 @@ pub(crate) use serial_port::{open, ConnectionError, ConnectionResult, SerialPort
 pub use setup_info::SetupInfo;
 
 use crate::SpectrumAnalyzer;
-use std::{borrow::Cow, io, time::Instant};
+use std::{borrow::Cow, io, sync::Arc};
 
 #[derive(Debug)]
 pub struct RfExplorer<D: Device = SpectrumAnalyzer> {
-    pub(crate) device: D,
+    pub(crate) device: Arc<D>,
 }
 
 impl<D: Device> RfExplorer<D> {
