@@ -13,7 +13,7 @@ pub struct SetupInfo<D: Device = SpectrumAnalyzer> {
     pub main_module_model: Model,
     pub expansion_module_model: Model,
     pub firmware_version: String,
-    marker: PhantomData<D>,
+    pub(crate) marker: PhantomData<D>,
 }
 
 impl<D: Device> SetupInfo<D> {
@@ -64,6 +64,12 @@ impl<D: Device> SetupInfo<D> {
         let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
 
         Ok((bytes, Self::new(main_model, exp_model, fw_version)))
+    }
+}
+
+impl<D: Device> Default for SetupInfo<D> {
+    fn default() -> Self {
+        SetupInfo::new(Model::default(), Model::default(), String::default())
     }
 }
 
