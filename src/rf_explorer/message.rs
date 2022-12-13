@@ -1,9 +1,5 @@
-use nom::IResult;
+use nom::error::Error;
 
-pub trait ParseFromBytes: Sized {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self>;
-}
-
-pub trait Message: ParseFromBytes {
-    const PREFIX: &'static [u8];
+pub trait Message: Sized {
+    fn parse(bytes: &[u8]) -> Result<Self, nom::Err<Error<&[u8]>>>;
 }

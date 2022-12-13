@@ -14,7 +14,7 @@ pub(crate) use command::Command;
 pub use device::Device;
 pub use error::{Error, Result};
 pub use frequency::Frequency;
-pub use message::{Message, ParseFromBytes};
+pub(crate) use message::Message;
 pub use model::Model;
 pub use screen_data::ScreenData;
 pub use serial_number::SerialNumber;
