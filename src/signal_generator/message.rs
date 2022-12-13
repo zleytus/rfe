@@ -1,6 +1,6 @@
-use super::{Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, SetupInfo, Temperature};
+use super::{Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, Temperature};
 use crate::{
-    common::{ScreenData, SerialNumber},
+    common::{ScreenData, SerialNumber, SetupInfo},
     SignalGenerator,
 };
 use nom::error::{Error, ErrorKind};

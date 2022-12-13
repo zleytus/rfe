@@ -1,11 +1,8 @@
 use super::{
     sweep::{SweepDataExt, SweepDataLarge, SweepDataStandard},
-    Config, DspMode, InputStage, SetupInfo, Sweep, TrackingStatus,
+    Config, DspMode, InputStage, SpectrumAnalyzer, Sweep, TrackingStatus,
 };
-use crate::{
-    common::{ScreenData, SerialNumber},
-    SpectrumAnalyzer,
-};
+use crate::common::{ScreenData, SerialNumber, SetupInfo};
 use nom::error::{Error, ErrorKind};
 
 #[derive(Debug, Clone, PartialEq)]

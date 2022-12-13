@@ -36,10 +36,9 @@ mod tests {
 
     #[test]
     fn accept_wsub1g_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:003,255,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:003,255,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1G);
         assert_eq!(setup.expansion_module_model, Model::None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -47,10 +46,9 @@ mod tests {
 
     #[test]
     fn accept_24g_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:004,255,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:004,255,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::Rfe24G);
         assert_eq!(setup.expansion_module_model, Model::None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -58,10 +56,9 @@ mod tests {
 
     #[test]
     fn accept_ism_combo_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:003,004,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:003,004,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1G);
         assert_eq!(setup.expansion_module_model, Model::Rfe24G);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -69,10 +66,9 @@ mod tests {
 
     #[test]
     fn accept_3g_combo_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:003,005,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:003,005,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1G);
         assert_eq!(setup.expansion_module_model, Model::RfeWSub3G);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -80,10 +76,9 @@ mod tests {
 
     #[test]
     fn accept_6g_combo_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:006,005,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:006,005,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::Rfe6G);
         assert_eq!(setup.expansion_module_model, Model::RfeWSub3G);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -91,10 +86,9 @@ mod tests {
 
     #[test]
     fn accept_wsub1g_plus_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,255,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,255,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
         assert_eq!(setup.expansion_module_model, Model::None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -102,10 +96,9 @@ mod tests {
 
     #[test]
     fn accept_ism_combo_plus_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,012,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,012,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
         assert_eq!(setup.expansion_module_model, Model::Rfe24GPlus);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -113,10 +106,9 @@ mod tests {
 
     #[test]
     fn accept_4g_combo_plus_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,013,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,013,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
         assert_eq!(setup.expansion_module_model, Model::Rfe4GPlus);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -124,10 +116,9 @@ mod tests {
 
     #[test]
     fn accept_6g_combo_plus_setup() {
-        let setup: crate::spectrum_analyzer::SetupInfo =
-            SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,014,XX.XXXX".as_ref())
-                .unwrap()
-                .1;
+        let setup = SetupInfo::<SpectrumAnalyzer>::parse(b"#C2-M:010,014,XX.XXXX".as_ref())
+            .unwrap()
+            .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
         assert_eq!(setup.expansion_module_model, Model::Rfe6GPlus);
         assert_eq!(setup.firmware_version, "XX.XXXX");
