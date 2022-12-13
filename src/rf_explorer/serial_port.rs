@@ -1,15 +1,15 @@
 use super::Command;
-use std::borrow::Cow;
-
 use serialport::{
     DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortType, StopBits,
     UsbPortInfo,
 };
+use std::borrow::Cow;
 use std::{
     io::{self, BufReader},
     time::Duration,
 };
 use thiserror::Error;
+use tracing::{error, trace, warn};
 
 const SILICON_LABS_VID: u16 = 4_292;
 const CP210X_UART_BRIDGE_PID: u16 = 60_000;
@@ -26,6 +26,7 @@ fn is_rf_explorer_serial_port(port_type: &SerialPortType) -> bool {
     )
 }
 
+#[tracing::instrument]
 pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortReader> {
     // On macOS, serial devices show up in /dev twice as /dev/tty.devicename and /dev/cu.devicename
     // For our purposes, we only want to connect to CU (Call-Up) devices
@@ -34,6 +35,7 @@ pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortRea
     }
 
     if !is_rf_explorer_serial_port(&port_info.port_type) {
+        trace!("VID or PID do not match RF Explorer's");
         return Err(ConnectionError::NotAnRfExplorer);
     }
 
@@ -44,7 +46,11 @@ pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortRea
         .stop_bits(StopBits::One)
         .timeout(Duration::from_secs(1))
         .open()?;
+    trace!("Opened serial port connection to potential RF Explorer");
+
     serial_port.write_all(&Cow::from(Command::RequestConfig))?;
+    trace!("Requested Config and SetupInfo");
+
     Ok(SerialPortReader::new(serial_port))
 }
 
