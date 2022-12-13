@@ -8,6 +8,17 @@ impl SetupInfo<SpectrumAnalyzer> {
     }
 }
 
+impl Clone for SetupInfo<SpectrumAnalyzer> {
+    fn clone(&self) -> Self {
+        Self {
+            main_module_model: self.main_module_model,
+            expansion_module_model: self.expansion_module_model,
+            firmware_version: self.firmware_version.clone(),
+            marker: self.marker,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::rf_explorer::SetupInfo;
