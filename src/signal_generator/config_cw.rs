@@ -1,5 +1,5 @@
 use crate::{
-    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
+    rf_explorer::{parsers::*, Frequency},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 use nom::{bytes::complete::tag, IResult};
@@ -14,12 +14,10 @@ pub struct ConfigCw {
     pub rf_power: RfPower,
 }
 
-impl Message for ConfigCw {
-    const PREFIX: &'static [u8] = b"#C3-G:";
-}
+impl ConfigCw {
+    pub const PREFIX: &'static [u8] = b"#C3-G:";
 
-impl ParseFromBytes for ConfigCw {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -80,7 +78,7 @@ mod tests {
     #[test]
     fn parse_config_cw() {
         let bytes = b"#C3-G:0186525,0186525,0005,0001000,0,3,0\r\n";
-        let config_cw = ConfigCw::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let config_cw = ConfigCw::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(config_cw.cw_freq.as_khz(), 186_525);
         assert_eq!(config_cw.total_steps, 5);
         assert_eq!(config_cw.step_freq.as_khz(), 1_000);

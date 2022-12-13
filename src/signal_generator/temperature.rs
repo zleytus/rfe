@@ -1,4 +1,3 @@
-use crate::rf_explorer::{Message, ParseFromBytes};
 use nom::{
     bytes::complete::tag,
     character::complete::line_ending,
@@ -35,12 +34,10 @@ impl Temperature {
     }
 }
 
-impl Message for Temperature {
-    const PREFIX: &'static [u8] = b"#T:";
-}
+impl Temperature {
+    pub const PREFIX: &'static [u8] = b"#T:";
 
-impl ParseFromBytes for Temperature {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Temperature::PREFIX)(bytes)?;
 

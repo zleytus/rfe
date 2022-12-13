@@ -1,5 +1,5 @@
 use crate::{
-    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
+    rf_explorer::{parsers::*, Frequency},
     spectrum_analyzer::parsers::*,
 };
 use chrono::{DateTime, Utc};
@@ -108,12 +108,10 @@ pub struct Config {
     pub timestamp: DateTime<Utc>,
 }
 
-impl Message for Config {
-    const PREFIX: &'static [u8] = b"#C2-F:";
-}
+impl Config {
+    pub const PREFIX: &'static [u8] = b"#C2-F:";
 
-impl ParseFromBytes for Config {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
@@ -225,7 +223,7 @@ mod tests {
     fn parse_6g_combo_config() {
         let bytes =
             b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000,00200,0000,000";
-        let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let config = Config::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(config.start_freq.as_hz(), 5_249_000_000);
         assert_eq!(config.step_freq.as_hz(), 196_428);
         assert_eq!(config.stop_freq.as_hz(), 5_270_803_508);
@@ -248,7 +246,7 @@ mod tests {
     fn parse_wsub1g_plus_config() {
         let bytes =
             b"#C2-F:0096000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
-        let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let config = Config::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(config.start_freq.as_hz(), 96_000_000);
         assert_eq!(config.step_freq.as_hz(), 90_072);
         assert_eq!(config.max_amp_dbm, -10);
@@ -267,7 +265,7 @@ mod tests {
     #[test]
     fn parse_config_without_rbw_amp_offset_calc_mode() {
         let bytes = b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000";
-        let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let config = Config::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(config.rbw, None);
         assert_eq!(config.amp_offset_db, None);
         assert_eq!(config.calc_mode, None);
@@ -277,13 +275,13 @@ mod tests {
     fn fail_to_parse_config_with_incorrect_prefix() {
         let bytes =
             b"#D2-F:0096000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
-        assert!(Config::parse_from_bytes(bytes.as_ref()).is_err());
+        assert!(Config::parse(bytes.as_ref()).is_err());
     }
 
     #[test]
     fn fail_to_parse_config_with_invalid_start_freq() {
         let bytes =
             b"#C2-F:XX96000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
-        assert!(Config::parse_from_bytes(bytes.as_ref()).is_err());
+        assert!(Config::parse(bytes.as_ref()).is_err());
     }
 }

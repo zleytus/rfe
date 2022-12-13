@@ -1,4 +1,4 @@
-use crate::rf_explorer::{parsers::*, Message, ParseFromBytes};
+use crate::rf_explorer::parsers::*;
 use nom::{bytes::complete::tag, combinator::map_res, IResult};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::convert::TryFrom;
@@ -13,12 +13,10 @@ pub enum DspMode {
     NoImg,
 }
 
-impl Message for DspMode {
-    const PREFIX: &'static [u8] = b"DSP:";
-}
+impl DspMode {
+    pub const PREFIX: &'static [u8] = b"DSP:";
 
-impl ParseFromBytes for DspMode {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(DspMode::PREFIX)(bytes)?;
 
@@ -39,7 +37,7 @@ mod tests {
     #[test]
     fn accept_valid_dsp_mode_message() {
         let bytes = b"DSP:0";
-        let dsp_mode = DspMode::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let dsp_mode = DspMode::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(dsp_mode, DspMode::Auto);
     }
 }

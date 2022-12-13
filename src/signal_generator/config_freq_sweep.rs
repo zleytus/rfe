@@ -1,10 +1,9 @@
-use std::time::Duration;
-
 use crate::{
-    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
+    rf_explorer::{parsers::*, Frequency},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 use nom::{bytes::complete::tag, IResult};
+use std::time::Duration;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ConfigFreqSweep {
@@ -17,12 +16,10 @@ pub struct ConfigFreqSweep {
     pub sweep_delay: Duration,
 }
 
-impl Message for ConfigFreqSweep {
-    const PREFIX: &'static [u8] = b"#C3-F:";
-}
+impl ConfigFreqSweep {
+    pub const PREFIX: &'static [u8] = b"#C3-F:";
 
-impl ParseFromBytes for ConfigFreqSweep {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -84,7 +81,7 @@ mod tests {
     #[test]
     fn parse_config_freq_sweep() {
         let bytes = b"#C3-F:0186525,0005,0001000,0,3,0,00100";
-        let config_freq_sweep = ConfigFreqSweep::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let config_freq_sweep = ConfigFreqSweep::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(config_freq_sweep.start_freq.as_khz(), 186_525);
         assert_eq!(config_freq_sweep.total_steps, 5);
         assert_eq!(config_freq_sweep.step_freq.as_khz(), 1_000);

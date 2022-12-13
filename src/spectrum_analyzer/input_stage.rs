@@ -1,11 +1,9 @@
-use std::fmt::Display;
-
-use crate::{rf_explorer::ParseFromBytes, Message};
 use nom::{
     bytes::complete::{tag, take},
     combinator::map_res,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use std::fmt::Display;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
@@ -15,6 +13,20 @@ pub enum InputStage {
     Lna25dB = b'2',
     Attenuator60dB = b'3',
     Lna12dB = b'4',
+}
+
+impl InputStage {
+    pub const PREFIX: &'static [u8] = b"#a";
+
+    pub(crate) fn parse(bytes: &[u8]) -> nom::IResult<&[u8], Self> {
+        // Parse the prefix of the message
+        let (bytes, _) = tag(InputStage::PREFIX)(bytes)?;
+
+        let (bytes, input_stage) =
+            map_res(take(1usize), |byte: &[u8]| InputStage::try_from(byte[0]))(bytes)?;
+
+        Ok((bytes, input_stage))
+    }
 }
 
 impl Display for InputStage {
@@ -27,21 +39,5 @@ impl Display for InputStage {
             InputStage::Lna12dB => "Attenuator 12dB",
         };
         write!(f, "{input_stage}")
-    }
-}
-
-impl Message for InputStage {
-    const PREFIX: &'static [u8] = b"#a";
-}
-
-impl ParseFromBytes for InputStage {
-    fn parse_from_bytes(bytes: &[u8]) -> nom::IResult<&[u8], Self> {
-        // Parse the prefix of the message
-        let (bytes, _) = tag(InputStage::PREFIX)(bytes)?;
-
-        let (bytes, input_stage) =
-            map_res(take(1usize), |byte: &[u8]| InputStage::try_from(byte[0]))(bytes)?;
-
-        Ok((bytes, input_stage))
     }
 }

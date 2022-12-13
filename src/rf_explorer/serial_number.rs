@@ -1,4 +1,3 @@
-use crate::rf_explorer::{Message, ParseFromBytes};
 use nom::{
     bytes::complete::{tag, take_while_m_n},
     character::complete::line_ending,
@@ -15,17 +14,13 @@ pub struct SerialNumber {
 }
 
 impl SerialNumber {
+    pub const PREFIX: &'static [u8] = b"#Sn";
+
     pub fn as_str(&self) -> &str {
         &self.serial_number
     }
-}
 
-impl Message for SerialNumber {
-    const PREFIX: &'static [u8] = b"#Sn";
-}
-
-impl ParseFromBytes for SerialNumber {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         let (bytes, serial_number) = preceded(
             tag(SerialNumber::PREFIX),
             map(
@@ -47,12 +42,12 @@ mod tests {
 
     #[test]
     fn reject_with_invalid_prefix() {
-        assert!(SerialNumber::parse_from_bytes(b"$Sn0SME38SI2X7NGR48".as_ref()).is_err());
+        assert!(SerialNumber::parse(b"$Sn0SME38SI2X7NGR48".as_ref()).is_err());
     }
 
     #[test]
     fn accept_valid_serial_number() {
-        assert!(SerialNumber::parse_from_bytes(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok());
-        assert!(SerialNumber::parse_from_bytes(b"#SnB3AK7AL7CACAA74M\r\n".as_ref()).is_ok());
+        assert!(SerialNumber::parse(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok());
+        assert!(SerialNumber::parse(b"#SnB3AK7AL7CACAA74M\r\n".as_ref()).is_ok());
     }
 }

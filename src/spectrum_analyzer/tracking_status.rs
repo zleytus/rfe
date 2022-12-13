@@ -1,4 +1,3 @@
-use crate::rf_explorer::{Message, ParseFromBytes};
 use nom::{
     bytes::complete::tag,
     character::complete::line_ending,
@@ -17,12 +16,10 @@ pub enum TrackingStatus {
     Enabled,
 }
 
-impl Message for TrackingStatus {
-    const PREFIX: &'static [u8] = b"#K";
-}
+impl TrackingStatus {
+    pub const PREFIX: &'static [u8] = b"#K";
 
-impl ParseFromBytes for TrackingStatus {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(TrackingStatus::PREFIX)(bytes)?;
 
@@ -43,7 +40,7 @@ mod tests {
     #[test]
     fn accept_valid_tracking_status_message() {
         let bytes = [b'#', b'K', 0];
-        let tracking_status = TrackingStatus::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let tracking_status = TrackingStatus::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(tracking_status, TrackingStatus::Disabled);
     }
 }

@@ -1,36 +1,38 @@
-use std::time::Duration;
-
 use crate::{
-    rf_explorer::{parsers::*, Frequency, Message, ParseFromBytes},
+    rf_explorer::{parsers::*, Frequency},
     signal_generator::parsers::*,
 };
 use nom::{bytes::complete::tag, IResult};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use std::time::Duration;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
 pub enum Attenuation {
+    #[default]
     On = 0,
     Off,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
 pub enum PowerLevel {
+    #[default]
     Lowest = 0,
     Low,
     High,
     Highest,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
 pub enum RfPower {
     On = 0,
+    #[default]
     Off,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Config {
     pub start_freq: Frequency,
     pub cw_freq: Frequency,
@@ -47,12 +49,10 @@ pub struct Config {
     pub sweep_delay: Duration,
 }
 
-impl Message for Config {
-    const PREFIX: &'static [u8] = b"#C3-*:";
-}
+impl Config {
+    pub const PREFIX: &'static [u8] = b"#C3-*:";
 
-impl ParseFromBytes for Config {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
@@ -150,7 +150,7 @@ mod tests {
     #[test]
     fn parse_config() {
         let bytes = b"#C3-*:0510000,0186525,0005,0001000,0,3,0000,0,0,1,3,0,00100\r\n";
-        let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
+        let config = Config::parse(bytes.as_ref()).unwrap().1;
         assert_eq!(config.start_freq.as_hz(), 510_000_000);
         assert_eq!(config.cw_freq.as_hz(), 186_525_000);
         assert_eq!(config.total_steps, 5);

@@ -1,11 +1,8 @@
-use crate::rf_explorer::{Message, ParseFromBytes};
 use chrono::{DateTime, Utc};
 use nom::{
-    branch::alt,
     bytes::complete::tag,
     character::complete::line_ending,
-    combinator::{all_consuming, map, opt, peek},
-    error::{Error, ErrorKind},
+    combinator::{all_consuming, map, opt},
     multi::length_data,
     number::complete::{be_u16, u8 as nom_u8},
     IResult,
@@ -38,21 +35,6 @@ impl Sweep {
     }
 }
 
-impl ParseFromBytes for Sweep {
-    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
-        // Parse the prefix of the message
-        let (bytes, prefix) = peek(alt((tag("$S"), tag("$s"), tag("$z"))))(bytes)?;
-        let sweep = match prefix {
-            b"$S" => Sweep::Standard(SweepDataStandard::parse_from_bytes(bytes)?.1),
-            b"$s" => Sweep::Ext(SweepDataExt::parse_from_bytes(bytes)?.1),
-            b"$z" => Sweep::Large(SweepDataLarge::parse_from_bytes(bytes)?.1),
-            _ => return Err(nom::Err::Failure(Error::new(bytes, ErrorKind::Tag))),
-        };
-
-        Ok((bytes, sweep))
-    }
-}
-
 macro_rules! impl_sweep_data {
     ($sweep_data:ident, $prefix:expr, $amp_parser:expr) => {
         #[derive(Debug, Clone, PartialEq)]
@@ -61,12 +43,10 @@ macro_rules! impl_sweep_data {
             timestamp: DateTime<Utc>,
         }
 
-        impl Message for $sweep_data {
-            const PREFIX: &'static [u8] = $prefix;
-        }
+        impl $sweep_data {
+            pub const PREFIX: &'static [u8] = $prefix;
 
-        impl ParseFromBytes for $sweep_data {
-            fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+            pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
                 // Parse the prefix of the message
                 let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -148,7 +128,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep_data = SweepDataStandard::parse_from_bytes(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataStandard::parse(&bytes[..]).unwrap().1;
         assert_eq!(
             sweep_data.amplitudes_dbm,
             &[
@@ -178,7 +158,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep_data = SweepDataExt::parse_from_bytes(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataExt::parse(&bytes[..]).unwrap().1;
         assert_eq!(
             sweep_data.amplitudes_dbm,
             &[
@@ -208,7 +188,7 @@ mod tests {
             175, 179, 36, 21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227,
             20, 92, 6, 229, 120, 125, 239,
         ];
-        let sweep_data = SweepDataLarge::parse_from_bytes(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataLarge::parse(&bytes[..]).unwrap().1;
         assert_eq!(
             sweep_data.amplitudes_dbm,
             &[
@@ -238,7 +218,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239, 100,
         ];
-        let sweep_data_error = SweepDataStandard::parse_from_bytes(&bytes[..]).unwrap_err();
+        let sweep_data_error = SweepDataStandard::parse(&bytes[..]).unwrap_err();
         assert!(matches!(sweep_data_error, nom::Err::Error(..)));
     }
 
@@ -254,7 +234,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125,
         ];
-        let sweep_data_error = SweepDataStandard::parse_from_bytes(&bytes[..]).unwrap_err();
+        let sweep_data_error = SweepDataStandard::parse(&bytes[..]).unwrap_err();
         assert!(matches!(sweep_data_error, nom::Err::Incomplete(..)));
     }
 
