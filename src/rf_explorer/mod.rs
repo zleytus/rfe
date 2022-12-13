@@ -65,15 +65,12 @@ impl<D: Device> RfExplorer<D> {
     }
 
     /// Sends a command to the RF Explorer.
-    pub(crate) fn send_command(
-        &mut self,
-        command: impl Into<Cow<'static, [u8]>>,
-    ) -> io::Result<()> {
+    pub(crate) fn send_command(&self, command: impl Into<Cow<'static, [u8]>>) -> io::Result<()> {
         self.send_bytes(command.into())
     }
 
     /// Sends bytes to the RF Explorer.
-    pub fn send_bytes(&mut self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
+    pub fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
         self.device.send_bytes(bytes)
     }
 
@@ -82,42 +79,42 @@ impl<D: Device> RfExplorer<D> {
     }
 
     /// Returns the RF Explorer's serial number.
-    pub fn serial_number(&mut self) -> SerialNumber {
+    pub fn serial_number(&self) -> SerialNumber {
         self.device.serial_number()
     }
 
     /// Turns on the RF Explorer's LCD screen.
-    pub fn lcd_on(&mut self) -> io::Result<()> {
+    pub fn lcd_on(&self) -> io::Result<()> {
         self.send_command(Command::EnableLcd)
     }
 
     /// Turns off the RF Explorer's LCD screen.
-    pub fn lcd_off(&mut self) -> io::Result<()> {
+    pub fn lcd_off(&self) -> io::Result<()> {
         self.send_command(Command::DisableLcd)
     }
 
     /// Requests the RF Explorer start sending screen data.
-    pub fn enable_dump_screen(&mut self) -> io::Result<()> {
+    pub fn enable_dump_screen(&self) -> io::Result<()> {
         self.send_command(Command::EnableDumpScreen)
     }
 
     /// Requests the RF Explorer stop sending screen data.
-    pub fn disable_dump_screen(&mut self) -> io::Result<()> {
+    pub fn disable_dump_screen(&self) -> io::Result<()> {
         self.send_command(Command::DisableDumpScreen)
     }
 
     /// Stops the RF Explorer data dump.
-    pub fn hold(&mut self) -> io::Result<()> {
+    pub fn hold(&self) -> io::Result<()> {
         self.send_command(Command::Hold)
     }
 
     /// Reboots the RF Explorer.
-    pub fn reboot(mut self) -> io::Result<()> {
+    pub fn reboot(self) -> io::Result<()> {
         self.send_command(Command::Reboot)
     }
 
     /// Turns off the RF Explorer.
-    pub fn power_off(mut self) -> io::Result<()> {
+    pub fn power_off(self) -> io::Result<()> {
         self.send_command(Command::PowerOff)
     }
 }
