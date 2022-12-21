@@ -9,7 +9,7 @@ use std::convert::TryInto;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ScreenData {
-    screen_data_matrix: [[u8; ScreenData::COLUMNS]; ScreenData::ROWS],
+    screen_data_matrix: Box<[[u8; ScreenData::COLUMNS]; ScreenData::ROWS]>,
 }
 
 impl ScreenData {
@@ -35,7 +35,7 @@ impl ScreenData {
 
         // Convert the slice of bytes representing the screen data into a matrix
         let screen_data_matrix = {
-            let mut matrix = [[0; ScreenData::COLUMNS]; ScreenData::ROWS];
+            let mut matrix = Box::new([[0; ScreenData::COLUMNS]; ScreenData::ROWS]);
             for (row_index, row_bytes) in screen_data.chunks_exact(ScreenData::COLUMNS).enumerate()
             {
                 matrix[row_index].clone_from_slice(row_bytes);
