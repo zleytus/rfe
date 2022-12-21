@@ -288,9 +288,9 @@ impl RfExplorer<SpectrumAnalyzer> {
                 lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
                 |config| {
-                    !config
+                    config
                         .filter(|config| config.active_radio_module == RadioModule::Main)
-                        .is_some()
+                        .is_none()
                 },
             )
             .unwrap();
@@ -319,9 +319,9 @@ impl RfExplorer<SpectrumAnalyzer> {
                 lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
                 |config| {
-                    !config
+                    config
                         .filter(|config| config.active_radio_module == RadioModule::Expansion)
-                        .is_some()
+                        .is_none()
                 },
             )
             .unwrap();
@@ -486,7 +486,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| !config.filter(config_contains_requested_values).is_some(),
+                |config| config.filter(config_contains_requested_values).is_none(),
             )
             .unwrap();
 
@@ -545,9 +545,9 @@ impl RfExplorer<SpectrumAnalyzer> {
                 lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
                 |config| {
-                    !config
+                    config
                         .filter(|config| config.sweep_points == expected_sweep_points)
-                        .is_some()
+                        .is_none()
                 },
             )
             .unwrap();
