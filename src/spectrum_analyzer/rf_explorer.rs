@@ -213,7 +213,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             .unwrap();
 
         if !timeout_result.timed_out() {
-            Ok(self.latest_sweep().clone().unwrap())
+            Ok(self.latest_sweep().unwrap())
         } else {
             Err(Error::TimedOut(timeout))
         }
