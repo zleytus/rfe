@@ -102,3 +102,45 @@ impl From<Command> for Cow<'static, [u8]> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! assert_correct_size {
+        ($command:expr) => {
+            let command_bytes = Cow::from($command);
+            assert_eq!(
+                command_bytes[1],
+                command_bytes.len() as u8,
+                "Command: {:?}",
+                String::from_utf8_lossy(&command_bytes)
+            );
+        };
+    }
+
+    #[test]
+    fn correct_command_size_fields() {
+        assert_correct_size!(Command::SetConfig {
+            start_freq: Frequency::from_hz(90_000_000),
+            stop_freq: Frequency::from_hz(110_000_000),
+            min_amp_dbm: -120,
+            max_amp_dbm: -40
+        });
+        assert_correct_size!(Command::SwitchModuleMain);
+        assert_correct_size!(Command::SwitchModuleExp);
+        assert_correct_size!(Command::StartTracking {
+            start_freq: Frequency::from_khz(100_000),
+            step_freq: Frequency::from_khz(1_000)
+        });
+        assert_correct_size!(Command::StartWifiAnalyzer(WifiBand::FiveGhz));
+        assert_correct_size!(Command::StopWifiAnalyzer);
+        assert_correct_size!(Command::SetCalcMode(CalcMode::Normal));
+        assert_correct_size!(Command::TrackingStep(4));
+        assert_correct_size!(Command::SetDsp(DspMode::Auto));
+        assert_correct_size!(Command::SetOffsetDB(20));
+        assert_correct_size!(Command::SetInputStage(InputStage::Direct));
+        assert_correct_size!(Command::SetSweepPointsExt(1024));
+        assert_correct_size!(Command::SetSweepPointsLarge(8192));
+    }
+}
