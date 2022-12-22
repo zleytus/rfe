@@ -15,11 +15,37 @@ pub struct ScreenData {
 }
 
 impl ScreenData {
-    pub const ROWS: usize = 8;
-    pub const COLUMNS: usize = 128;
-    pub const VERTICAL_PX_PER_ROW: usize = 8;
-    pub const PREFIX: &'static [u8] = b"$D";
+    pub const WIDTH_PX: u8 = 128;
+    pub const HEIGHT_PX: u8 = 64;
+    pub(crate) const PREFIX: &'static [u8] = b"$D";
+    const ROWS: usize = 8;
+    const COLUMNS: usize = 128;
+    const ROW_HEIGHT_PX: usize = 8;
 
+    /// Returns whether a pixel is on or off at a given xy-coordinate.
+    ///
+    /// The top-left of the screen is (0, 0) and the bottom-right is (127, 63).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the coordinate is out of range.
+    pub fn get_pixel(&self, x: u8, y: u8) -> bool {
+        let row = usize::from(y) / Self::ROW_HEIGHT_PX;
+        let column = usize::from(x);
+
+        (self.screen_data_matrix[row][column] & (1 << (y % 8))) > 0
+    }
+
+    /// Returns whether a pixel is on or off at a given xy-coordinate.
+    ///
+    /// The top-left of the screen is (0, 0) and the bottom-right is (127, 63).
+    ///
+    /// `None` is returned if the coordinate is out of range.
+    pub fn get_pixel_checked(&self, x: u8, y: u8) -> Option<bool> {
+        let row = usize::from(y) / Self::ROW_HEIGHT_PX;
+        let column = usize::from(x);
+
+        Some((self.screen_data_matrix.get(row)?.get(column)? & (1 << (y % 8))) > 0)
     }
 
     /// The time at which this `ScreenData` was captured.
