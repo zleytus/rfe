@@ -227,7 +227,7 @@ mod tests {
         assert_eq!(config.start_freq.as_hz(), 5_249_000_000);
         assert_eq!(config.step_freq.as_hz(), 196_428);
         assert_eq!(config.stop_freq.as_hz(), 5_270_803_508);
-        assert_eq!(config.center_freq.as_hz(), 525_9901_754);
+        assert_eq!(config.center_freq.as_hz(), 5_259_901_754);
         assert_eq!(config.span_freq.as_hz(), 21_803_508);
         assert_eq!(config.max_amp_dbm, -30);
         assert_eq!(config.min_amp_dbm, -118);
