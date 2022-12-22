@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use nom::{
     bytes::complete::tag,
     bytes::streaming::take,
@@ -10,6 +11,7 @@ use std::convert::TryInto;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ScreenData {
     screen_data_matrix: Box<[[u8; ScreenData::COLUMNS]; ScreenData::ROWS]>,
+    timestamp: DateTime<Utc>,
 }
 
 impl ScreenData {
@@ -18,8 +20,11 @@ impl ScreenData {
     pub const VERTICAL_PX_PER_ROW: usize = 8;
     pub const PREFIX: &'static [u8] = b"$D";
 
-    pub fn as_byte_matrix(&self) -> &[[u8; ScreenData::COLUMNS]; ScreenData::ROWS] {
-        &self.screen_data_matrix
+    }
+
+    /// The time at which this `ScreenData` was captured.
+    pub fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
     }
 
     pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
@@ -43,6 +48,12 @@ impl ScreenData {
             matrix
         };
 
-        Ok((bytes, ScreenData { screen_data_matrix }))
+        Ok((
+            bytes,
+            ScreenData {
+                screen_data_matrix,
+                timestamp: Utc::now(),
+            },
+        ))
     }
 }
