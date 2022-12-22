@@ -224,3 +224,59 @@ impl From<Command> for Cow<'static, [u8]> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! assert_correct_size {
+        ($command:expr) => {
+            let command_bytes = Cow::from($command);
+            assert_eq!(
+                command_bytes[1],
+                command_bytes.len() as u8,
+                "Command: {:?}",
+                String::from_utf8_lossy(&command_bytes)
+            );
+        };
+    }
+
+    #[ignore]
+    #[test]
+    fn correct_command_size_fields() {
+        assert_correct_size!(Command::RfPowerOn);
+        assert_correct_size!(Command::RfPowerOff);
+        assert_correct_size!(Command::StartAmpSweep {
+            cw_freq: Frequency::from_khz(100_000),
+            start_attenuation: Attenuation::On,
+            start_power_level: PowerLevel::Low,
+            stop_attenuation: Attenuation::Off,
+            stop_power_level: PowerLevel::Highest,
+            step_delay: Duration::from_secs(1),
+        });
+        assert_correct_size!(Command::StartAmpSweepExp {
+            cw_freq: Frequency::from_khz(100_000),
+            start_power_dbm: -40.,
+            step_power_db: 2.,
+            stop_power_dbm: 0.,
+            step_delay: Duration::from_secs(1),
+        });
+        assert_correct_size!(Command::StartCw {
+            cw_freq: Frequency::from_mhz(1),
+            attenuation: Attenuation::Off,
+            power_level: PowerLevel::Low
+        });
+        assert_correct_size!(Command::StartCwExp {
+            cw_freq: Frequency::from_ghz(1),
+            power_dbm: 10.
+        });
+        assert_correct_size!(Command::StartFreqSweep {
+            start_freq: Frequency::from_ghz(1),
+            attenuation: Attenuation::Off,
+            power_level: PowerLevel::High,
+            sweep_steps: 10,
+            step_freq: Frequency::from_mhz(1),
+            step_delay: Duration::from_secs(2)
+        });
+    }
+}
