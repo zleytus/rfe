@@ -103,7 +103,7 @@ pub struct Config {
     pub max_freq: Frequency,
     pub max_span: Frequency,
     pub rbw: Option<Frequency>,
-    pub amp_offset_db: Option<i16>,
+    pub amp_offset_db: Option<i8>,
     pub calc_mode: Option<CalcMode>,
     pub timestamp: DateTime<Utc>,
 }
