@@ -198,8 +198,13 @@ impl RfExplorer<SpectrumAnalyzer> {
     const MIN_SWEEP_POINTS: u16 = 112;
     const NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
 
-    /// Returns a copy of the latest sweep measured by the RF Explorer.
-    pub fn latest_sweep(&self) -> Option<Sweep> {
+    /// Returns the RF Explorer's current `Config`.
+    pub fn config(&self) -> Config {
+        self.device.config.0.lock().unwrap().unwrap_or_default()
+    }
+
+    /// Returns the most recent `Sweep` measured by the RF Explorer.
+    pub fn sweep(&self) -> Option<Sweep> {
         self.device.sweep.0.lock().unwrap().clone()
     }
 
@@ -210,7 +215,7 @@ impl RfExplorer<SpectrumAnalyzer> {
 
     /// Waits for the RF Explorer to measure its next `Sweep` or for the timeout duration to elapse.
     pub fn wait_for_next_sweep_with_timeout(&self, timeout: Duration) -> Result<Sweep> {
-        let previous_sweep = self.latest_sweep();
+        let previous_sweep = self.sweep();
 
         let (sweep, cond_var) = &*self.device.sweep;
         let (_, timeout_result) = cond_var
