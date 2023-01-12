@@ -2,8 +2,7 @@ use super::{
     sweep::{SweepDataExt, SweepDataLarge, SweepDataStandard},
     Config, DspMode, InputStage, SpectrumAnalyzer, Sweep, TrackingStatus,
 };
-use crate::common::{ScreenData, SerialNumber, SetupInfo};
-use nom::error::{Error, ErrorKind};
+use crate::common::{MessageParseError, ScreenData, SerialNumber, SetupInfo};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Message {
@@ -18,7 +17,7 @@ pub enum Message {
 }
 
 impl crate::common::Message for Message {
-    fn parse(bytes: &[u8]) -> Result<Message, nom::Err<Error<&[u8]>>> {
+    fn parse(bytes: &[u8]) -> Result<Self, MessageParseError> {
         if bytes.starts_with(Config::PREFIX) {
             Ok(Message::Config(Config::parse(bytes)?.1))
         } else if bytes.starts_with(DspMode::PREFIX) {
@@ -46,7 +45,7 @@ impl crate::common::Message for Message {
         } else if bytes.starts_with(TrackingStatus::PREFIX) {
             Ok(Message::TrackingStatus(TrackingStatus::parse(bytes)?.1))
         } else {
-            Err(nom::Err::Failure(Error::new(bytes, ErrorKind::Fail)))
+            Err(MessageParseError::Invalid)
         }
     }
 }

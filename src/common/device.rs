@@ -1,4 +1,4 @@
-use super::{ConnectionResult, Message, SerialNumber, SetupInfo};
+use super::{ConnectionResult, Message, MessageParseError, SerialNumber};
 use serialport::SerialPortInfo;
 use std::io::{self, ErrorKind};
 use std::sync::Arc;
@@ -57,7 +57,7 @@ pub trait Device: Sized + Send + Sync {
                         device.process_message(message);
                         message_buf.clear();
                     }
-                    Err(nom::Err::Incomplete(_)) => {
+                    Err(MessageParseError::Incomplete) => {
                         // Check for the Early-End-of-Transmission (EEOT) byte sequence
                         if let Some(eeot_index) = message_buf
                             .windows(Self::EEOT_BYTES.len())

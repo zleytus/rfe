@@ -3,7 +3,6 @@ use crate::{
     common::{ScreenData, SerialNumber, SetupInfo},
     SignalGenerator,
 };
-use nom::error::{Error, ErrorKind};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Message {
@@ -18,7 +17,7 @@ pub enum Message {
 }
 
 impl crate::common::Message for Message {
-    fn parse(bytes: &[u8]) -> Result<Message, nom::Err<Error<&[u8]>>> {
+    fn parse(bytes: &[u8]) -> Result<Message, crate::common::MessageParseError> {
         if bytes.starts_with(Config::PREFIX) {
             Ok(Message::Config(Config::parse(bytes)?.1))
         } else if bytes.starts_with(ConfigAmpSweep::PREFIX) {
@@ -38,7 +37,7 @@ impl crate::common::Message for Message {
         } else if bytes.starts_with(Temperature::PREFIX) {
             Ok(Message::Temperature(Temperature::parse(bytes)?.1))
         } else {
-            Err(nom::Err::Failure(Error::new(bytes, ErrorKind::Fail)))
+            Err(crate::common::MessageParseError::Invalid)
         }
     }
 }
