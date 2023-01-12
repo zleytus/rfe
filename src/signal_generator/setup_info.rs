@@ -4,7 +4,7 @@ impl SetupInfo<SignalGenerator> {
     pub const PREFIX: &'static [u8] = b"#C3-M:";
 
     pub(crate) fn parse(bytes: &[u8]) -> nom::IResult<&[u8], Self> {
-        SetupInfo::parse_from_bytes_with_prefix(bytes, Self::PREFIX)
+        SetupInfo::parse_with_prefix(bytes, Self::PREFIX)
     }
 }
 

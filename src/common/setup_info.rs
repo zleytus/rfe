@@ -30,7 +30,7 @@ impl<D: Device> SetupInfo<D> {
         }
     }
 
-    pub(crate) fn parse_from_bytes_with_prefix<'a>(
+    pub(crate) fn parse_with_prefix<'a>(
         bytes: &'a [u8],
         prefix: &'static [u8],
     ) -> IResult<&'a [u8], Self> {

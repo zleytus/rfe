@@ -4,7 +4,7 @@ impl SetupInfo<SpectrumAnalyzer> {
     pub const PREFIX: &'static [u8] = b"#C2-M:";
 
     pub(crate) fn parse(bytes: &[u8]) -> nom::IResult<&[u8], Self> {
-        Self::parse_from_bytes_with_prefix(bytes, Self::PREFIX)
+        Self::parse_with_prefix(bytes, Self::PREFIX)
     }
 }
 
