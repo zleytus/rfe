@@ -193,6 +193,30 @@ impl RfExplorer<SignalGenerator> {
         *self.device.temperature.0.lock().unwrap()
     }
 
+    /// Returns the `Model` of the RF Explorer's main module.
+    pub fn main_module_model(&self) -> Model {
+        self.device
+            .setup_info
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("RF Explorer should contain SetupInfo")
+            .main_module_model
+    }
+
+    /// Returns the `Model` of the RF Explorer's expansion module.
+    pub fn expansion_module_model(&self) -> Option<Model> {
+        self.device
+            .setup_info
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("RF Explorer should contain SetupInfo")
+            .expansion_module_model
+    }
+
     /// Starts the signal generator's amplitude sweep mode.
     pub fn start_amp_sweep(
         &self,

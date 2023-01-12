@@ -57,16 +57,6 @@ impl<D: Device> RfExplorer<D> {
         self.device.port_name()
     }
 
-    /// Returns the `Model` of the RF Explorer's main module.
-    pub fn main_module_model(&self) -> Model {
-        self.device.setup_info().main_module_model
-    }
-
-    /// Returns the `Model` of the RF Explorer's expansion module.
-    pub fn expansion_module_model(&self) -> Model {
-        self.device.setup_info().expansion_module_model
-    }
-
     /// Returns the RF Explorer's firmware version.
     pub fn firmware_version(&self) -> String {
         self.device.firmware_version()

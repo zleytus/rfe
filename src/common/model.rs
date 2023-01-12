@@ -6,7 +6,7 @@ use std::{
     str::{self, FromStr},
 };
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
 pub enum Model {
     Rfe433M = 0,
@@ -22,8 +22,6 @@ pub enum Model {
     Rfe4GPlus = 13,
     Rfe6GPlus = 14,
     RfeGen = 60,
-    #[default]
-    None = 255,
 }
 
 impl Model {
@@ -59,7 +57,6 @@ impl Model {
             Model::Rfe6G => 4_850_000_000,
             Model::Rfe4GPlus | Model::Rfe6GPlus => 240_000_000,
             Model::RfeGen => 24_000_000,
-            Model::None => 0,
         }
         .into()
     }
@@ -75,7 +72,6 @@ impl Model {
             Model::Rfe4GPlus => 4_000_000_000,
             Model::Rfe6G | Model::Rfe6GPlus => 6_100_000_000,
             Model::RfeGen => 6_000_000_000,
-            Model::None => 0,
         }
         .into()
     }
@@ -92,7 +88,6 @@ impl Model {
             Model::RfeWSub1GPlus => 100_000,
             Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6G | Model::Rfe6GPlus => 2_000_000,
             Model::RfeGen => 1_000_000,
-            Model::None => 0,
         }
         .into()
     }
@@ -105,9 +100,24 @@ impl Model {
             Model::RfeWSub3G | Model::RfeProAudio | Model::Rfe6G => 600_000_000,
             Model::RfeWSub1GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => 960_000_000,
             Model::RfeGen => 1_000_000_000,
-            Model::None => 0,
         }
         .into()
+    }
+
+    pub(crate) fn parse_main_module_model(s: &str) -> Result<Model, ()> {
+        Model::from_str(s)
+    }
+
+    pub(crate) fn parse_expansion_module_model(s: &str) -> Result<Option<Model>, ()> {
+        if let Ok(model) = Model::from_str(s) {
+            Ok(Some(model))
+        } else {
+            if u8::from_str(s) == Ok(255) {
+                return Ok(None);
+            } else {
+                return Err(());
+            }
+        }
     }
 }
 
@@ -135,7 +145,6 @@ impl Display for Model {
             Model::Rfe4GPlus => write!(f, "4G+"),
             Model::Rfe6GPlus => write!(f, "6G+"),
             Model::RfeGen => write!(f, "RFEGen"),
-            Model::None => write!(f, "None"),
         }
     }
 }

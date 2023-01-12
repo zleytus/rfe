@@ -40,7 +40,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeGen);
-        assert_eq!(setup.expansion_module_model, Model::None);
+        assert_eq!(setup.expansion_module_model, None);
         assert_eq!(setup.firmware_version, "01.15");
     }
 }

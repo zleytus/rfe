@@ -237,6 +237,30 @@ impl RfExplorer<SpectrumAnalyzer> {
         *self.device.input_stage.0.lock().unwrap()
     }
 
+    /// Returns the `Model` of the RF Explorer's main module.
+    pub fn main_module_model(&self) -> Model {
+        self.device
+            .setup_info
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("RF Explorer should contain SetupInfo")
+            .main_module_model
+    }
+
+    /// Returns the `Model` of the RF Explorer's expansion module.
+    pub fn expansion_module_model(&self) -> Option<Model> {
+        self.device
+            .setup_info
+            .0
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("RF Explorer should contain SetupInfo")
+            .expansion_module_model
+    }
+
     /// Returns which radio module is active (main or expansion)
     pub fn active_module(&self) -> RadioModule {
         self.config().active_radio_module
@@ -244,7 +268,7 @@ impl RfExplorer<SpectrumAnalyzer> {
 
     /// Returns which radio module is inactive (main or expansion)
     pub fn inactive_module(&self) -> Option<RadioModule> {
-        if self.expansion_module_model() != Model::None {
+        if self.expansion_module_model().is_some() {
             match self.config().active_radio_module {
                 RadioModule::Main => Some(RadioModule::Expansion),
                 RadioModule::Expansion => Some(RadioModule::Main),
@@ -258,77 +282,17 @@ impl RfExplorer<SpectrumAnalyzer> {
     pub fn active_module_model(&self) -> Model {
         match self.config().active_radio_module {
             RadioModule::Main => self.main_module_model(),
-            RadioModule::Expansion => self.expansion_module_model(),
+            RadioModule::Expansion => self
+                .expansion_module_model()
+                .unwrap_or_else(|| self.main_module_model()),
         }
     }
 
     /// Returns the model of the inactive RF Explorer radio module.
-    pub fn inactive_module_model(&self) -> Model {
+    pub fn inactive_module_model(&self) -> Option<Model> {
         match self.config().active_radio_module {
             RadioModule::Main => self.expansion_module_model(),
-            RadioModule::Expansion => self.main_module_model(),
-        }
-    }
-
-    /// Switches the spectrum analyzer's active module to the main module.
-    #[tracing::instrument]
-    pub fn use_main_module(&mut self) -> Result<()> {
-        self.send_command(Command::SwitchModuleMain)?;
-
-        // Check if the RF Explorer is already using the main module
-        if self.config().active_radio_module == RadioModule::Main {
-            return Ok(());
-        }
-
-        // Wait until the config shows that the main module is active
-        let (lock, condvar) = &*self.device.config;
-        let (_, timeout_result) = condvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| {
-                    config
-                        .filter(|config| config.active_radio_module == RadioModule::Main)
-                        .is_none()
-                },
-            )
-            .unwrap();
-
-        if !timeout_result.timed_out() {
-            Ok(())
-        } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
-        }
-    }
-
-    /// Switches the spectrum analyzer's active module to the expansion module.
-    #[tracing::instrument]
-    pub fn use_expansion_module(&mut self) -> Result<()> {
-        self.send_command(Command::SwitchModuleExp)?;
-
-        // Check if the RF Explorer is already using the main module
-        if self.config().active_radio_module == RadioModule::Expansion {
-            return Ok(());
-        }
-
-        // Wait until the config shows that the expansion module is active
-        let (lock, condvar) = &*self.device.config;
-        let (_, timeout_result) = condvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| {
-                    config
-                        .filter(|config| config.active_radio_module == RadioModule::Expansion)
-                        .is_none()
-                },
-            )
-            .unwrap();
-
-        if !timeout_result.timed_out() {
-            Ok(())
-        } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+            RadioModule::Expansion => Some(self.main_module_model()),
         }
     }
 

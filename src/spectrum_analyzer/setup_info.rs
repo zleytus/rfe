@@ -40,7 +40,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1G);
-        assert_eq!(setup.expansion_module_model, Model::None);
+        assert_eq!(setup.expansion_module_model, None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -50,7 +50,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::Rfe24G);
-        assert_eq!(setup.expansion_module_model, Model::None);
+        assert_eq!(setup.expansion_module_model, None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -60,7 +60,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1G);
-        assert_eq!(setup.expansion_module_model, Model::Rfe24G);
+        assert_eq!(setup.expansion_module_model, Some(Model::Rfe24G));
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -70,7 +70,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1G);
-        assert_eq!(setup.expansion_module_model, Model::RfeWSub3G);
+        assert_eq!(setup.expansion_module_model, Some(Model::RfeWSub3G));
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -80,7 +80,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::Rfe6G);
-        assert_eq!(setup.expansion_module_model, Model::RfeWSub3G);
+        assert_eq!(setup.expansion_module_model, Some(Model::RfeWSub3G));
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -90,7 +90,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
-        assert_eq!(setup.expansion_module_model, Model::None);
+        assert_eq!(setup.expansion_module_model, None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -100,7 +100,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
-        assert_eq!(setup.expansion_module_model, Model::Rfe24GPlus);
+        assert_eq!(setup.expansion_module_model, Some(Model::Rfe24GPlus));
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -110,7 +110,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
-        assert_eq!(setup.expansion_module_model, Model::Rfe4GPlus);
+        assert_eq!(setup.expansion_module_model, Some(Model::Rfe4GPlus));
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 
@@ -120,7 +120,7 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(setup.main_module_model, Model::RfeWSub1GPlus);
-        assert_eq!(setup.expansion_module_model, Model::Rfe6GPlus);
+        assert_eq!(setup.expansion_module_model, Some(Model::Rfe6GPlus));
         assert_eq!(setup.firmware_version, "XX.XXXX");
     }
 

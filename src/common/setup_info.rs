@@ -6,12 +6,12 @@ use nom::{
     combinator::{all_consuming, map, map_res, opt},
     IResult,
 };
-use std::{fmt::Debug, marker::PhantomData, str, str::FromStr};
+use std::{fmt::Debug, marker::PhantomData, str};
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct SetupInfo<D: Device = SpectrumAnalyzer> {
     pub main_module_model: Model,
-    pub expansion_module_model: Model,
+    pub expansion_module_model: Option<Model>,
     pub firmware_version: String,
     pub(crate) marker: PhantomData<D>,
 }
@@ -19,7 +19,7 @@ pub struct SetupInfo<D: Device = SpectrumAnalyzer> {
 impl<D: Device> SetupInfo<D> {
     pub fn new(
         main_module_model: Model,
-        expansion_module_model: Model,
+        expansion_module_model: Option<Model>,
         firmware_version: String,
     ) -> Self {
         SetupInfo {
@@ -38,21 +38,18 @@ impl<D: Device> SetupInfo<D> {
         let (bytes, _) = tag(prefix)(bytes)?;
 
         // Parse the main model
-        let (bytes, main_model) =
-            map_res(map_res(take(3u8), str::from_utf8), Model::from_str)(bytes)?;
-
-        if main_model == Model::None {
-            return Err(nom::Err::Error(nom::error::Error::new(
-                bytes,
-                nom::error::ErrorKind::Fail,
-            )));
-        }
+        let (bytes, main_model) = map_res(
+            map_res(take(3u8), str::from_utf8),
+            Model::parse_main_module_model,
+        )(bytes)?;
 
         let (bytes, _) = tag(",")(bytes)?;
 
         // Parse the expansion model
-        let (bytes, exp_model) =
-            map_res(map_res(take(3u8), str::from_utf8), Model::from_str)(bytes)?;
+        let (bytes, exp_model) = map_res(
+            map_res(take(3u8), str::from_utf8),
+            Model::parse_expansion_module_model,
+        )(bytes)?;
 
         let (bytes, _) = tag(",")(bytes)?;
 
@@ -64,12 +61,6 @@ impl<D: Device> SetupInfo<D> {
         let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
 
         Ok((bytes, Self::new(main_model, exp_model, fw_version)))
-    }
-}
-
-impl<D: Device> Default for SetupInfo<D> {
-    fn default() -> Self {
-        SetupInfo::new(Model::default(), Model::default(), String::default())
     }
 }
 
