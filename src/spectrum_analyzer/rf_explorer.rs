@@ -3,7 +3,7 @@ use super::{
 };
 use crate::common::{
     self, Callback, ConnectionError, ConnectionResult, Device, Error, Frequency, Model, Result,
-    RfExplorer, SerialNumber, SerialPortReader, SetupInfo,
+    RfExplorer, ScreenData, SerialNumber, SerialPortReader, SetupInfo,
 };
 use num_enum::IntoPrimitive;
 use serialport::SerialPortInfo;
@@ -32,6 +32,7 @@ pub struct SpectrumAnalyzer {
     config_callback: Arc<Mutex<Callback<Config>>>,
     sweep: Arc<(Mutex<Option<Sweep>>, Condvar)>,
     sweep_callback: Arc<Mutex<Callback<Sweep>>>,
+    screen_data: Arc<(Mutex<Option<ScreenData>>, Condvar)>,
     dsp_mode: Arc<(Mutex<Option<DspMode>>, Condvar)>,
     tracking_status: Arc<(Mutex<Option<TrackingStatus>>, Condvar)>,
     input_stage: Arc<(Mutex<Option<InputStage>>, Condvar)>,
@@ -55,6 +56,7 @@ impl Device for SpectrumAnalyzer {
             config_callback: Arc::new(Mutex::new(None)),
             sweep: Arc::new((Mutex::new(None), Condvar::new())),
             sweep_callback: Arc::new(Mutex::new(None)),
+            screen_data: Arc::new((Mutex::new(None), Condvar::new())),
             dsp_mode: Arc::new((Mutex::new(None), Condvar::new())),
             tracking_status: Arc::new((Mutex::new(None), Condvar::new())),
             input_stage: Arc::new((Mutex::new(None), Condvar::new())),
@@ -109,6 +111,10 @@ impl Device for SpectrumAnalyzer {
                     }
                 }
             }
+            Message::ScreenData(screen_data) => {
+                *self.screen_data.0.lock().unwrap() = Some(screen_data);
+                self.screen_data.1.notify_one();
+            }
             Message::DspMode(dsp_mode) => {
                 *self.dsp_mode.0.lock().unwrap() = Some(dsp_mode);
                 self.dsp_mode.1.notify_one();
@@ -129,7 +135,6 @@ impl Device for SpectrumAnalyzer {
                 *self.setup_info.0.lock().unwrap() = Some(setup_info);
                 self.setup_info.1.notify_one();
             }
-            _ => (),
         }
     }
 
@@ -218,9 +223,31 @@ impl RfExplorer<SpectrumAnalyzer> {
         }
     }
 
-    /// Returns a copy of the spectrum analyzer's current config.
-    pub fn config(&self) -> Config {
-        self.device.config.0.lock().unwrap().unwrap_or_default()
+    /// Returns the most recent `ScreenData` captured by the RF Explorer.
+    pub fn screen_data(&self) -> Option<ScreenData> {
+        self.device.screen_data.0.lock().unwrap().clone()
+    }
+
+    /// Waits for the RF Explorer to capture its next `ScreenData`.
+    pub fn wait_for_next_screen_data(&self) -> Result<ScreenData> {
+        self.wait_for_next_screen_data_with_timeout(Self::NEXT_SCREEN_DATA_TIMEOUT)
+    }
+
+    /// Waits for the RF Explorer to capture its next `ScreenData` or for the timeout duration to elapse.
+    pub fn wait_for_next_screen_data_with_timeout(&self, timeout: Duration) -> Result<ScreenData> {
+        let previous_screen_data = self.screen_data();
+
+        let (screen_data, condvar) = &*self.device.screen_data;
+        let (screen_data, wait_result) = condvar
+            .wait_timeout_while(screen_data.lock().unwrap(), timeout, |screen_data| {
+                *screen_data == previous_screen_data || screen_data.is_none()
+            })
+            .unwrap();
+
+        match &*screen_data {
+            Some(screen_data) if !wait_result.timed_out() => Ok(screen_data.clone()),
+            _ => Err(Error::TimedOut(timeout)),
+        }
     }
 
     /// Returns the spectrum analyzer's DSP mode.

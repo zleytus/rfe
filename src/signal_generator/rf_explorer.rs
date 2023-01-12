@@ -3,9 +3,10 @@ use super::{
     Temperature,
 };
 use crate::common::{
-    Callback, ConnectionError, ConnectionResult, Device, SerialNumber, SerialPortReader, SetupInfo,
+    Callback, ConnectionError, ConnectionResult, Device, Error, Result, SerialNumber,
+    SerialPortReader, SetupInfo,
 };
-use crate::{Frequency, RfExplorer};
+use crate::{Frequency, Model, RfExplorer, ScreenData};
 use serialport::SerialPortInfo;
 use std::fmt::Debug;
 use std::io::{self, BufRead};
@@ -25,6 +26,7 @@ pub struct SignalGenerator {
     config_cw_callback: Arc<Mutex<Callback<ConfigCw>>>,
     config_freq_sweep: Arc<(Mutex<Option<ConfigFreqSweep>>, Condvar)>,
     config_freq_sweep_callback: Arc<Mutex<Callback<ConfigFreqSweep>>>,
+    screen_data: Arc<(Mutex<Option<ScreenData>>, Condvar)>,
     temperature: Arc<(Mutex<Option<Temperature>>, Condvar)>,
     setup_info: Arc<(Mutex<Option<SetupInfo<Self>>>, Condvar)>,
     serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
@@ -49,6 +51,7 @@ impl Device for SignalGenerator {
             config_amp_sweep_callback: Arc::new(Mutex::new(None)),
             config_freq_sweep: Arc::new((Mutex::new(None), Condvar::new())),
             config_freq_sweep_callback: Arc::new(Mutex::new(None)),
+            screen_data: Arc::new((Mutex::new(None), Condvar::new())),
             temperature: Arc::new((Mutex::new(None), Condvar::new())),
             setup_info: Arc::new((Mutex::new(None), Condvar::new())),
             serial_number: Arc::new((Mutex::new(None), Condvar::new())),
@@ -101,6 +104,10 @@ impl Device for SignalGenerator {
                 *self.config_freq_sweep.0.lock().unwrap() = Some(config);
                 self.config_freq_sweep.1.notify_one();
             }
+            Message::ScreenData(screen_data) => {
+                *self.screen_data.0.lock().unwrap() = Some(screen_data);
+                self.screen_data.1.notify_one();
+            }
             Message::SerialNumber(serial_number) => {
                 *self.serial_number.0.lock().unwrap() = Some(serial_number);
                 self.serial_number.1.notify_one();
@@ -113,7 +120,6 @@ impl Device for SignalGenerator {
                 *self.temperature.0.lock().unwrap() = Some(temperature);
                 self.temperature.1.notify_one();
             }
-            _ => (),
         }
     }
 
@@ -186,6 +192,33 @@ impl RfExplorer<SignalGenerator> {
     /// Returns the signal generator's frequency sweep mode configuration.
     pub fn config_freq_sweep(&self) -> Option<ConfigFreqSweep> {
         *self.device.config_freq_sweep.0.lock().unwrap()
+    }
+
+    /// Returns the most recent `ScreenData` captured by the RF Explorer.
+    pub fn screen_data(&self) -> Option<ScreenData> {
+        self.device.screen_data.0.lock().unwrap().clone()
+    }
+
+    /// Waits for the RF Explorer to capture its next `ScreenData`.
+    pub fn wait_for_next_screen_data(&self) -> Result<ScreenData> {
+        self.wait_for_next_screen_data_with_timeout(Self::NEXT_SCREEN_DATA_TIMEOUT)
+    }
+
+    /// Waits for the RF Explorer to capture its next `ScreenData` or for the timeout duration to elapse.
+    pub fn wait_for_next_screen_data_with_timeout(&self, timeout: Duration) -> Result<ScreenData> {
+        let previous_screen_data = self.screen_data();
+
+        let (screen_data, condvar) = &*self.device.screen_data;
+        let (screen_data, wait_result) = condvar
+            .wait_timeout_while(screen_data.lock().unwrap(), timeout, |screen_data| {
+                *screen_data == previous_screen_data || screen_data.is_none()
+            })
+            .unwrap();
+
+        match &*screen_data {
+            Some(screen_data) if !wait_result.timed_out() => Ok(screen_data.clone()),
+            _ => Err(Error::TimedOut(timeout)),
+        }
     }
 
     /// Returns the signal generator's temperature.
