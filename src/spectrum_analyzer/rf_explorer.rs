@@ -11,7 +11,7 @@ use std::{
     fmt::Debug,
     io::{self, BufRead},
     ops::RangeInclusive,
-    sync::{Arc, Condvar, Mutex},
+    sync::{Arc, Condvar, Mutex, MutexGuard, WaitTimeoutResult},
     thread::JoinHandle,
     time::Duration,
 };
@@ -70,7 +70,7 @@ impl Device for SpectrumAnalyzer {
 
         // Wait to receive a Config before considering this a valid RF Explorer spectrum analyzer
         let (lock, cvar) = &*device.config;
-        let (_, timeout_result) = cvar
+        let _ = cvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 SpectrumAnalyzer::RECEIVE_FIRST_CONFIG_TIMEOUT,
@@ -78,7 +78,10 @@ impl Device for SpectrumAnalyzer {
             )
             .unwrap();
 
-        if !timeout_result.timed_out() {
+        // The spectrum analyzer is only valid after receiving a SetupInfo and Config message
+        if device.setup_info.0.lock().unwrap().is_some()
+            && device.config.0.lock().unwrap().is_some()
+        {
             Ok(device)
         } else {
             Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))

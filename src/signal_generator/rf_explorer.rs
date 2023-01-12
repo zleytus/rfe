@@ -63,7 +63,7 @@ impl Device for SignalGenerator {
 
         // Wait to receive a Config before considering this a valid RF Explorer signal generator
         let (lock, cvar) = &*device.config;
-        let (_, timeout_result) = cvar
+        let _ = cvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 SignalGenerator::RECEIVE_FIRST_CONFIG_TIMEOUT,
@@ -71,7 +71,10 @@ impl Device for SignalGenerator {
             )
             .unwrap();
 
-        if !timeout_result.timed_out() {
+        // The signal generator is only valid after receiving a SetupInfo and Config message
+        if device.setup_info.0.lock().unwrap().is_some()
+            && device.config.0.lock().unwrap().is_some()
+        {
             Ok(device)
         } else {
             Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
