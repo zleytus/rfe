@@ -218,16 +218,15 @@ impl RfExplorer<SpectrumAnalyzer> {
         let previous_sweep = self.sweep();
 
         let (sweep, cond_var) = &*self.device.sweep;
-        let (_, timeout_result) = cond_var
+        let (sweep, wait_result) = cond_var
             .wait_timeout_while(sweep.lock().unwrap(), timeout, |sweep| {
                 *sweep == previous_sweep || sweep.is_none()
             })
             .unwrap();
 
-        if !timeout_result.timed_out() {
-            Ok(self.latest_sweep().unwrap())
-        } else {
-            Err(Error::TimedOut(timeout))
+        match &*sweep {
+            Some(sweep) if !wait_result.timed_out() => Ok(sweep.clone()),
+            _ => Err(Error::TimedOut(timeout)),
         }
     }
 
@@ -352,13 +351,13 @@ impl RfExplorer<SpectrumAnalyzer> {
 
         // Send the command to enter tracking mode
         self.send_command(Command::StartTracking {
-            start_freq: Frequency::from_hz(start_hz),
-            step_freq: Frequency::from_hz(step_hz),
+            start: Frequency::from_hz(start_hz),
+            step: Frequency::from_hz(step_hz),
         })?;
 
         // Wait to see if we receive a tracking status message in response
         let (lock, condvar) = &*self.device.tracking_status;
-        let (tracking_status, timeout_result) = condvar
+        let (tracking_status, wait_result) = condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
@@ -366,7 +365,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             )
             .unwrap();
 
-        if !timeout_result.timed_out() {
+        if !wait_result.timed_out() {
             Ok(tracking_status.unwrap_or_default())
         } else {
             Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
@@ -473,16 +472,11 @@ impl RfExplorer<SpectrumAnalyzer> {
 
         // Wait until the current config contains the requested values
         info!("Waiting to receive updated config");
-        let (lock, condvar) = &*self.device.config;
-        let (_, timeout_result) = condvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| config.filter(config_contains_requested_values).is_none(),
-            )
-            .unwrap();
+        let (_, wait_result) = self.wait_for_config_while(|config| {
+            config.filter(config_contains_requested_values).is_none()
+        });
 
-        if !timeout_result.timed_out() {
+        if !wait_result.timed_out() {
             Ok(())
         } else {
             Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
@@ -531,20 +525,13 @@ impl RfExplorer<SpectrumAnalyzer> {
 
         // Wait until the current config contains the requested sweep points
         info!("Waiting to receive updated config");
-        let (lock, condvar) = &*self.device.config;
-        let (_, timeout_result) = condvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
-                |config| {
-                    config
-                        .filter(|config| config.sweep_points == expected_sweep_points)
-                        .is_none()
-                },
-            )
-            .unwrap();
+        let (_, wait_result) = self.wait_for_config_while(|config| {
+            config
+                .filter(|config| config.sweep_points == expected_sweep_points)
+                .is_none()
+        });
 
-        if !timeout_result.timed_out() {
+        if !wait_result.timed_out() {
             Ok(())
         } else {
             warn!("Failed to receive updated config");
@@ -583,7 +570,7 @@ impl RfExplorer<SpectrumAnalyzer> {
 
         // Wait to see if we receive a DSP mode message in response
         let (lock, condvar) = &*self.device.dsp_mode;
-        let (_, timeout_result) = condvar
+        let (_, wait_result) = condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
@@ -591,11 +578,25 @@ impl RfExplorer<SpectrumAnalyzer> {
             )
             .unwrap();
 
-        if !timeout_result.timed_out() {
+        if !wait_result.timed_out() {
             Ok(())
         } else {
             Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
         }
+    }
+
+    fn wait_for_config_while(
+        &self,
+        condition: impl FnMut(&mut Option<Config>) -> bool,
+    ) -> (MutexGuard<Option<Config>>, WaitTimeoutResult) {
+        let (lock, condvar) = &*self.device.config;
+        condvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
+                condition,
+            )
+            .unwrap()
     }
 
     #[tracing::instrument]
