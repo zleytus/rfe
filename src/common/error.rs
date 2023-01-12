@@ -3,6 +3,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[error("This operation requires firmware version {} or later", .0)]
+    IncompatibleFirmware(String),
+
     #[error("Invalid input: {}", .0)]
     InvalidInput(String),
 
