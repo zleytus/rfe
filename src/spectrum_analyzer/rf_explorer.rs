@@ -384,13 +384,13 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Sets the start and stop frequency of sweeps measured by the spectrum analyzer.
     pub fn set_start_stop(
         &self,
-        start_freq: impl Into<Frequency>,
-        stop_freq: impl Into<Frequency>,
+        start: impl Into<Frequency>,
+        stop: impl Into<Frequency>,
     ) -> Result<()> {
         let config = self.config();
         self.set_config(
-            start_freq.into(),
-            stop_freq.into(),
+            start.into(),
+            stop.into(),
             config.min_amp_dbm,
             config.max_amp_dbm,
         )
@@ -412,12 +412,11 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Sets the center frequency and span of sweeps measured by the spectrum analyzer.
     pub fn set_center_span(
         &self,
-        center_freq: impl Into<Frequency>,
-        span_freq: impl Into<Frequency>,
+        center: impl Into<Frequency>,
+        span: impl Into<Frequency>,
     ) -> Result<()> {
-        let center_freq = center_freq.into();
-        let span_freq = span_freq.into();
-        self.set_start_stop(center_freq - span_freq / 2, center_freq + span_freq / 2)
+        let (center, span) = (center.into(), span.into());
+        self.set_start_stop(center - span / 2, center + span / 2)
     }
 
     /// Sets the center frequency, span, and number of points of sweeps measured by the spectrum analyzer.
@@ -435,41 +434,36 @@ impl RfExplorer<SpectrumAnalyzer> {
     #[tracing::instrument(skip(self))]
     pub fn set_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         let config = self.config();
-        self.set_config(
-            config.start_freq,
-            config.stop_freq,
-            min_amp_dbm,
-            max_amp_dbm,
-        )
+        self.set_config(config.start, config.stop, min_amp_dbm, max_amp_dbm)
     }
 
     /// Sets the spectrum analyzer's configuration.
     #[tracing::instrument(skip(self))]
     fn set_config(
         &self,
-        start_freq: Frequency,
-        stop_freq: Frequency,
+        start: Frequency,
+        stop: Frequency,
         min_amp_dbm: i16,
         max_amp_dbm: i16,
     ) -> Result<()> {
         info!("Validating start and stop frequencies");
-        self.validate_start_stop(start_freq, stop_freq)?;
+        self.validate_start_stop(start, stop)?;
         info!("Validating min and max amplitudes");
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
         // Send the command to change the config
         info!("Sending 'SetConfig' command");
         self.send_command(Command::SetConfig {
-            start_freq,
-            stop_freq,
+            start,
+            stop,
             min_amp_dbm,
             max_amp_dbm,
         })?;
 
         // Function to check whether a config contains the requested values
         let config_contains_requested_values = |config: &Config| {
-            config.start_freq.abs_diff(start_freq) < config.step_freq
-                && config.stop_freq.abs_diff(stop_freq) < config.step_freq
+            config.start.abs_diff(start) < config.step
+                && config.stop.abs_diff(stop) < config.step
                 && config.min_amp_dbm == min_amp_dbm
                 && config.max_amp_dbm == max_amp_dbm
         };
@@ -607,8 +601,8 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     #[tracing::instrument]
-    fn validate_start_stop(&self, start_freq: Frequency, stop_freq: Frequency) -> Result<()> {
-        if start_freq >= stop_freq {
+    fn validate_start_stop(&self, start: Frequency, stop: Frequency) -> Result<()> {
+        if start >= stop {
             return Err(Error::InvalidInput(
                 "The start frequency must be less than the stop frequency".to_string(),
             ));
@@ -617,27 +611,27 @@ impl RfExplorer<SpectrumAnalyzer> {
         let active_model = self.active_module_model();
 
         let min_max_freq = active_model.min_freq()..=active_model.max_freq();
-        if !min_max_freq.contains(&start_freq) {
+        if !min_max_freq.contains(&start) {
             return Err(Error::InvalidInput(format!(
                 "The start frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
-                start_freq.as_mhz_f64(),
+                start.as_mhz_f64(),
                 min_max_freq.start().as_mhz_f64(),
                 min_max_freq.end().as_mhz_f64()
             )));
-        } else if !min_max_freq.contains(&stop_freq) {
+        } else if !min_max_freq.contains(&stop) {
             return Err(Error::InvalidInput(format!(
                 "The stop frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
-                stop_freq.as_mhz(),
+                stop.as_mhz(),
                 min_max_freq.start().as_mhz_f64(),
                 min_max_freq.end().as_mhz_f64()
             )));
         }
 
         let min_max_span = active_model.min_span()..=active_model.max_span();
-        if !min_max_span.contains(&(stop_freq - start_freq)) {
+        if !min_max_span.contains(&(stop - start)) {
             return Err(Error::InvalidInput(format!(
                 "The span {} MHz is not within the RF Explorer's span range of {}-{} MHz",
-                (stop_freq - start_freq).as_mhz_f64(),
+                (stop - start).as_mhz_f64(),
                 min_max_span.start().as_mhz_f64(),
                 min_max_span.end().as_mhz_f64()
             )));

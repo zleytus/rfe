@@ -34,10 +34,10 @@ pub enum RfPower {
 
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct Config {
-    pub start_freq: Frequency,
-    pub cw_freq: Frequency,
+    pub start: Frequency,
+    pub cw: Frequency,
     pub total_steps: u32,
-    pub step_freq: Frequency,
+    pub step: Frequency,
     pub attenuation: Attenuation,
     pub power_level: PowerLevel,
     pub sweep_power_steps: u16,
@@ -57,12 +57,12 @@ impl Config {
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, start_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the cw frequency
-        let (bytes, cw_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, cw_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -72,7 +72,7 @@ impl Config {
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, step_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, step_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -125,10 +125,10 @@ impl Config {
         Ok((
             bytes,
             Config {
-                start_freq: Frequency::from_khz(start_freq_khz),
-                cw_freq: Frequency::from_khz(cw_freq_khz),
+                start: Frequency::from_khz(start_khz),
+                cw: Frequency::from_khz(cw_khz),
                 total_steps,
-                step_freq: Frequency::from_khz(step_freq_khz),
+                step: Frequency::from_khz(step_khz),
                 attenuation,
                 power_level,
                 sweep_power_steps,
@@ -151,10 +151,10 @@ mod tests {
     fn parse_config() {
         let bytes = b"#C3-*:0510000,0186525,0005,0001000,0,3,0000,0,0,1,3,0,00100\r\n";
         let config = Config::parse(bytes.as_ref()).unwrap().1;
-        assert_eq!(config.start_freq.as_hz(), 510_000_000);
-        assert_eq!(config.cw_freq.as_hz(), 186_525_000);
+        assert_eq!(config.start.as_hz(), 510_000_000);
+        assert_eq!(config.cw.as_hz(), 186_525_000);
         assert_eq!(config.total_steps, 5);
-        assert_eq!(config.step_freq.as_hz(), 1_000_000);
+        assert_eq!(config.step.as_hz(), 1_000_000);
         assert_eq!(config.attenuation, Attenuation::On);
         assert_eq!(config.power_level, PowerLevel::Highest);
         assert_eq!(config.sweep_power_steps, 0);

@@ -6,7 +6,7 @@ use nom::{bytes::complete::tag, IResult};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ConfigCw {
-    pub cw_freq: Frequency,
+    pub cw: Frequency,
     pub total_steps: u32,
     pub step_freq: Frequency,
     pub attenuation: Attenuation,
@@ -22,7 +22,7 @@ impl ConfigCw {
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
         // Parse the CW frequency
-        let (bytes, cw_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, cw_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -37,7 +37,7 @@ impl ConfigCw {
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, step_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, step_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -60,9 +60,9 @@ impl ConfigCw {
         Ok((
             bytes,
             ConfigCw {
-                cw_freq: Frequency::from_khz(cw_freq_khz),
+                cw: Frequency::from_khz(cw_khz),
                 total_steps,
-                step_freq: Frequency::from_khz(step_freq_khz),
+                step_freq: Frequency::from_khz(step_khz),
                 attenuation,
                 power_level,
                 rf_power,
@@ -79,7 +79,7 @@ mod tests {
     fn parse_config_cw() {
         let bytes = b"#C3-G:0186525,0186525,0005,0001000,0,3,0\r\n";
         let config_cw = ConfigCw::parse(bytes.as_ref()).unwrap().1;
-        assert_eq!(config_cw.cw_freq.as_khz(), 186_525);
+        assert_eq!(config_cw.cw.as_khz(), 186_525);
         assert_eq!(config_cw.total_steps, 5);
         assert_eq!(config_cw.step_freq.as_khz(), 1_000);
         assert_eq!(config_cw.attenuation, Attenuation::On);

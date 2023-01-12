@@ -205,7 +205,7 @@ impl RfExplorer<SignalGenerator> {
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartAmpSweep {
-            cw_freq: cw.into(),
+            cw: cw.into(),
             start_attenuation,
             start_power_level,
             stop_attenuation,
@@ -224,7 +224,7 @@ impl RfExplorer<SignalGenerator> {
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartAmpSweepExp {
-            cw_freq: cw.into(),
+            cw: cw.into(),
             start_power_dbm,
             step_power_db,
             stop_power_dbm,
@@ -240,7 +240,7 @@ impl RfExplorer<SignalGenerator> {
         power_level: PowerLevel,
     ) -> io::Result<()> {
         self.send_command(Command::StartCw {
-            cw_freq: cw.into(),
+            cw: cw.into(),
             attenuation,
             power_level,
         })
@@ -249,7 +249,7 @@ impl RfExplorer<SignalGenerator> {
     /// Starts the signal generator's CW mode using the expansion module.
     pub fn start_cw_exp(&self, cw: impl Into<Frequency>, power_dbm: f64) -> io::Result<()> {
         self.send_command(Command::StartCwExp {
-            cw_freq: cw.into(),
+            cw: cw.into(),
             power_dbm,
         })
     }
@@ -265,11 +265,11 @@ impl RfExplorer<SignalGenerator> {
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartFreqSweep {
-            start_freq: start.into(),
+            start: start.into(),
             attenuation,
             power_level,
             sweep_steps,
-            step_freq: Frequency::from_hz(step_hz),
+            step: Frequency::from_hz(step_hz),
             step_delay,
         })
     }
@@ -284,10 +284,10 @@ impl RfExplorer<SignalGenerator> {
         step_delay: Duration,
     ) -> io::Result<()> {
         self.send_command(Command::StartFreqSweepExp {
-            start_freq: start.into(),
+            start: start.into(),
             power_dbm,
             sweep_steps,
-            step_freq: step.into(),
+            step: step.into(),
             step_delay,
         })
     }
@@ -302,11 +302,11 @@ impl RfExplorer<SignalGenerator> {
         step: impl Into<Frequency>,
     ) -> io::Result<()> {
         self.send_command(Command::StartTracking {
-            start_freq: start.into(),
+            start: start.into(),
             attenuation,
             power_level,
             sweep_steps,
-            step_freq: step.into(),
+            step: step.into(),
         })
     }
 
@@ -319,10 +319,10 @@ impl RfExplorer<SignalGenerator> {
         step: impl Into<Frequency>,
     ) -> io::Result<()> {
         self.send_command(Command::StartTrackingExp {
-            start_freq: start.into(),
+            start: start.into(),
             power_dbm,
             sweep_steps,
-            step_freq: step.into(),
+            step: step.into(),
         })
     }
 

@@ -7,9 +7,9 @@ use std::time::Duration;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ConfigFreqSweep {
-    pub start_freq: Frequency,
+    pub start: Frequency,
     pub total_steps: u32,
-    pub step_freq: Frequency,
+    pub step: Frequency,
     pub attenuation: Attenuation,
     pub power_level: PowerLevel,
     pub rf_power: RfPower,
@@ -24,7 +24,7 @@ impl ConfigFreqSweep {
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, start_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -34,7 +34,7 @@ impl ConfigFreqSweep {
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, step_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, step_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -62,9 +62,9 @@ impl ConfigFreqSweep {
         Ok((
             bytes,
             ConfigFreqSweep {
-                start_freq: Frequency::from_khz(start_freq_khz),
+                start: Frequency::from_khz(start_khz),
                 total_steps,
-                step_freq: Frequency::from_khz(step_freq_khz),
+                step: Frequency::from_khz(step_khz),
                 attenuation,
                 power_level,
                 rf_power,
@@ -82,9 +82,9 @@ mod tests {
     fn parse_config_freq_sweep() {
         let bytes = b"#C3-F:0186525,0005,0001000,0,3,0,00100";
         let config_freq_sweep = ConfigFreqSweep::parse(bytes.as_ref()).unwrap().1;
-        assert_eq!(config_freq_sweep.start_freq.as_khz(), 186_525);
+        assert_eq!(config_freq_sweep.start.as_khz(), 186_525);
         assert_eq!(config_freq_sweep.total_steps, 5);
-        assert_eq!(config_freq_sweep.step_freq.as_khz(), 1_000);
+        assert_eq!(config_freq_sweep.step.as_khz(), 1_000);
         assert_eq!(config_freq_sweep.attenuation, Attenuation::On);
         assert_eq!(config_freq_sweep.power_level, PowerLevel::Highest);
         assert_eq!(config_freq_sweep.rf_power, RfPower::On);

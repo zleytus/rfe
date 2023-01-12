@@ -7,7 +7,7 @@ pub(crate) enum Command {
     RfPowerOn,
     RfPowerOff,
     StartAmpSweep {
-        cw_freq: Frequency,
+        cw: Frequency,
         start_attenuation: Attenuation,
         start_power_level: PowerLevel,
         stop_attenuation: Attenuation,
@@ -15,48 +15,48 @@ pub(crate) enum Command {
         step_delay: Duration,
     },
     StartAmpSweepExp {
-        cw_freq: Frequency,
+        cw: Frequency,
         start_power_dbm: f64,
         step_power_db: f64,
         stop_power_dbm: f64,
         step_delay: Duration,
     },
     StartCw {
-        cw_freq: Frequency,
+        cw: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
     },
     StartCwExp {
-        cw_freq: Frequency,
+        cw: Frequency,
         power_dbm: f64,
     },
     StartFreqSweep {
-        start_freq: Frequency,
+        start: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
-        step_freq: Frequency,
+        step: Frequency,
         step_delay: Duration,
     },
     StartFreqSweepExp {
-        start_freq: Frequency,
+        start: Frequency,
         power_dbm: f64,
         sweep_steps: u16,
-        step_freq: Frequency,
+        step: Frequency,
         step_delay: Duration,
     },
     StartTracking {
-        start_freq: Frequency,
+        start: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
-        step_freq: Frequency,
+        step: Frequency,
     },
     StartTrackingExp {
-        start_freq: Frequency,
+        start: Frequency,
         power_dbm: f64,
         sweep_steps: u16,
-        step_freq: Frequency,
+        step: Frequency,
     },
     TrackingStep(u16),
 }
@@ -67,7 +67,7 @@ impl From<Command> for Cow<'static, [u8]> {
             Command::RfPowerOn => Cow::Borrowed(&[b'#', 5, b'C', b'P', b'1'][..]),
             Command::RfPowerOff => Cow::Borrowed(&[b'#', 5, b'C', b'P', b'0']),
             Command::StartAmpSweep {
-                cw_freq,
+                cw,
                 start_attenuation,
                 start_power_level,
                 stop_attenuation,
@@ -78,7 +78,7 @@ impl From<Command> for Cow<'static, [u8]> {
                 command.extend(
                     format!(
                         "C3-A:{:07.0},{},{},{},{},{:05}",
-                        cw_freq.as_khz(),
+                        cw.as_khz(),
                         u8::from(start_attenuation),
                         u8::from(start_power_level),
                         u8::from(stop_attenuation),
@@ -90,7 +90,7 @@ impl From<Command> for Cow<'static, [u8]> {
                 Cow::Owned(command)
             }
             Command::StartAmpSweepExp {
-                cw_freq,
+                cw,
                 start_power_dbm,
                 step_power_db,
                 stop_power_dbm,
@@ -100,7 +100,7 @@ impl From<Command> for Cow<'static, [u8]> {
                 command.extend(
                     format!(
                         "C5-A:{:07.0},{:+05.1},{:+05.1},{:05.1},{:05}",
-                        cw_freq.as_khz(),
+                        cw.as_khz(),
                         start_power_dbm,
                         step_power_db,
                         stop_power_dbm,
@@ -111,7 +111,7 @@ impl From<Command> for Cow<'static, [u8]> {
                 Cow::Owned(command)
             }
             Command::StartCw {
-                cw_freq,
+                cw,
                 attenuation,
                 power_level,
             } => {
@@ -119,7 +119,7 @@ impl From<Command> for Cow<'static, [u8]> {
                 command.extend(
                     format!(
                         "C3-F:{:07.0},{},{}",
-                        cw_freq.as_khz(),
+                        cw.as_khz(),
                         u8::from(attenuation),
                         u8::from(power_level)
                     )
@@ -127,29 +127,28 @@ impl From<Command> for Cow<'static, [u8]> {
                 );
                 Cow::Owned(command)
             }
-            Command::StartCwExp { cw_freq, power_dbm } => {
+            Command::StartCwExp { cw, power_dbm } => {
                 let mut command = vec![b'#', 20];
-                command
-                    .extend(format!("C5-F:{:07.0},{:+05.1}", cw_freq.as_khz(), power_dbm).bytes());
+                command.extend(format!("C5-F:{:07.0},{:+05.1}", cw.as_khz(), power_dbm).bytes());
                 Cow::Owned(command)
             }
             Command::StartFreqSweep {
-                start_freq,
+                start,
                 attenuation,
                 power_level,
                 sweep_steps,
-                step_freq,
+                step,
                 step_delay,
             } => {
                 let mut command = vec![b'#', 37];
                 command.extend(
                     format!(
                         "C3-F:{:07.0},{},{},{:04},{:07.0},{:05}",
-                        start_freq.as_khz(),
+                        start.as_khz(),
                         u8::from(attenuation),
                         u8::from(power_level),
                         sweep_steps,
-                        step_freq.as_khz(),
+                        step.as_khz(),
                         step_delay.as_millis()
                     )
                     .bytes(),
@@ -157,20 +156,20 @@ impl From<Command> for Cow<'static, [u8]> {
                 Cow::Owned(command)
             }
             Command::StartFreqSweepExp {
-                start_freq,
+                start,
                 power_dbm,
                 sweep_steps,
-                step_freq,
+                step,
                 step_delay,
             } => {
                 let mut command = vec![b'#', 39];
                 command.extend(
                     format!(
                         "C5-F:{:07.0},{:+05.1},{:04},{:07.0},{:05}",
-                        start_freq.as_khz(),
+                        start.as_khz(),
                         power_dbm,
                         sweep_steps,
-                        step_freq.as_khz(),
+                        step.as_khz(),
                         step_delay.as_millis()
                     )
                     .bytes(),
@@ -178,40 +177,40 @@ impl From<Command> for Cow<'static, [u8]> {
                 Cow::Owned(command)
             }
             Command::StartTracking {
-                start_freq,
+                start,
                 attenuation,
                 power_level,
                 sweep_steps,
-                step_freq,
+                step,
             } => {
                 let mut command = vec![b'#', 31];
                 command.extend(
                     format!(
                         "C3-T:{:07.0},{},{},{:04},{:07.0}",
-                        start_freq.as_khz(),
+                        start.as_khz(),
                         u8::from(attenuation),
                         u8::from(power_level),
                         sweep_steps,
-                        step_freq.as_khz()
+                        step.as_khz()
                     )
                     .bytes(),
                 );
                 Cow::Owned(command)
             }
             Command::StartTrackingExp {
-                start_freq,
+                start,
                 power_dbm,
                 sweep_steps,
-                step_freq,
+                step,
             } => {
                 let mut command = vec![b'#', 33];
                 command.extend(
                     format!(
                         "C5-T:{:07.0},{:+05.1},{:04},{:07.0}",
-                        start_freq.as_khz(),
+                        start.as_khz(),
                         power_dbm,
                         sweep_steps,
-                        step_freq.as_khz()
+                        step.as_khz()
                     )
                     .bytes(),
                 );
@@ -247,7 +246,7 @@ mod tests {
         assert_correct_size!(Command::RfPowerOn);
         assert_correct_size!(Command::RfPowerOff);
         assert_correct_size!(Command::StartAmpSweep {
-            cw_freq: Frequency::from_khz(100_000),
+            cw: Frequency::from_khz(100_000),
             start_attenuation: Attenuation::On,
             start_power_level: PowerLevel::Low,
             stop_attenuation: Attenuation::Off,
@@ -255,27 +254,27 @@ mod tests {
             step_delay: Duration::from_secs(1),
         });
         assert_correct_size!(Command::StartAmpSweepExp {
-            cw_freq: Frequency::from_khz(100_000),
+            cw: Frequency::from_khz(100_000),
             start_power_dbm: -40.,
             step_power_db: 2.,
             stop_power_dbm: 0.,
             step_delay: Duration::from_secs(1),
         });
         assert_correct_size!(Command::StartCw {
-            cw_freq: Frequency::from_mhz(1),
+            cw: Frequency::from_mhz(1),
             attenuation: Attenuation::Off,
             power_level: PowerLevel::Low
         });
         assert_correct_size!(Command::StartCwExp {
-            cw_freq: Frequency::from_ghz(1),
+            cw: Frequency::from_ghz(1),
             power_dbm: 10.
         });
         assert_correct_size!(Command::StartFreqSweep {
-            start_freq: Frequency::from_ghz(1),
+            start: Frequency::from_ghz(1),
             attenuation: Attenuation::Off,
             power_level: PowerLevel::High,
             sweep_steps: 10,
-            step_freq: Frequency::from_mhz(1),
+            step: Frequency::from_mhz(1),
             step_delay: Duration::from_secs(2)
         });
     }

@@ -7,7 +7,7 @@ use std::time::Duration;
 
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct ConfigAmpSweep {
-    pub cw_freq: Frequency,
+    pub cw: Frequency,
     pub sweep_power_steps: u16,
     pub start_attenuation: Attenuation,
     pub start_power_level: PowerLevel,
@@ -25,7 +25,7 @@ impl ConfigAmpSweep {
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
         // Parse the cw frequency
-        let (bytes, cw_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, cw_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -68,7 +68,7 @@ impl ConfigAmpSweep {
         Ok((
             bytes,
             ConfigAmpSweep {
-                cw_freq: Frequency::from_khz(cw_freq_khz),
+                cw: Frequency::from_khz(cw_khz),
                 sweep_power_steps,
                 start_attenuation,
                 start_power_level,
@@ -89,7 +89,7 @@ mod tests {
     fn parse_config() {
         let bytes = b"#C3-A:0186525,0000,0,0,1,3,0,00100\r\n";
         let config_amp_sweep = ConfigAmpSweep::parse(bytes.as_ref()).unwrap().1;
-        assert_eq!(config_amp_sweep.cw_freq.as_khz(), 186_525);
+        assert_eq!(config_amp_sweep.cw.as_khz(), 186_525);
         assert_eq!(config_amp_sweep.sweep_power_steps, 0);
         assert_eq!(config_amp_sweep.start_attenuation, Attenuation::On);
         assert_eq!(config_amp_sweep.start_power_level, PowerLevel::Lowest);

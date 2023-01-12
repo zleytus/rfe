@@ -89,11 +89,11 @@ impl Display for CalcMode {
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct Config {
-    pub start_freq: Frequency,
-    pub step_freq: Frequency,
-    pub stop_freq: Frequency,
-    pub center_freq: Frequency,
-    pub span_freq: Frequency,
+    pub start: Frequency,
+    pub step: Frequency,
+    pub stop: Frequency,
+    pub center: Frequency,
+    pub span: Frequency,
     pub max_amp_dbm: i16,
     pub min_amp_dbm: i16,
     pub sweep_points: u16,
@@ -116,12 +116,12 @@ impl Config {
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_freq_khz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, start_khz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, step_freq_hz) = parse_frequency(7u8)(bytes)?;
+        let (bytes, step_hz) = parse_frequency(7u8)(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -186,18 +186,18 @@ impl Config {
         // Consume \n or \r\n line endings and make sure there aren't any bytes left afterwards
         let (bytes, _) = parse_opt_line_ending(bytes)?;
 
-        let start_freq = Frequency::from_khz(start_freq_khz);
-        let step_freq = Frequency::from_hz(step_freq_hz);
-        let stop_freq = start_freq + (step_freq * u64::from(sweep_points - 1));
+        let start = Frequency::from_khz(start_khz);
+        let step = Frequency::from_hz(step_hz);
+        let stop = start + (step * u64::from(sweep_points - 1));
 
         Ok((
             bytes,
             Config {
-                start_freq,
-                stop_freq,
-                step_freq,
-                center_freq: (start_freq + stop_freq) / 2,
-                span_freq: stop_freq - start_freq,
+                start,
+                stop,
+                step,
+                center: (start + stop) / 2,
+                span: stop - start,
                 max_amp_dbm,
                 min_amp_dbm,
                 sweep_points,
@@ -224,11 +224,11 @@ mod tests {
         let bytes =
             b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000,00200,0000,000";
         let config = Config::parse(bytes.as_ref()).unwrap().1;
-        assert_eq!(config.start_freq.as_hz(), 5_249_000_000);
-        assert_eq!(config.step_freq.as_hz(), 196_428);
-        assert_eq!(config.stop_freq.as_hz(), 5_270_803_508);
-        assert_eq!(config.center_freq.as_hz(), 5_259_901_754);
-        assert_eq!(config.span_freq.as_hz(), 21_803_508);
+        assert_eq!(config.start.as_hz(), 5_249_000_000);
+        assert_eq!(config.step.as_hz(), 196_428);
+        assert_eq!(config.stop.as_hz(), 5_270_803_508);
+        assert_eq!(config.center.as_hz(), 5_259_901_754);
+        assert_eq!(config.span.as_hz(), 21_803_508);
         assert_eq!(config.max_amp_dbm, -30);
         assert_eq!(config.min_amp_dbm, -118);
         assert_eq!(config.sweep_points, 112);
@@ -247,8 +247,8 @@ mod tests {
         let bytes =
             b"#C2-F:0096000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
         let config = Config::parse(bytes.as_ref()).unwrap().1;
-        assert_eq!(config.start_freq.as_hz(), 96_000_000);
-        assert_eq!(config.step_freq.as_hz(), 90_072);
+        assert_eq!(config.start.as_hz(), 96_000_000);
+        assert_eq!(config.step.as_hz(), 90_072);
         assert_eq!(config.max_amp_dbm, -10);
         assert_eq!(config.min_amp_dbm, -120);
         assert_eq!(config.sweep_points, 112);
