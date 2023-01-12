@@ -1,6 +1,8 @@
-use super::{Command, Device, SerialNumber};
-use crate::{Model, SpectrumAnalyzer};
-use std::{borrow::Cow, io, sync::Arc};
+use crate::{
+    common::{Command, Device, SerialNumber},
+    SpectrumAnalyzer,
+};
+use std::{borrow::Cow, io, sync::Arc, time::Duration};
 
 #[derive(Debug)]
 pub struct RfExplorer<D: Device = SpectrumAnalyzer> {
@@ -8,6 +10,8 @@ pub struct RfExplorer<D: Device = SpectrumAnalyzer> {
 }
 
 impl<D: Device> RfExplorer<D> {
+    pub(crate) const NEXT_SCREEN_DATA_TIMEOUT: Duration = Duration::from_secs(2);
+
     /// Connects to the first available RF Explorer.
     pub fn connect() -> Option<Self> {
         serialport::available_ports()
