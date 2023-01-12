@@ -13,7 +13,7 @@ pub(crate) use command::Command;
 pub use config::{CalcMode, Config, Mode, RadioModule};
 pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
-pub use message::Message;
+pub(crate) use message::Message;
 pub use rf_explorer::{SpectrumAnalyzer, WifiBand};
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
