@@ -334,7 +334,7 @@ impl RfExplorer<SpectrumAnalyzer> {
 
     /// Stops the spectrum analyzer's Wi-Fi analyzer.
     #[tracing::instrument(skip(self))]
-    pub fn stop_wifi_analyzer(&mut self) -> io::Result<()> {
+    pub fn stop_wifi_analyzer(&self) -> io::Result<()> {
         self.send_command(Command::StopWifiAnalyzer)
     }
 
@@ -549,25 +549,25 @@ impl RfExplorer<SpectrumAnalyzer> {
 
     /// Sets the spectrum analyzer's calculator mode.
     #[tracing::instrument]
-    pub fn set_calc_mode(&mut self, calc_mode: CalcMode) -> io::Result<()> {
+    pub fn set_calc_mode(&self, calc_mode: CalcMode) -> io::Result<()> {
         self.send_command(Command::SetCalcMode(calc_mode))
     }
 
     /// Sets the spectrum analyzer's input stage.
     #[tracing::instrument]
-    pub fn set_input_stage(&mut self, input_stage: InputStage) -> io::Result<()> {
+    pub fn set_input_stage(&self, input_stage: InputStage) -> io::Result<()> {
         self.send_command(Command::SetInputStage(input_stage))
     }
 
     /// Adds or subtracts an offset to the amplitudes in each sweep.
     #[tracing::instrument]
-    pub fn set_offset_db(&mut self, offset_db: i8) -> io::Result<()> {
+    pub fn set_offset_db(&self, offset_db: i8) -> io::Result<()> {
         self.send_command(Command::SetOffsetDB(offset_db))
     }
 
     /// Sets the spectrum analyzer's DSP mode.
     #[tracing::instrument]
-    pub fn set_dsp_mode(&mut self, dsp_mode: DspMode) -> Result<()> {
+    pub fn set_dsp_mode(&self, dsp_mode: DspMode) -> Result<()> {
         // Check to see if the DspMode is already set to the desired value
         if *self.device.dsp_mode.0.lock().unwrap() == Some(dsp_mode) {
             return Ok(());
