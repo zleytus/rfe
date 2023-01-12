@@ -6,16 +6,16 @@ use crate::common::Frequency;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub(crate) enum Command {
     SetConfig {
-        start_freq: Frequency,
-        stop_freq: Frequency,
+        start: Frequency,
+        stop: Frequency,
         min_amp_dbm: i16,
         max_amp_dbm: i16,
     },
     SwitchModuleMain,
     SwitchModuleExp,
     StartTracking {
-        start_freq: Frequency,
-        step_freq: Frequency,
+        start: Frequency,
+        step: Frequency,
     },
     StartWifiAnalyzer(WifiBand),
     StopWifiAnalyzer,
@@ -32,8 +32,8 @@ impl From<Command> for Cow<'static, [u8]> {
     fn from(command: Command) -> Cow<'static, [u8]> {
         match command {
             Command::SetConfig {
-                start_freq,
-                stop_freq,
+                start,
+                stop,
                 min_amp_dbm,
                 max_amp_dbm,
             } => {
@@ -41,8 +41,8 @@ impl From<Command> for Cow<'static, [u8]> {
                 command.extend(
                     format!(
                         "C2-F:{:07.0},{:07.0},{:04},{:04}",
-                        start_freq.as_khz(),
-                        stop_freq.as_khz(),
+                        start.as_khz(),
+                        stop.as_khz(),
                         max_amp_dbm,
                         min_amp_dbm
                     )
@@ -52,19 +52,10 @@ impl From<Command> for Cow<'static, [u8]> {
             }
             Command::SwitchModuleMain => Cow::Borrowed(&[b'#', 5, b'C', b'M', 0]),
             Command::SwitchModuleExp => Cow::Borrowed(&[b'#', 5, b'C', b'M', 1]),
-            Command::StartTracking {
-                start_freq,
-                step_freq,
-            } => {
+            Command::StartTracking { start, step } => {
                 let mut command = vec![b'#', 22];
-                command.extend(
-                    format!(
-                        "C3-K:{:07.0},{:07.0}",
-                        start_freq.as_khz(),
-                        step_freq.as_khz()
-                    )
-                    .bytes(),
-                );
+                command
+                    .extend(format!("C3-K:{:07.0},{:07.0}", start.as_khz(), step.as_khz()).bytes());
                 Cow::Owned(command)
             }
             Command::StartWifiAnalyzer(wifi_band) => {
@@ -122,16 +113,16 @@ mod tests {
     #[test]
     fn correct_command_size_fields() {
         assert_correct_size!(Command::SetConfig {
-            start_freq: Frequency::from_hz(90_000_000),
-            stop_freq: Frequency::from_hz(110_000_000),
+            start: Frequency::from_hz(90_000_000),
+            stop: Frequency::from_hz(110_000_000),
             min_amp_dbm: -120,
             max_amp_dbm: -40
         });
         assert_correct_size!(Command::SwitchModuleMain);
         assert_correct_size!(Command::SwitchModuleExp);
         assert_correct_size!(Command::StartTracking {
-            start_freq: Frequency::from_khz(100_000),
-            step_freq: Frequency::from_khz(1_000)
+            start: Frequency::from_khz(100_000),
+            step: Frequency::from_khz(1_000)
         });
         assert_correct_size!(Command::StartWifiAnalyzer(WifiBand::FiveGhz));
         assert_correct_size!(Command::StopWifiAnalyzer);
