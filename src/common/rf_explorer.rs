@@ -69,7 +69,7 @@ impl<D: Device> RfExplorer<D> {
 
     /// Returns the RF Explorer's firmware version.
     pub fn firmware_version(&self) -> String {
-        self.device.setup_info().firmware_version
+        self.device.firmware_version()
     }
 
     /// Returns the RF Explorer's serial number.

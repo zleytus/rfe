@@ -147,13 +147,12 @@ impl Device for SpectrumAnalyzer {
         &self.port_name
     }
 
-    fn setup_info(&self) -> SetupInfo<Self> {
-        self.setup_info
-            .0
-            .lock()
-            .unwrap()
-            .clone()
-            .unwrap_or_default()
+    fn firmware_version(&self) -> String {
+        if let Some(setup_info) = self.setup_info.0.lock().unwrap().clone() {
+            setup_info.firmware_version
+        } else {
+            String::default()
+        }
     }
 
     fn serial_number(&self) -> SerialNumber {

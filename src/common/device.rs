@@ -25,7 +25,7 @@ pub trait Device: Sized + Send + Sync {
 
     fn port_name(&self) -> &str;
 
-    fn setup_info(&self) -> SetupInfo<Self>;
+    fn firmware_version(&self) -> String;
 
     fn serial_number(&self) -> SerialNumber;
 
