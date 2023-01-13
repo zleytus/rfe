@@ -1,0 +1,41 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install serialport-rs dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt install pkg-config libudev-dev
+    - name: Build rfe (debug)
+      run: cargo build --verbose
+    - name: Build rfe (release)
+      run: cargo build --verbose --release
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Build rfe-ffi (release)
+      run: cargo build --release
+      working-directory: rfe-ffi
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.os }}-artifacts
+        path: |
+          ${{ github.workspace }}/rfe-ffi/target/release/*.dll
+          ${{ github.workspace }}/rfe-ffi/target/release/*.dylib
+          ${{ github.workspace }}/rfe-ffi/target/release/*.so
