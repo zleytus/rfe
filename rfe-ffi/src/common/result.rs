@@ -1,12 +1,13 @@
 #[repr(C)]
 pub enum Result {
-    Success,
+    Success = 0,
+    IncompatibleFirmwareError,
     InvalidInputError,
     InvalidOperationError,
     IoError,
-    TimeoutError,
-    NullPtrError,
     NoData,
+    NullPtrError,
+    TimeoutError,
 }
 
 impl<T> From<rfe::Result<T>> for Result {
@@ -21,7 +22,7 @@ impl<T> From<rfe::Result<T>> for Result {
 impl From<rfe::Error> for Result {
     fn from(error: rfe::Error) -> Self {
         match error {
-            rfe::Error::IncompatibleFirmware(_) => Result::IoError,
+            rfe::Error::IncompatibleFirmware(_) => Result::IncompatibleFirmwareError,
             rfe::Error::InvalidInput(_) => Result::InvalidInputError,
             rfe::Error::InvalidOperation(_) => Result::InvalidOperationError,
             rfe::Error::Io(_) => Result::IoError,
