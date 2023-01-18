@@ -1,10 +1,8 @@
-use super::Frequency;
+use std::fmt::Display;
+
 use num_enum::TryFromPrimitive;
-use std::{
-    convert::TryFrom,
-    fmt::Display,
-    str::{self, FromStr},
-};
+
+use crate::Frequency;
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
@@ -21,7 +19,6 @@ pub enum Model {
     Rfe24GPlus = 12,
     Rfe4GPlus = 13,
     Rfe6GPlus = 14,
-    RfeGen = 60,
 }
 
 impl Model {
@@ -56,7 +53,6 @@ impl Model {
             Model::RfeWSub3G | Model::RfeProAudio => 15_000_000,
             Model::Rfe6G => 4_850_000_000,
             Model::Rfe4GPlus | Model::Rfe6GPlus => 240_000_000,
-            Model::RfeGen => 24_000_000,
         }
         .into()
     }
@@ -71,7 +67,6 @@ impl Model {
             Model::RfeWSub3G | Model::RfeProAudio => 2_700_000_000,
             Model::Rfe4GPlus => 4_000_000_000,
             Model::Rfe6G | Model::Rfe6GPlus => 6_100_000_000,
-            Model::RfeGen => 6_000_000_000,
         }
         .into()
     }
@@ -87,7 +82,6 @@ impl Model {
             | Model::RfeProAudio => 112_000,
             Model::RfeWSub1GPlus => 100_000,
             Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6G | Model::Rfe6GPlus => 2_000_000,
-            Model::RfeGen => 1_000_000,
         }
         .into()
     }
@@ -99,52 +93,26 @@ impl Model {
             Model::Rfe24GPlus => 85_000_000,
             Model::RfeWSub3G | Model::RfeProAudio | Model::Rfe6G => 600_000_000,
             Model::RfeWSub1GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => 960_000_000,
-            Model::RfeGen => 1_000_000_000,
         }
         .into()
-    }
-
-    pub(crate) fn parse_main_module_model(s: &str) -> Result<Model, ()> {
-        Model::from_str(s)
-    }
-
-    pub(crate) fn parse_expansion_module_model(s: &str) -> Result<Option<Model>, ()> {
-        if let Ok(model) = Model::from_str(s) {
-            Ok(Some(model))
-        } else {
-            if u8::from_str(s) == Ok(255) {
-                return Ok(None);
-            } else {
-                return Err(());
-            }
-        }
-    }
-}
-
-impl FromStr for Model {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Model::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
     }
 }
 
 impl Display for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Model::Rfe433M => write!(f, "433M"),
-            Model::Rfe868M => write!(f, "868M"),
-            Model::Rfe915M => write!(f, "915M"),
-            Model::RfeWSub1G => write!(f, "WSUB1G"),
-            Model::Rfe24G => write!(f, "2.4G"),
-            Model::RfeWSub3G => write!(f, "WSUB3G"),
-            Model::Rfe6G => write!(f, "6G"),
-            Model::RfeWSub1GPlus => write!(f, "WSUB1G+"),
-            Model::RfeProAudio => write!(f, "Pro Audio"),
-            Model::Rfe24GPlus => write!(f, "2.4G+"),
-            Model::Rfe4GPlus => write!(f, "4G+"),
-            Model::Rfe6GPlus => write!(f, "6G+"),
-            Model::RfeGen => write!(f, "RFEGen"),
+            Self::Rfe433M => write!(f, "433M"),
+            Self::Rfe868M => write!(f, "868M"),
+            Self::Rfe915M => write!(f, "915M"),
+            Self::RfeWSub1G => write!(f, "WSUB1G"),
+            Self::Rfe24G => write!(f, "2.4G"),
+            Self::RfeWSub3G => write!(f, "WSUB3G"),
+            Self::Rfe6G => write!(f, "6G"),
+            Self::RfeWSub1GPlus => write!(f, "WSUB1G+"),
+            Self::RfeProAudio => write!(f, "Pro Audio"),
+            Self::Rfe24GPlus => write!(f, "2.4G+"),
+            Self::Rfe4GPlus => write!(f, "4G+"),
+            Self::Rfe6GPlus => write!(f, "6G+"),
         }
     }
 }
