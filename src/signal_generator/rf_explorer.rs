@@ -94,18 +94,30 @@ impl Device for SignalGenerator {
             Message::Config(config) => {
                 *self.config.0.lock().unwrap() = Some(config);
                 self.config.1.notify_one();
+                if let Some(ref mut cb) = *self.config_callback.lock().unwrap() {
+                    cb(config);
+                }
             }
             Message::ConfigAmpSweep(config) => {
                 *self.config_amp_sweep.0.lock().unwrap() = Some(config);
                 self.config_amp_sweep.1.notify_one();
+                if let Some(ref mut cb) = *self.config_amp_sweep_callback.lock().unwrap() {
+                    cb(config);
+                }
             }
             Message::ConfigCw(config) => {
                 *self.config_cw.0.lock().unwrap() = Some(config);
                 self.config_cw.1.notify_one();
+                if let Some(ref mut cb) = *self.config_cw_callback.lock().unwrap() {
+                    cb(config);
+                }
             }
             Message::ConfigFreqSweep(config) => {
                 *self.config_freq_sweep.0.lock().unwrap() = Some(config);
                 self.config_freq_sweep.1.notify_one();
+                if let Some(ref mut cb) = *self.config_freq_sweep_callback.lock().unwrap() {
+                    cb(config);
+                }
             }
             Message::ScreenData(screen_data) => {
                 *self.screen_data.0.lock().unwrap() = Some(screen_data);
