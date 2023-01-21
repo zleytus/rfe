@@ -1,9 +1,12 @@
+use std::fmt::Display;
+
 use nom::{
     bytes::complete::{tag, take},
     combinator::map_res,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use std::fmt::Display;
+
+use crate::common::parsers::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
@@ -22,8 +25,12 @@ impl InputStage {
         // Parse the prefix of the message
         let (bytes, _) = tag(InputStage::PREFIX)(bytes)?;
 
+        // Parse the input stage
         let (bytes, input_stage) =
             map_res(take(1usize), |byte: &[u8]| InputStage::try_from(byte[0]))(bytes)?;
+
+        // Consume \r or \r\n line ending and make sure there aren't any bytes left
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((bytes, input_stage))
     }

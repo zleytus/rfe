@@ -1,12 +1,14 @@
+use std::str;
+
 use nom::{
     bytes::complete::{tag, take_while_m_n},
-    character::complete::line_ending,
     character::is_alphanumeric,
-    combinator::{all_consuming, map, map_res, opt},
+    combinator::{map, map_res},
     sequence::preceded,
     IResult,
 };
-use std::str;
+
+use super::parsers::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct SerialNumber {
@@ -30,7 +32,7 @@ impl SerialNumber {
         )(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((bytes, SerialNumber { serial_number }))
     }

@@ -1,14 +1,16 @@
+use std::fmt::Debug;
+use std::ops::{Add, AddAssign};
+
 use chrono::{DateTime, Utc};
 use nom::{
     bytes::complete::tag,
-    character::complete::line_ending,
-    combinator::{all_consuming, map, opt},
+    combinator::map,
     multi::length_data,
     number::complete::{be_u16, u8 as nom_u8},
     IResult,
 };
-use std::fmt::Debug;
-use std::ops::{Add, AddAssign};
+
+use crate::common::parsers::*;
 
 #[derive(Clone, PartialEq)]
 pub enum Sweep {
@@ -57,7 +59,7 @@ macro_rules! impl_sweep_data {
                 let amplitudes_dbm = amps.iter().map(|&byte| f32::from(byte) / -2.).collect();
 
                 // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-                let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+                let (bytes, _) = parse_opt_line_ending(bytes)?;
 
                 Ok((
                     bytes,

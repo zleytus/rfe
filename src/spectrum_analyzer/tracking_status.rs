@@ -1,12 +1,9 @@
-use nom::{
-    bytes::complete::tag,
-    character::complete::line_ending,
-    combinator::{all_consuming, map_res, opt},
-    number::complete::u8 as nom_u8,
-    IResult,
-};
-use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
+
+use nom::{bytes::complete::tag, combinator::map_res, number::complete::u8 as nom_u8, IResult};
+use num_enum::TryFromPrimitive;
+
+use crate::common::parsers::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, Default)]
 #[repr(u8)]
@@ -27,7 +24,7 @@ impl TrackingStatus {
         let (bytes, tracking_status) = map_res(nom_u8, TrackingStatus::try_from)(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((bytes, tracking_status))
     }

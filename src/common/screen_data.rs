@@ -1,12 +1,9 @@
-use chrono::{DateTime, Utc};
-use nom::{
-    bytes::complete::tag,
-    bytes::streaming::take,
-    character::complete::line_ending,
-    combinator::{all_consuming, map_res, opt},
-    IResult,
-};
 use std::convert::TryInto;
+
+use chrono::{DateTime, Utc};
+use nom::{bytes::complete::tag, bytes::streaming::take, combinator::map_res, IResult};
+
+use crate::common::parsers::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ScreenData {
@@ -62,7 +59,7 @@ impl ScreenData {
             map_res(take(Self::ROWS * Self::COLUMNS), TryInto::try_into)(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         // Convert the slice of bytes representing the screen data into a matrix
         let screen_data_matrix = {
