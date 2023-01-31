@@ -1,5 +1,6 @@
 mod command;
 mod config;
+mod device;
 mod dsp_mode;
 mod input_stage;
 mod message;
@@ -12,10 +13,11 @@ mod tracking_status;
 
 pub(crate) use command::Command;
 pub use config::{CalcMode, Config, Mode};
+pub use device::SpectrumAnalyzer;
 pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
 pub(crate) use message::Message;
 pub use model::Model;
-pub use rf_explorer::{SpectrumAnalyzer, WifiBand};
+pub use rf_explorer::WifiBand;
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
