@@ -151,8 +151,8 @@ impl Device for SignalGenerator {
     }
 
     fn firmware_version(&self) -> String {
-        if let Some(setup_info) = self.setup_info.0.lock().unwrap().clone() {
-            setup_info.firmware_version
+        if let Some(setup_info) = self.setup_info.0.lock().unwrap().as_ref() {
+            setup_info.firmware_version.clone()
         } else {
             String::default()
         }
