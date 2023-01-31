@@ -3,27 +3,14 @@ use crate::{
     spectrum_analyzer::parsers::*,
 };
 use chrono::{DateTime, Utc};
-use nom::{branch::alt, bytes::complete::tag, combinator::opt, IResult};
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    combinator::{map_res, opt},
+    IResult,
+};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::fmt::Display;
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
-#[repr(u8)]
-pub enum RadioModule {
-    #[default]
-    Main = 0,
-    Expansion,
-}
-
-impl Display for RadioModule {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let radio_module = match self {
-            RadioModule::Main => "Main",
-            RadioModule::Expansion => "Expansion",
-        };
-        write!(f, "{radio_module}")
-    }
-}
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
@@ -97,7 +84,7 @@ pub struct Config {
     pub max_amp_dbm: i16,
     pub min_amp_dbm: i16,
     pub sweep_points: u16,
-    pub active_radio_module: RadioModule,
+    pub is_expansion_radio_module_active: bool,
     pub mode: Mode,
     pub min_freq: Frequency,
     pub max_freq: Frequency,
@@ -142,8 +129,12 @@ impl Config {
 
         let (bytes, _) = parse_comma(bytes)?;
 
-        // Parse the active radio module
-        let (bytes, active_radio_module) = parse_radio_module(bytes)?;
+        // Parse whether or not the expansion module is active
+        let (bytes, is_expansion_radio_module_active) = map_res(parse_num(1), |num| match num {
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err(()),
+        })(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -201,7 +192,7 @@ impl Config {
                 max_amp_dbm,
                 min_amp_dbm,
                 sweep_points,
-                active_radio_module,
+                is_expansion_radio_module_active,
                 mode,
                 min_freq: Frequency::from_khz(min_freq_khz),
                 max_freq: Frequency::from_khz(max_freq_khz),
@@ -232,7 +223,7 @@ mod tests {
         assert_eq!(config.max_amp_dbm, -30);
         assert_eq!(config.min_amp_dbm, -118);
         assert_eq!(config.sweep_points, 112);
-        assert_eq!(config.active_radio_module, RadioModule::Main);
+        assert!(!config.is_expansion_radio_module_active);
         assert_eq!(config.mode, Mode::SpectrumAnalyzer);
         assert_eq!(config.min_freq.as_hz(), 4_850_000_000);
         assert_eq!(config.max_freq.as_hz(), 6_100_000_000);
@@ -252,7 +243,7 @@ mod tests {
         assert_eq!(config.max_amp_dbm, -10);
         assert_eq!(config.min_amp_dbm, -120);
         assert_eq!(config.sweep_points, 112);
-        assert_eq!(config.active_radio_module, RadioModule::Main);
+        assert!(!config.is_expansion_radio_module_active);
         assert_eq!(config.mode, Mode::SpectrumAnalyzer);
         assert_eq!(config.min_freq.as_hz(), 50_000);
         assert_eq!(config.max_freq.as_hz(), 960_000_000);

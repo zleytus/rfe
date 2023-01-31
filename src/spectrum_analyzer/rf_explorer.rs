@@ -1,9 +1,7 @@
-use super::{
-    CalcMode, Command, Config, DspMode, InputStage, Message, RadioModule, Sweep, TrackingStatus,
-};
+use super::{CalcMode, Command, Config, DspMode, InputStage, Message, Sweep, TrackingStatus};
 use crate::common::{
-    self, Callback, ConnectionError, ConnectionResult, Device, Error, Frequency, Model, Result,
-    RfExplorer, ScreenData, SerialNumber, SerialPortReader, SetupInfo,
+    self, Callback, ConnectionError, ConnectionResult, Device, Error, Frequency, RadioModule,
+    Result, RfExplorer, ScreenData, SerialNumber, SerialPortReader, SetupInfo,
 };
 use num_enum::IntoPrimitive;
 use serialport::SerialPortInfo;
@@ -271,62 +269,50 @@ impl RfExplorer<SpectrumAnalyzer> {
         *self.device.input_stage.0.lock().unwrap()
     }
 
-    /// Returns the `Model` of the RF Explorer's main module.
-    pub fn main_module_model(&self) -> Model {
+    /// Returns the main radio module.
+    pub fn main_radio_module(&self) -> RadioModule {
         self.device
             .setup_info
             .0
             .lock()
             .unwrap()
-            .clone()
-            .expect("RF Explorer should contain SetupInfo")
-            .main_module_model
+            .as_ref()
+            .unwrap()
+            .main_radio_module
     }
 
-    /// Returns the `Model` of the RF Explorer's expansion module.
-    pub fn expansion_module_model(&self) -> Option<Model> {
+    /// Returns the expansion radio module (if one exists).
+    pub fn expansion_radio_module(&self) -> Option<RadioModule> {
         self.device
             .setup_info
             .0
             .lock()
             .unwrap()
-            .clone()
-            .expect("RF Explorer should contain SetupInfo")
-            .expansion_module_model
+            .as_ref()
+            .unwrap()
+            .expansion_radio_module
     }
 
-    /// Returns which radio module is active (main or expansion)
-    pub fn active_module(&self) -> RadioModule {
-        self.config().active_radio_module
+    /// Returns the active radio module.
+    pub fn active_radio_module(&self) -> RadioModule {
+        if self.config().is_expansion_radio_module_active {
+            self.expansion_radio_module().unwrap()
+        } else {
+            self.main_radio_module()
+        }
     }
 
-    /// Returns which radio module is inactive (main or expansion)
-    pub fn inactive_module(&self) -> Option<RadioModule> {
-        if self.expansion_module_model().is_some() {
-            match self.config().active_radio_module {
-                RadioModule::Main => Some(RadioModule::Expansion),
-                RadioModule::Expansion => Some(RadioModule::Main),
+    /// Returns the inactive radio module (if one exists).
+    pub fn inactive_radio_module(&self) -> Option<RadioModule> {
+        let expansion_radio_module = self.expansion_radio_module();
+        if expansion_radio_module.is_some() {
+            if self.config().is_expansion_radio_module_active {
+                Some(self.main_radio_module())
+            } else {
+                expansion_radio_module
             }
         } else {
             None
-        }
-    }
-
-    /// Returns the model of the active RF Explorer radio module.
-    pub fn active_module_model(&self) -> Model {
-        match self.config().active_radio_module {
-            RadioModule::Main => self.main_module_model(),
-            RadioModule::Expansion => self
-                .expansion_module_model()
-                .unwrap_or_else(|| self.main_module_model()),
-        }
-    }
-
-    /// Returns the model of the inactive RF Explorer radio module.
-    pub fn inactive_module_model(&self) -> Option<Model> {
-        match self.config().active_radio_module {
-            RadioModule::Main => self.expansion_module_model(),
-            RadioModule::Expansion => Some(self.main_module_model()),
         }
     }
 
@@ -497,7 +483,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     #[tracing::instrument]
     pub fn set_sweep_points(&self, sweep_points: u16) -> Result<()> {
         // Only 'Plus' models can set the number of points in a sweep
-        if !self.active_module_model().is_plus_model() {
+        if !self.active_radio_module().model().is_plus_model() {
             return Err(Error::InvalidOperation(
                 "Only RF Explorer 'Plus' models support setting the number of sweep points"
                     .to_string(),
@@ -641,7 +627,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             ));
         }
 
-        let active_model = self.active_module_model();
+        let active_model = self.active_radio_module().model();
 
         let min_max_freq = active_model.min_freq()..=active_model.max_freq();
         if !min_max_freq.contains(&start) {

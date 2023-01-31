@@ -1,5 +1,7 @@
 mod config;
 mod list;
+mod model;
+mod radio_module;
 mod rf_explorer;
 
 use config::{
@@ -7,5 +9,7 @@ use config::{
     SignalGeneratorConfigFreqSweep,
 };
 use list::SignalGeneratorList;
+use model::SignalGeneratorModel;
+use radio_module::SignalGeneratorRadioModule;
 
 type SignalGenerator = rfe::RfExplorer<rfe::SignalGenerator>;

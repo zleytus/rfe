@@ -3,7 +3,7 @@ use super::{
     Temperature,
 };
 use crate::common::{
-    Callback, ConnectionError, ConnectionResult, Device, Error, Result, SerialNumber,
+    Callback, ConnectionError, ConnectionResult, Device, Error, RadioModule, Result, SerialNumber,
     SerialPortReader, SetupInfo,
 };
 use crate::{Frequency, Model, RfExplorer, ScreenData};
@@ -241,28 +241,54 @@ impl RfExplorer<SignalGenerator> {
         *self.device.temperature.0.lock().unwrap()
     }
 
-    /// Returns the `Model` of the RF Explorer's main module.
-    pub fn main_module_model(&self) -> Model {
+    /// Returns the main radio module.
+    pub fn main_radio_module(&self) -> RadioModule<Model> {
         self.device
             .setup_info
             .0
             .lock()
             .unwrap()
-            .clone()
-            .expect("RF Explorer should contain SetupInfo")
-            .main_module_model
+            .as_ref()
+            .unwrap()
+            .main_radio_module
     }
 
-    /// Returns the `Model` of the RF Explorer's expansion module.
-    pub fn expansion_module_model(&self) -> Option<Model> {
+    /// Returns the expansion radio module (if one exists).
+    pub fn expansion_radio_module(&self) -> Option<RadioModule<Model>> {
         self.device
             .setup_info
             .0
             .lock()
             .unwrap()
-            .clone()
-            .expect("RF Explorer should contain SetupInfo")
-            .expansion_module_model
+            .as_ref()
+            .unwrap()
+            .expansion_radio_module
+    }
+
+    /// Returns the active radio module.
+    pub fn active_radio_module(&self) -> RadioModule<Model> {
+        let Some(exp_module) = self.expansion_radio_module() else {
+            return self.main_radio_module();
+        };
+
+        if self.config_expansion().is_some() {
+            exp_module
+        } else {
+            self.main_radio_module()
+        }
+    }
+
+    /// Returns the inactive radio module (if one exists).
+    pub fn inactive_radio_module(&self) -> Option<RadioModule<Model>> {
+        let Some(exp_module) = self.expansion_radio_module() else {
+            return None;
+        };
+
+        if self.config_expansion().is_some() {
+            Some(self.main_radio_module())
+        } else {
+            Some(exp_module)
+        }
     }
 
     /// Starts the signal generator's amplitude sweep mode.

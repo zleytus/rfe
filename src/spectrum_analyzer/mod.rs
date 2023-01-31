@@ -11,7 +11,7 @@ mod sweep;
 mod tracking_status;
 
 pub(crate) use command::Command;
-pub use config::{CalcMode, Config, Mode, RadioModule};
+pub use config::{CalcMode, Config, Mode};
 pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
 pub(crate) use message::Message;

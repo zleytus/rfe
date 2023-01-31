@@ -5,13 +5,14 @@ use std::{
 };
 
 use rfe::{
-    spectrum_analyzer::{
-        CalcMode, Config, DspMode, InputStage, RadioModule, TrackingStatus, WifiBand,
-    },
-    Model, ScreenData,
+    spectrum_analyzer::{CalcMode, Config, DspMode, InputStage, TrackingStatus, WifiBand},
+    ScreenData,
 };
 
-use super::{SpectrumAnalyzer, SpectrumAnalyzerConfig, SpectrumAnalyzerList, Sweep};
+use super::{
+    SpectrumAnalyzer, SpectrumAnalyzerConfig, SpectrumAnalyzerList, SpectrumAnalyzerRadioModule,
+    Sweep,
+};
 use crate::common::{Result, UserDataWrapper};
 
 #[no_mangle]
@@ -385,12 +386,12 @@ pub extern "C" fn rfe_spectrum_analyzer_input_stage(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_main_module_model(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_module(
     rfe: Option<&SpectrumAnalyzer>,
-    model: Option<&mut Model>,
+    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
 ) -> Result {
-    if let (Some(rfe), Some(model)) = (rfe, model) {
-        *model = rfe.main_module_model();
+    if let (Some(rfe), Some(radio_module)) = (rfe, radio_module) {
+        *radio_module = rfe.main_radio_module().into();
         Result::Success
     } else {
         Result::NullPtrError
@@ -398,16 +399,16 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_main_module_model(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_module_model(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_module(
     rfe: Option<&SpectrumAnalyzer>,
-    model: Option<&mut Model>,
+    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
 ) -> Result {
-    let (Some(rfe), Some(model)) = (rfe, model) else {
+    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
         return Result::NullPtrError;
     };
 
-    if let Some(expansion_model) = rfe.expansion_module_model() {
-        *model = expansion_model;
+    if let Some(module) = rfe.expansion_radio_module() {
+        *radio_module = module.into();
         Result::Success
     } else {
         Result::InvalidOperationError
@@ -415,12 +416,12 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_module_model(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_spectrum_analyzer_active_module(
+pub extern "C" fn rfe_spectrum_analyzer_active_radio_module(
     rfe: Option<&SpectrumAnalyzer>,
-    radio_module: Option<&mut RadioModule>,
+    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
 ) -> Result {
     if let (Some(rfe), Some(radio_module)) = (rfe, radio_module) {
-        *radio_module = rfe.active_module();
+        *radio_module = rfe.active_radio_module().into();
         Result::Success
     } else {
         Result::NullPtrError
@@ -428,46 +429,16 @@ pub extern "C" fn rfe_spectrum_analyzer_active_module(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_spectrum_analyzer_inactive_module(
+pub extern "C" fn rfe_spectrum_analyzer_inactive_radio_module(
     rfe: Option<&SpectrumAnalyzer>,
-    radio_module: Option<&mut RadioModule>,
+    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
 ) -> Result {
     let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
         return Result::NullPtrError;
     };
 
-    if let Some(module) = rfe.inactive_module() {
-        *radio_module = module;
-        Result::Success
-    } else {
-        Result::NoData
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_active_module_model(
-    rfe: Option<&SpectrumAnalyzer>,
-    model: Option<&mut Model>,
-) -> Result {
-    if let (Some(rfe), Some(model)) = (rfe, model) {
-        *model = rfe.active_module_model();
-        Result::Success
-    } else {
-        Result::NullPtrError
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_inactive_module_model(
-    rfe: Option<&SpectrumAnalyzer>,
-    model: Option<&mut Model>,
-) -> Result {
-    let (Some(rfe), Some(model)) = (rfe, model) else {
-        return Result::NullPtrError;
-    };
-
-    if let Some(inactive_module_model) = rfe.inactive_module_model() {
-        *model = inactive_module_model;
+    if let Some(module) = rfe.inactive_radio_module() {
+        *radio_module = module.into();
         Result::Success
     } else {
         Result::NoData

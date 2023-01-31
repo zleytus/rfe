@@ -1,4 +1,4 @@
-use rfe::spectrum_analyzer::{CalcMode, Mode, RadioModule};
+use rfe::spectrum_analyzer::{CalcMode, Mode};
 
 #[repr(C)]
 pub struct SpectrumAnalyzerConfig {
@@ -10,7 +10,7 @@ pub struct SpectrumAnalyzerConfig {
     min_amp_dbm: i16,
     max_amp_dbm: i16,
     sweep_points: u16,
-    active_radio_module: RadioModule,
+    is_expansion_radio_module_active: bool,
     mode: Mode,
     min_freq_hz: u64,
     max_freq_hz: u64,
@@ -31,7 +31,7 @@ impl From<rfe::spectrum_analyzer::Config> for SpectrumAnalyzerConfig {
             min_amp_dbm: config.min_amp_dbm,
             max_amp_dbm: config.max_amp_dbm,
             sweep_points: config.sweep_points,
-            active_radio_module: config.active_radio_module,
+            is_expansion_radio_module_active: config.is_expansion_radio_module_active,
             mode: config.mode,
             min_freq_hz: config.min_freq.as_hz(),
             max_freq_hz: config.max_freq.as_hz(),
