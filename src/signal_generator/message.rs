@@ -1,8 +1,8 @@
-use super::{Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, Temperature};
-use crate::{
-    common::{ScreenData, SerialNumber, SetupInfo},
-    SignalGenerator,
+use super::{
+    Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp, ConfigExp, ConfigFreqSweep,
+    ConfigFreqSweepExp, Model, Temperature,
 };
+use crate::common::{ScreenData, SerialNumber, SetupInfo};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Message {
@@ -12,7 +12,7 @@ pub enum Message {
     ConfigFreqSweep(ConfigFreqSweep),
     ScreenData(ScreenData),
     SerialNumber(SerialNumber),
-    SetupInfo(SetupInfo<SignalGenerator>),
+    SetupInfo(SetupInfo<Model>),
     Temperature(Temperature),
 }
 
@@ -30,10 +30,8 @@ impl crate::common::Message for Message {
             Ok(Message::ScreenData(ScreenData::parse(bytes)?.1))
         } else if bytes.starts_with(SerialNumber::PREFIX) {
             Ok(Message::SerialNumber(SerialNumber::parse(bytes)?.1))
-        } else if bytes.starts_with(SetupInfo::<SignalGenerator>::PREFIX) {
-            Ok(Message::SetupInfo(
-                SetupInfo::<SignalGenerator>::parse(bytes)?.1,
-            ))
+        } else if bytes.starts_with(SetupInfo::<Model>::PREFIX) {
+            Ok(Message::SetupInfo(SetupInfo::<Model>::parse(bytes)?.1))
         } else if bytes.starts_with(Temperature::PREFIX) {
             Ok(Message::Temperature(Temperature::parse(bytes)?.1))
         } else {

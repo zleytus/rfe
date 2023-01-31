@@ -1,6 +1,6 @@
 use super::{
     sweep::{SweepDataExt, SweepDataLarge, SweepDataStandard},
-    Config, DspMode, InputStage, SpectrumAnalyzer, Sweep, TrackingStatus,
+    Config, DspMode, InputStage, Model, Sweep, TrackingStatus,
 };
 use crate::common::{MessageParseError, ScreenData, SerialNumber, SetupInfo};
 
@@ -11,7 +11,7 @@ pub enum Message {
     InputStage(InputStage),
     ScreenData(ScreenData),
     SerialNumber(SerialNumber),
-    SetupInfo(SetupInfo<SpectrumAnalyzer>),
+    SetupInfo(SetupInfo<Model>),
     Sweep(Sweep),
     TrackingStatus(TrackingStatus),
 }
@@ -28,10 +28,8 @@ impl crate::common::Message for Message {
             Ok(Message::ScreenData(ScreenData::parse(bytes)?.1))
         } else if bytes.starts_with(SerialNumber::PREFIX) {
             Ok(Message::SerialNumber(SerialNumber::parse(bytes)?.1))
-        } else if bytes.starts_with(SetupInfo::<SpectrumAnalyzer>::PREFIX) {
-            Ok(Message::SetupInfo(
-                SetupInfo::<SpectrumAnalyzer>::parse(bytes)?.1,
-            ))
+        } else if bytes.starts_with(SetupInfo::<Model>::PREFIX) {
+            Ok(Message::SetupInfo(SetupInfo::<Model>::parse(bytes)?.1))
         } else if bytes.starts_with(SweepDataStandard::PREFIX) {
             Ok(Message::Sweep(Sweep::Standard(
                 SweepDataStandard::parse(bytes)?.1,

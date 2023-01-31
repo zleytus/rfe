@@ -6,7 +6,7 @@ use crate::common::{
     Callback, ConnectionError, ConnectionResult, Device, Error, RadioModule, Result, SerialNumber,
     SerialPortReader, SetupInfo,
 };
-use crate::{Frequency, Model, RfExplorer, ScreenData};
+use crate::{Frequency, RfExplorer, ScreenData};
 use serialport::SerialPortInfo;
 use std::fmt::Debug;
 use std::io::{self, BufRead};
@@ -28,7 +28,7 @@ pub struct SignalGenerator {
     config_freq_sweep_callback: Arc<Mutex<Callback<ConfigFreqSweep>>>,
     screen_data: Arc<(Mutex<Option<ScreenData>>, Condvar)>,
     temperature: Arc<(Mutex<Option<Temperature>>, Condvar)>,
-    setup_info: Arc<(Mutex<Option<SetupInfo<Self>>>, Condvar)>,
+    setup_info: Arc<(Mutex<Option<SetupInfo<Model>>>, Condvar)>,
     serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
     port_name: String,
 }

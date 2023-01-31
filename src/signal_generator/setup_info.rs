@@ -1,6 +1,7 @@
-use crate::{common::SetupInfo, SignalGenerator};
+use super::Model;
+use crate::common::SetupInfo;
 
-impl SetupInfo<SignalGenerator> {
+impl SetupInfo<Model> {
     pub const PREFIX: &'static [u8] = b"#C3-M:";
 
     pub(crate) fn parse(bytes: &[u8]) -> nom::IResult<&[u8], Self> {
@@ -8,39 +9,43 @@ impl SetupInfo<SignalGenerator> {
     }
 }
 
-impl Clone for SetupInfo<SignalGenerator> {
-    fn clone(&self) -> Self {
-        Self {
-            main_module_model: self.main_module_model,
-            expansion_module_model: self.expansion_module_model,
-            firmware_version: self.firmware_version.clone(),
-            marker: self.marker,
-        }
-    }
-}
-
-impl PartialEq for SetupInfo<SignalGenerator> {
-    fn eq(&self, other: &Self) -> bool {
-        self.main_module_model == other.main_module_model
-            && self.expansion_module_model == other.expansion_module_model
-            && self.firmware_version == other.firmware_version
-    }
-}
-
-impl Eq for SetupInfo<SignalGenerator> {}
-
 #[cfg(test)]
 mod tests {
-    use crate::common::SetupInfo;
-    use crate::{Model, SignalGenerator};
+    use crate::common::{RadioModule, SetupInfo};
+    use crate::signal_generator::Model;
 
     #[test]
     fn accept_rfe_gen_setup() {
-        let setup = SetupInfo::<SignalGenerator>::parse(b"#C3-M:060,255,01.15\r\n".as_ref())
+        let setup = SetupInfo::<Model>::parse(b"#C3-M:060,255,01.15\r\n".as_ref())
             .unwrap()
             .1;
-        assert_eq!(setup.main_module_model, Model::RfeGen);
-        assert_eq!(setup.expansion_module_model, None);
+        assert_eq!(
+            setup.main_radio_module,
+            RadioModule::Main {
+                model: Model::Rfe6Gen
+            }
+        );
+        assert_eq!(setup.expansion_radio_module, None);
+        assert_eq!(setup.firmware_version, "01.15");
+    }
+
+    #[test]
+    fn accept_rfe_gen_combo_setup() {
+        let setup = SetupInfo::<Model>::parse(b"#C3-M:060,061,01.15\r\n".as_ref())
+            .unwrap()
+            .1;
+        assert_eq!(
+            setup.main_radio_module,
+            RadioModule::Main {
+                model: Model::Rfe6Gen
+            }
+        );
+        assert_eq!(
+            setup.expansion_radio_module,
+            Some(RadioModule::Expansion {
+                model: Model::Rfe6GenExpansion
+            })
+        );
         assert_eq!(setup.firmware_version, "01.15");
     }
 }
