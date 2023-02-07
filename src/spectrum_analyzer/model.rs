@@ -77,11 +77,14 @@ impl Model {
             | Model::Rfe868M
             | Model::Rfe915M
             | Model::RfeWSub1G
-            | Model::Rfe24G
             | Model::RfeWSub3G
             | Model::RfeProAudio => 112_000,
             Model::RfeWSub1GPlus => 100_000,
-            Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6G | Model::Rfe6GPlus => 2_000_000,
+            Model::Rfe24G
+            | Model::Rfe24GPlus
+            | Model::Rfe4GPlus
+            | Model::Rfe6G
+            | Model::Rfe6GPlus => 2_000_000,
         }
         .into()
     }
@@ -89,10 +92,11 @@ impl Model {
     pub fn max_span(&self) -> Frequency {
         match self {
             Model::Rfe433M | Model::Rfe868M | Model::Rfe915M => 10_000_000,
-            Model::RfeWSub1G | Model::Rfe24G => 100_000_000,
-            Model::Rfe24GPlus => 85_000_000,
+            Model::Rfe24G | Model::Rfe24GPlus => 85_000_000,
+            Model::RfeWSub1G => 300_000_000,
             Model::RfeWSub3G | Model::RfeProAudio | Model::Rfe6G => 600_000_000,
-            Model::RfeWSub1GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => 960_000_000,
+            Model::RfeWSub1GPlus => 959_950_000,
+            Model::Rfe4GPlus | Model::Rfe6GPlus => 960_000_000,
         }
         .into()
     }
