@@ -77,4 +77,6 @@ pub trait Device: Sized + Send + Sync {
             }
         })
     }
+
+    fn stop_read_thread(&self);
 }

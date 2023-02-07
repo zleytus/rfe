@@ -106,3 +106,9 @@ impl<D: Device> RfExplorer<D> {
         self.send_command(Command::PowerOff)
     }
 }
+
+impl<D: Device> Drop for RfExplorer<D> {
+    fn drop(&mut self) {
+        self.device.stop_read_thread();
+    }
+}
