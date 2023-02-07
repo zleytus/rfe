@@ -58,18 +58,29 @@ pub trait Device: Sized + Send + Sync {
                         message_buf.clear();
                     }
                     Err(MessageParseError::Incomplete) => {
-                        // Check for the Early-End-of-Transmission (EEOT) byte sequence
-                        if let Some(eeot_index) = message_buf
+                        // Check for Early-End-of-Transmission (EEOT) byte sequences
+                        while let Some(eeot_index) = message_buf
                             .windows(Self::EEOT_BYTES.len())
                             .position(|window| window == Self::EEOT_BYTES)
                         {
                             warn!("Found partial message with EEOT byte sequence. Removing partial message from message buffer.");
                             message_buf.drain(0..eeot_index + Self::EEOT_BYTES.len());
+
                             // Try to parse again after removing the EEOT bytes
-                            if let Ok(message) = Self::Message::parse(&message_buf) {
-                                device.process_message(message);
+                            match Self::Message::parse(&message_buf) {
+                                Ok(message) => {
+                                    device.process_message(message);
+                                    message_buf.clear();
+                                    break;
+                                }
+                                Err(MessageParseError::Incomplete) => {
+                                    continue;
+                                }
+                                _ => {
+                                    message_buf.clear();
+                                    break;
+                                }
                             }
-                            message_buf.clear();
                         }
                     }
                     _ => message_buf.clear(),
