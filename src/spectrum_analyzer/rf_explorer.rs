@@ -194,6 +194,60 @@ impl RfExplorer<SpectrumAnalyzer> {
         self.send_command(Command::TrackingStep(step))
     }
 
+    /// Activates the RF Explorer's main radio module.
+    pub fn activate_main_radio_module(&self) -> Result<()> {
+        if self.active_radio_module().is_main() {
+            return Err(Error::InvalidOperation(
+                "Main radio module is already active.".to_string(),
+            ));
+        }
+
+        self.send_command(Command::SwitchModuleMain)?;
+
+        // Wait until config shows that the main radio module is active
+        let _ = self.wait_for_config_while(|config| {
+            config
+                .filter(|config| !config.is_expansion_radio_module_active)
+                .is_none()
+        });
+
+        if self.active_radio_module().is_main() {
+            Ok(())
+        } else {
+            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+        }
+    }
+
+    /// Activates the RF Explorer's expansion radio module (if one exists).
+    pub fn activate_expansion_radio_module(&self) -> Result<()> {
+        if self.expansion_radio_module().is_none() {
+            return Err(Error::InvalidOperation(
+                "This RF Explorer does not contain an expansion radio module.".to_string(),
+            ));
+        }
+
+        if self.active_radio_module().is_expansion() {
+            return Err(Error::InvalidOperation(
+                "Expansion radio module is already active.".to_string(),
+            ));
+        }
+
+        self.send_command(Command::SwitchModuleExp)?;
+
+        // Wait until config shows that the expansion radio module is active
+        let _ = self.wait_for_config_while(|config| {
+            config
+                .filter(|config| config.is_expansion_radio_module_active)
+                .is_none()
+        });
+
+        if self.active_radio_module().is_expansion() {
+            Ok(())
+        } else {
+            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+        }
+    }
+
     /// Sets the start and stop frequency of sweeps measured by the spectrum analyzer.
     pub fn set_start_stop(
         &self,
@@ -359,40 +413,6 @@ impl RfExplorer<SpectrumAnalyzer> {
     #[tracing::instrument]
     pub fn set_calc_mode(&self, calc_mode: CalcMode) -> io::Result<()> {
         self.send_command(Command::SetCalcMode(calc_mode))
-    }
-
-    /// Sets the spectrum analyzer's active radio module
-    pub fn set_active_radio_module(&self, radio_module: RadioModule) -> Result<()> {
-        // Check if the RF Explorer has more than one radio module to switch between
-        if self.inactive_module().is_none() {
-            return Err(Error::InvalidOperation(format!(
-                "This RF Explorer only has 1 possible radio module: ({})",
-                self.active_module_model()
-            )));
-        }
-
-        // Check if the given radio module is already active
-        if self.config().active_radio_module == radio_module {
-            return Ok(());
-        }
-
-        match radio_module {
-            RadioModule::Main => self.send_command(Command::SwitchModuleMain)?,
-            RadioModule::Expansion => self.send_command(Command::SwitchModuleExp)?,
-        }
-
-        // Wait until the config shows that the given module is active
-        let (_, wait_result) = self.wait_for_config_while(|config| {
-            config
-                .filter(|config| config.active_radio_module == radio_module)
-                .is_none()
-        });
-
-        if !wait_result.timed_out() {
-            Ok(())
-        } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
-        }
     }
 
     /// Sets the spectrum analyzer's input stage.

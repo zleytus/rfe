@@ -637,12 +637,22 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_calc_mode(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_set_active_radio_module(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_main_radio_module(
     rfe: Option<&SpectrumAnalyzer>,
-    radio_module: RadioModule,
 ) -> Result {
     if let Some(rfe) = rfe {
-        rfe.set_active_radio_module(radio_module).into()
+        rfe.activate_main_radio_module().into()
+    } else {
+        Result::NullPtrError
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_expansion_radio_module(
+    rfe: Option<&SpectrumAnalyzer>,
+) -> Result {
+    if let Some(rfe) = rfe {
+        rfe.activate_expansion_radio_module().into()
     } else {
         Result::NullPtrError
     }
