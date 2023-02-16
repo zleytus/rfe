@@ -1,7 +1,4 @@
-use std::{
-    fmt::{write, Display},
-    str,
-};
+use std::{fmt::Display, str};
 
 use nom::{
     bytes::complete::{tag, take_while_m_n},
