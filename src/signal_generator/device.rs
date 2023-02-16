@@ -95,6 +95,7 @@ impl Device for SignalGenerator {
         {
             Ok(device)
         } else {
+            device.stop_read_thread();
             Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
         }
     }
@@ -212,13 +213,11 @@ impl Device for SignalGenerator {
             .clone()
             .unwrap_or_default()
     }
-}
 
-impl Drop for SignalGenerator {
-    fn drop(&mut self) {
+    fn stop_read_thread(&self) {
         *self.is_reading.lock().unwrap() = false;
-        if let Some(read_handle) = self.read_thread_handle.lock().unwrap().take() {
-            let _ = read_handle.join();
+        if let Some(read_thread_handle) = self.read_thread_handle.lock().unwrap().take() {
+            let _ = read_thread_handle.join();
         }
     }
 }
