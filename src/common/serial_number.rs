@@ -1,4 +1,7 @@
-use std::str;
+use std::{
+    fmt::{write, Display},
+    str,
+};
 
 use nom::{
     bytes::complete::{tag, take_while_m_n},
@@ -35,6 +38,18 @@ impl SerialNumber {
         let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((bytes, SerialNumber { serial_number }))
+    }
+}
+
+impl AsRef<str> for SerialNumber {
+    fn as_ref(&self) -> &str {
+        &self.serial_number
+    }
+}
+
+impl Display for SerialNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
