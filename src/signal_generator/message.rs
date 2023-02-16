@@ -35,7 +35,7 @@ impl crate::common::Message for Message {
         } else if bytes.starts_with(Temperature::PREFIX) {
             Ok(Message::Temperature(Temperature::parse(bytes)?.1))
         } else {
-            Err(crate::common::MessageParseError::Invalid)
+            Err(crate::common::MessageParseError::UnknownMessageType)
         }
     }
 }

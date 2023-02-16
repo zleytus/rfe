@@ -12,6 +12,9 @@ pub enum MessageParseError {
 
     #[error("Attempted to parse an invalid message")]
     Invalid,
+
+    #[error("Attempted to parse an unknown message type")]
+    UnknownMessageType,
 }
 
 impl From<nom::Err<Error<&[u8]>>> for MessageParseError {

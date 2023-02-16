@@ -43,7 +43,7 @@ impl crate::common::Message for Message {
         } else if bytes.starts_with(TrackingStatus::PREFIX) {
             Ok(Message::TrackingStatus(TrackingStatus::parse(bytes)?.1))
         } else {
-            Err(MessageParseError::Invalid)
+            Err(MessageParseError::UnknownMessageType)
         }
     }
 }
