@@ -51,7 +51,11 @@ pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortRea
     serial_port.write_all(&Cow::from(Command::RequestConfig))?;
     trace!("Requested Config and SetupInfo");
 
-    Ok(SerialPortReader::new(serial_port))
+    if cfg!(target_os = "windows") {
+        Ok(SerialPortReader::with_capacity(1, serial_port))
+    } else {
+        Ok(SerialPortReader::new(serial_port))
+    }
 }
 
 #[derive(Error, Debug)]
