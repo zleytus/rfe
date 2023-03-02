@@ -2,6 +2,7 @@ use crate::{
     common::{parsers::*, Frequency},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
+use chrono::{DateTime, Utc};
 use nom::{bytes::complete::tag, IResult};
 use std::time::Duration;
 
@@ -15,6 +16,7 @@ pub struct ConfigAmpSweep {
     pub stop_power_level: PowerLevel,
     pub rf_power: RfPower,
     pub sweep_delay: Duration,
+    pub timestamp: DateTime<Utc>,
 }
 
 impl ConfigAmpSweep {

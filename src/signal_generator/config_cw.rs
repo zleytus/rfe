@@ -2,6 +2,7 @@ use crate::{
     common::{parsers::*, Frequency},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
+use chrono::{DateTime, Utc};
 use nom::{bytes::complete::tag, IResult};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -12,6 +13,7 @@ pub struct ConfigCw {
     pub attenuation: Attenuation,
     pub power_level: PowerLevel,
     pub rf_power: RfPower,
+    pub timestamp: DateTime<Utc>,
 }
 
 impl ConfigCw {

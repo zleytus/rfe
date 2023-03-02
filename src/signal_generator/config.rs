@@ -2,6 +2,7 @@ use crate::{
     common::{parsers::*, Frequency},
     signal_generator::parsers::*,
 };
+use chrono::{DateTime, Utc};
 use nom::{bytes::complete::tag, IResult};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::time::Duration;
@@ -47,6 +48,7 @@ pub struct Config {
     pub stop_power_level: PowerLevel,
     pub rf_power: RfPower,
     pub sweep_delay: Duration,
+    pub timestamp: DateTime<Utc>,
 }
 
 impl Config {
