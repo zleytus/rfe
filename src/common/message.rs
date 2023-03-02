@@ -1,10 +1,6 @@
 use nom::error::Error;
 use thiserror::Error;
 
-pub trait Message: Sized {
-    fn parse(bytes: &[u8]) -> Result<Self, MessageParseError>;
-}
-
 #[derive(Error, Debug)]
 pub enum MessageParseError {
     #[error("Attempted to parse an incomplete message")]

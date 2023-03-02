@@ -16,8 +16,11 @@ pub enum Message {
     TrackingStatus(TrackingStatus),
 }
 
-impl crate::common::Message for Message {
-    fn parse(bytes: &[u8]) -> Result<Self, MessageParseError> {
+impl TryFrom<&[u8]> for Message {
+    type Error = MessageParseError;
+
+    #[tracing::instrument(ret, err, fields(bytes_as_string = String::from_utf8_lossy(bytes).as_ref()))]
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.starts_with(Config::PREFIX) {
             Ok(Message::Config(Config::parse(bytes)?.1))
         } else if bytes.starts_with(DspMode::PREFIX) {

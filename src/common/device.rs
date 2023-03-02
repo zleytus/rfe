@@ -11,7 +11,7 @@ pub trait Device: Sized + Send + Sync {
     const RECEIVE_FIRST_CONFIG_TIMEOUT: Duration = Duration::from_secs(1);
     const EEOT_BYTES: [u8; 5] = [255, 254, 255, 254, 0];
 
-    type Message: Message;
+    type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError> + Debug;
 
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>>;
 
