@@ -1,10 +1,13 @@
-use nom::error::Error;
+use nom::{error::Error, Err};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum MessageParseError {
+#[derive(Error, Debug, Eq, PartialEq)]
+pub enum MessageParseError<'a> {
     #[error("Attempted to parse an incomplete message")]
     Incomplete,
+
+    #[error("Attempted to parse a truncated message")]
+    Truncated { remainder: Option<&'a [u8]> },
 
     #[error("Attempted to parse an invalid message")]
     Invalid,
@@ -13,10 +16,10 @@ pub enum MessageParseError {
     UnknownMessageType,
 }
 
-impl From<nom::Err<Error<&[u8]>>> for MessageParseError {
-    fn from(error: nom::Err<Error<&[u8]>>) -> Self {
+impl<'a> From<Err<Error<&[u8]>>> for MessageParseError<'a> {
+    fn from(error: Err<Error<&[u8]>>) -> Self {
         match error {
-            nom::Err::Incomplete(_) => MessageParseError::Incomplete,
+            Err::Incomplete(_) => MessageParseError::Incomplete,
             _ => MessageParseError::Invalid,
         }
     }
