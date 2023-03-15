@@ -1,8 +1,9 @@
 use std::convert::TryInto;
 
 use chrono::{DateTime, Utc};
-use nom::{bytes::complete::tag, bytes::streaming::take, combinator::map_res, IResult};
+use nom::{bytes::complete::tag, bytes::streaming::take, combinator::map_res};
 
+use super::MessageParseError;
 use crate::common::parsers::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -49,8 +50,12 @@ impl ScreenData {
     pub fn timestamp(&self) -> DateTime<Utc> {
         self.timestamp
     }
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
+impl<'a> TryFrom<&'a [u8]> for ScreenData {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -59,7 +64,7 @@ impl ScreenData {
             map_res(take(Self::ROWS * Self::COLUMNS), TryInto::try_into)(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = parse_opt_line_ending(bytes)?;
+        let _ = parse_opt_line_ending(bytes)?;
 
         // Convert the slice of bytes representing the screen data into a matrix
         let screen_data_matrix = {
@@ -71,12 +76,9 @@ impl ScreenData {
             matrix
         };
 
-        Ok((
-            bytes,
-            ScreenData {
-                screen_data_matrix,
-                timestamp: Utc::now(),
-            },
-        ))
+        Ok(ScreenData {
+            screen_data_matrix,
+            timestamp: Utc::now(),
+        })
     }
 }

@@ -1,11 +1,12 @@
+use chrono::{DateTime, Utc};
+use nom::bytes::complete::tag;
+
 use crate::{
-    common::{parsers::*, Frequency},
+    common::{parsers::*, Frequency, MessageParseError},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
-use chrono::{DateTime, Utc};
-use nom::{bytes::complete::tag, IResult};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct ConfigCw {
     pub cw: Frequency,
     pub total_steps: u32,
@@ -18,8 +19,12 @@ pub struct ConfigCw {
 
 impl ConfigCw {
     pub const PREFIX: &'static [u8] = b"#C3-G:";
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
+impl<'a> TryFrom<&'a [u8]> for ConfigCw {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -57,19 +62,17 @@ impl ConfigCw {
         let (bytes, rf_power) = parse_rf_power(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = parse_opt_line_ending(bytes)?;
+        let _ = parse_opt_line_ending(bytes)?;
 
-        Ok((
-            bytes,
-            ConfigCw {
-                cw: Frequency::from_khz(cw_khz),
-                total_steps,
-                step_freq: Frequency::from_khz(step_khz),
-                attenuation,
-                power_level,
-                rf_power,
-            },
-        ))
+        Ok(ConfigCw {
+            cw: Frequency::from_khz(cw_khz),
+            total_steps,
+            step_freq: Frequency::from_khz(step_khz),
+            attenuation,
+            power_level,
+            rf_power,
+            timestamp: Utc::now(),
+        })
     }
 }
 
@@ -80,7 +83,7 @@ mod tests {
     #[test]
     fn parse_config_cw() {
         let bytes = b"#C3-G:0186525,0186525,0005,0001000,0,3,0\r\n";
-        let config_cw = ConfigCw::parse(bytes.as_ref()).unwrap().1;
+        let config_cw = ConfigCw::try_from(bytes.as_ref()).unwrap();
         assert_eq!(config_cw.cw.as_khz(), 186_525);
         assert_eq!(config_cw.total_steps, 5);
         assert_eq!(config_cw.step_freq.as_khz(), 1_000);

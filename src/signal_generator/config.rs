@@ -1,11 +1,13 @@
+use std::time::Duration;
+
+use chrono::{DateTime, Utc};
+use nom::bytes::complete::tag;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+
 use crate::{
-    common::{parsers::*, Frequency},
+    common::{parsers::*, Frequency, MessageParseError},
     signal_generator::parsers::*,
 };
-use chrono::{DateTime, Utc};
-use nom::{bytes::complete::tag, IResult};
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use std::time::Duration;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
@@ -53,8 +55,12 @@ pub struct Config {
 
 impl Config {
     pub const PREFIX: &'static [u8] = b"#C3-*:";
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
+impl<'a> TryFrom<&'a [u8]> for Config {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
@@ -122,26 +128,24 @@ impl Config {
         let (bytes, sweep_delay_ms) = parse_sweep_delay_ms(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = parse_opt_line_ending(bytes)?;
+        let _ = parse_opt_line_ending(bytes)?;
 
-        Ok((
-            bytes,
-            Config {
-                start: Frequency::from_khz(start_khz),
-                cw: Frequency::from_khz(cw_khz),
-                total_steps,
-                step: Frequency::from_khz(step_khz),
-                attenuation,
-                power_level,
-                sweep_power_steps,
-                start_attenuation,
-                start_power_level,
-                stop_attenuation,
-                stop_power_level,
-                rf_power,
-                sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
-            },
-        ))
+        Ok(Config {
+            start: Frequency::from_khz(start_khz),
+            cw: Frequency::from_khz(cw_khz),
+            total_steps,
+            step: Frequency::from_khz(step_khz),
+            attenuation,
+            power_level,
+            sweep_power_steps,
+            start_attenuation,
+            start_power_level,
+            stop_attenuation,
+            stop_power_level,
+            rf_power,
+            sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
+            timestamp: Utc::now(),
+        })
     }
 }
 
@@ -152,7 +156,7 @@ mod tests {
     #[test]
     fn parse_config() {
         let bytes = b"#C3-*:0510000,0186525,0005,0001000,0,3,0000,0,0,1,3,0,00100\r\n";
-        let config = Config::parse(bytes.as_ref()).unwrap().1;
+        let config = Config::try_from(bytes.as_ref()).unwrap();
         assert_eq!(config.start.as_hz(), 510_000_000);
         assert_eq!(config.cw.as_hz(), 186_525_000);
         assert_eq!(config.total_steps, 5);

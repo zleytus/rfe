@@ -16,35 +16,35 @@ pub enum Message {
     TrackingStatus(TrackingStatus),
 }
 
-impl TryFrom<&[u8]> for Message {
-    type Error = MessageParseError;
+impl<'a> TryFrom<&'a [u8]> for Message {
+    type Error = MessageParseError<'a>;
 
     #[tracing::instrument(ret, err, fields(bytes_as_string = String::from_utf8_lossy(bytes).as_ref()))]
-    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         if bytes.starts_with(Config::PREFIX) {
-            Ok(Message::Config(Config::parse(bytes)?.1))
+            Ok(Message::Config(Config::try_from(bytes)?))
         } else if bytes.starts_with(DspMode::PREFIX) {
-            Ok(Message::DspMode(DspMode::parse(bytes)?.1))
+            Ok(Message::DspMode(DspMode::try_from(bytes)?))
         } else if bytes.starts_with(InputStage::PREFIX) {
-            Ok(Message::InputStage(InputStage::parse(bytes)?.1))
+            Ok(Message::InputStage(InputStage::try_from(bytes)?))
         } else if bytes.starts_with(ScreenData::PREFIX) {
-            Ok(Message::ScreenData(ScreenData::parse(bytes)?.1))
+            Ok(Message::ScreenData(ScreenData::try_from(bytes)?))
         } else if bytes.starts_with(SerialNumber::PREFIX) {
-            Ok(Message::SerialNumber(SerialNumber::parse(bytes)?.1))
+            Ok(Message::SerialNumber(SerialNumber::try_from(bytes)?))
         } else if bytes.starts_with(SetupInfo::<Model>::PREFIX) {
-            Ok(Message::SetupInfo(SetupInfo::<Model>::parse(bytes)?.1))
+            Ok(Message::SetupInfo(SetupInfo::<Model>::try_from(bytes)?))
         } else if bytes.starts_with(SweepDataStandard::PREFIX) {
             Ok(Message::Sweep(Sweep::Standard(
-                SweepDataStandard::parse(bytes)?.1,
+                SweepDataStandard::try_from(bytes)?,
             )))
         } else if bytes.starts_with(SweepDataExt::PREFIX) {
-            Ok(Message::Sweep(Sweep::Ext(SweepDataExt::parse(bytes)?.1)))
+            Ok(Message::Sweep(Sweep::Ext(SweepDataExt::try_from(bytes)?)))
         } else if bytes.starts_with(SweepDataLarge::PREFIX) {
-            Ok(Message::Sweep(Sweep::Large(
-                SweepDataLarge::parse(bytes)?.1,
-            )))
+            Ok(Message::Sweep(Sweep::Large(SweepDataLarge::try_from(
+                bytes,
+            )?)))
         } else if bytes.starts_with(TrackingStatus::PREFIX) {
-            Ok(Message::TrackingStatus(TrackingStatus::parse(bytes)?.1))
+            Ok(Message::TrackingStatus(TrackingStatus::try_from(bytes)?))
         } else {
             Err(MessageParseError::UnknownMessageType)
         }

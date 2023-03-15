@@ -7,10 +7,10 @@ use nom::{
     combinator::map,
     multi::length_data,
     number::complete::{be_u16, u8 as nom_u8},
-    IResult,
 };
 
-use crate::common::parsers::*;
+use super::{Config, Model};
+use crate::common::{parsers::*, MessageParseError, SetupInfo};
 
 #[derive(Clone, PartialEq)]
 pub enum Sweep {
@@ -47,8 +47,12 @@ macro_rules! impl_sweep_data {
 
         impl $sweep_data {
             pub const PREFIX: &'static [u8] = $prefix;
+        }
 
-            pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
+        impl<'a> TryFrom<&'a [u8]> for $sweep_data {
+            type Error = MessageParseError<'a>;
+
+            fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
                 // Parse the prefix of the message
                 let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -59,15 +63,12 @@ macro_rules! impl_sweep_data {
                 let amplitudes_dbm = amps.iter().map(|&byte| f32::from(byte) / -2.).collect();
 
                 // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-                let (bytes, _) = parse_opt_line_ending(bytes)?;
+                let _ = parse_opt_line_ending(bytes)?;
 
-                Ok((
-                    bytes,
-                    $sweep_data {
-                        amplitudes_dbm,
-                        timestamp: Utc::now(),
-                    },
-                ))
+                Ok($sweep_data {
+                    amplitudes_dbm,
+                    timestamp: Utc::now(),
+                })
             }
         }
 
@@ -130,7 +131,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep_data = SweepDataStandard::parse(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataStandard::try_from(&bytes[..]).unwrap();
         assert_eq!(
             sweep_data.amplitudes_dbm,
             &[
@@ -160,7 +161,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep_data = SweepDataExt::parse(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataExt::try_from(&bytes[..]).unwrap();
         assert_eq!(
             sweep_data.amplitudes_dbm,
             &[
@@ -190,7 +191,7 @@ mod tests {
             175, 179, 36, 21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227,
             20, 92, 6, 229, 120, 125, 239,
         ];
-        let sweep_data = SweepDataLarge::parse(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataLarge::try_from(&bytes[..]).unwrap();
         assert_eq!(
             sweep_data.amplitudes_dbm,
             &[
@@ -220,8 +221,8 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239, 100,
         ];
-        let sweep_data_error = SweepDataStandard::parse(&bytes[..]).unwrap_err();
-        assert!(matches!(sweep_data_error, nom::Err::Error(..)));
+        let sweep_data_error = SweepDataStandard::try_from(&bytes[..]).unwrap_err();
+        assert_eq!(sweep_data_error, MessageParseError::Invalid);
     }
 
     #[test]
@@ -236,8 +237,8 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125,
         ];
-        let sweep_data_error = SweepDataStandard::parse(&bytes[..]).unwrap_err();
-        assert!(matches!(sweep_data_error, nom::Err::Incomplete(..)));
+        let sweep_data_error = SweepDataStandard::try_from(&bytes[..]).unwrap_err();
+        assert_eq!(sweep_data_error, MessageParseError::Incomplete);
     }
 
     #[test]

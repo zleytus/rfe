@@ -5,10 +5,9 @@ use nom::{
     character::is_alphanumeric,
     combinator::{map, map_res},
     sequence::preceded,
-    IResult,
 };
 
-use super::parsers::*;
+use super::{parsers::*, MessageParseError};
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct SerialNumber {
@@ -21,8 +20,12 @@ impl SerialNumber {
     pub fn as_str(&self) -> &str {
         &self.serial_number
     }
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
+impl<'a> TryFrom<&'a [u8]> for SerialNumber {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         let (bytes, serial_number) = preceded(
             tag(SerialNumber::PREFIX),
             map(
@@ -32,9 +35,9 @@ impl SerialNumber {
         )(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = parse_opt_line_ending(bytes)?;
+        let _ = parse_opt_line_ending(bytes)?;
 
-        Ok((bytes, SerialNumber { serial_number }))
+        Ok(SerialNumber { serial_number })
     }
 }
 
@@ -56,12 +59,12 @@ mod tests {
 
     #[test]
     fn reject_with_invalid_prefix() {
-        assert!(SerialNumber::parse(b"$Sn0SME38SI2X7NGR48".as_ref()).is_err());
+        assert!(SerialNumber::try_from(b"$Sn0SME38SI2X7NGR48".as_ref()).is_err());
     }
 
     #[test]
     fn accept_valid_serial_number() {
-        assert!(SerialNumber::parse(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok());
-        assert!(SerialNumber::parse(b"#SnB3AK7AL7CACAA74M\r\n".as_ref()).is_ok());
+        assert!(SerialNumber::try_from(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok());
+        assert!(SerialNumber::try_from(b"#SnB3AK7AL7CACAA74M\r\n".as_ref()).is_ok());
     }
 }

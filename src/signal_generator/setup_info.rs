@@ -1,11 +1,15 @@
 use super::Model;
-use crate::common::SetupInfo;
+use crate::common::{MessageParseError, SetupInfo};
 
 impl SetupInfo<Model> {
     pub const PREFIX: &'static [u8] = b"#C3-M:";
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> nom::IResult<&[u8], Self> {
-        SetupInfo::parse_with_prefix(bytes, Self::PREFIX)
+impl<'a> TryFrom<&'a [u8]> for SetupInfo<Model> {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        SetupInfo::try_from_with_prefix(bytes, Self::PREFIX)
     }
 }
 
@@ -16,9 +20,7 @@ mod tests {
 
     #[test]
     fn accept_rfe_gen_setup() {
-        let setup = SetupInfo::<Model>::parse(b"#C3-M:060,255,01.15\r\n".as_ref())
-            .unwrap()
-            .1;
+        let setup = SetupInfo::<Model>::try_from(b"#C3-M:060,255,01.15\r\n".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
             RadioModule::Main {
@@ -31,9 +33,7 @@ mod tests {
 
     #[test]
     fn accept_rfe_gen_combo_setup() {
-        let setup = SetupInfo::<Model>::parse(b"#C3-M:060,061,01.15\r\n".as_ref())
-            .unwrap()
-            .1;
+        let setup = SetupInfo::<Model>::try_from(b"#C3-M:060,061,01.15\r\n".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
             RadioModule::Main {

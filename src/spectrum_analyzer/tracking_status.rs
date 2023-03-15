@@ -1,9 +1,9 @@
 use std::convert::TryFrom;
 
-use nom::{bytes::complete::tag, combinator::map_res, number::complete::u8 as nom_u8, IResult};
+use nom::{bytes::complete::tag, combinator::map_res, number::complete::u8 as nom_u8};
 use num_enum::TryFromPrimitive;
 
-use crate::common::parsers::*;
+use crate::common::{parsers::*, MessageParseError};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, Default)]
 #[repr(u8)]
@@ -15,8 +15,12 @@ pub enum TrackingStatus {
 
 impl TrackingStatus {
     pub const PREFIX: &'static [u8] = b"#K";
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
+impl<'a> TryFrom<&'a [u8]> for TrackingStatus {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         // Parse the prefix of the message
         let (bytes, _) = tag(TrackingStatus::PREFIX)(bytes)?;
 
@@ -24,9 +28,9 @@ impl TrackingStatus {
         let (bytes, tracking_status) = map_res(nom_u8, TrackingStatus::try_from)(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = parse_opt_line_ending(bytes)?;
+        let _ = parse_opt_line_ending(bytes)?;
 
-        Ok((bytes, tracking_status))
+        Ok(tracking_status)
     }
 }
 
@@ -37,7 +41,7 @@ mod tests {
     #[test]
     fn accept_valid_tracking_status_message() {
         let bytes = [b'#', b'K', 0];
-        let tracking_status = TrackingStatus::parse(bytes.as_ref()).unwrap().1;
+        let tracking_status = TrackingStatus::try_from(bytes.as_ref()).unwrap();
         assert_eq!(tracking_status, TrackingStatus::Disabled);
     }
 }

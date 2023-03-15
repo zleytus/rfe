@@ -6,7 +6,7 @@ use nom::{
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use crate::common::parsers::*;
+use crate::common::{parsers::*, MessageParseError};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
@@ -20,8 +20,12 @@ pub enum InputStage {
 
 impl InputStage {
     pub const PREFIX: &'static [u8] = b"#a";
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> nom::IResult<&[u8], Self> {
+impl<'a> TryFrom<&'a [u8]> for InputStage {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         // Parse the prefix of the message
         let (bytes, _) = tag(InputStage::PREFIX)(bytes)?;
 
@@ -30,9 +34,9 @@ impl InputStage {
             map_res(take(1usize), |byte: &[u8]| InputStage::try_from(byte[0]))(bytes)?;
 
         // Consume \r or \r\n line ending and make sure there aren't any bytes left
-        let (bytes, _) = parse_opt_line_ending(bytes)?;
+        let _ = parse_opt_line_ending(bytes)?;
 
-        Ok((bytes, input_stage))
+        Ok(input_stage)
     }
 }
 

@@ -1,10 +1,12 @@
+use std::time::Duration;
+
+use chrono::{DateTime, Utc};
+use nom::bytes::complete::tag;
+
 use crate::{
-    common::{parsers::*, Frequency},
+    common::{parsers::*, Frequency, MessageParseError},
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
-use chrono::{DateTime, Utc};
-use nom::{bytes::complete::tag, IResult};
-use std::time::Duration;
 
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct ConfigAmpSweep {
@@ -21,8 +23,12 @@ pub struct ConfigAmpSweep {
 
 impl ConfigAmpSweep {
     pub const PREFIX: &'static [u8] = b"#C3-A:";
+}
 
-    pub(crate) fn parse(bytes: &[u8]) -> IResult<&[u8], Self> {
+impl<'a> TryFrom<&'a [u8]> for ConfigAmpSweep {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -65,21 +71,19 @@ impl ConfigAmpSweep {
         let (bytes, sweep_delay_ms) = parse_sweep_delay_ms(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = parse_opt_line_ending(bytes)?;
+        let _ = parse_opt_line_ending(bytes)?;
 
-        Ok((
-            bytes,
-            ConfigAmpSweep {
-                cw: Frequency::from_khz(cw_khz),
-                sweep_power_steps,
-                start_attenuation,
-                start_power_level,
-                stop_attenuation,
-                stop_power_level,
-                rf_power,
-                sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
-            },
-        ))
+        Ok(ConfigAmpSweep {
+            cw: Frequency::from_khz(cw_khz),
+            sweep_power_steps,
+            start_attenuation,
+            start_power_level,
+            stop_attenuation,
+            stop_power_level,
+            rf_power,
+            sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
+            timestamp: Utc::now(),
+        })
     }
 }
 
@@ -90,7 +94,7 @@ mod tests {
     #[test]
     fn parse_config() {
         let bytes = b"#C3-A:0186525,0000,0,0,1,3,0,00100\r\n";
-        let config_amp_sweep = ConfigAmpSweep::parse(bytes.as_ref()).unwrap().1;
+        let config_amp_sweep = ConfigAmpSweep::try_from(bytes.as_ref()).unwrap();
         assert_eq!(config_amp_sweep.cw.as_khz(), 186_525);
         assert_eq!(config_amp_sweep.sweep_power_steps, 0);
         assert_eq!(config_amp_sweep.start_attenuation, Attenuation::On);
