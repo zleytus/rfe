@@ -1,17 +1,17 @@
-use super::{ConnectionResult, Message, MessageParseError, SerialNumber};
-use serialport::SerialPortInfo;
-use std::io::{self, ErrorKind};
-use std::sync::Arc;
-use std::thread::{self, JoinHandle};
-use std::time::Duration;
-use tracing::{error, trace, warn};
+use std::{
+    fmt::Debug,
+    io::{self, ErrorKind},
+    sync::Arc,
+    thread,
+    time::Duration,
+};
 
 pub trait Device: Sized + Send + Sync {
     const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
     const RECEIVE_FIRST_CONFIG_TIMEOUT: Duration = Duration::from_secs(1);
     const EEOT_BYTES: [u8; 5] = [255, 254, 255, 254, 0];
 
-    type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError> + Debug;
+use super::{ConnectionResult, MessageParseError, SerialNumber, SerialPort};
 
     fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>>;
 
@@ -90,4 +90,16 @@ pub trait Device: Sized + Send + Sync {
     }
 
     fn stop_read_thread(&self);
+}
+
+fn find_message_in_buf<M>(message_buf: &[u8]) -> Result<M, MessageParseError>
+where
+    M: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>>,
+{
+    M::try_from(message_buf).or_else(|e| match e {
+        MessageParseError::Truncated {
+            remainder: Some(remaining_bytes),
+        } => find_message_in_buf(remaining_bytes),
+        error => Err(error),
+    })
 }

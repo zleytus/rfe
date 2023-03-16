@@ -20,6 +20,8 @@ pub enum Sweep {
 }
 
 impl Sweep {
+    const EEOT_BYTES: [u8; 5] = [255, 254, 255, 254, 0];
+
     pub fn amplitudes_dbm(&self) -> &[f32] {
         match self {
             Sweep::Standard(sweep_data) => sweep_data.amplitudes_dbm.as_slice(),
@@ -55,6 +57,24 @@ macro_rules! impl_sweep_data {
             fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
                 // Parse the prefix of the message
                 let (bytes, _) = tag(Self::PREFIX)(bytes)?;
+
+                // Determine whether or not the Sweep is 'truncated' by looking for the EEOT byte
+                // sequence as well as Config and SetupInfo messages
+                if let Some(index) = bytes.windows(5).enumerate().find_map(|(i, window)| {
+                    if Sweep::EEOT_BYTES.starts_with(window) {
+                        Some(i + Sweep::EEOT_BYTES.len())
+                    } else if Config::PREFIX.starts_with(window)
+                        || SetupInfo::<Model>::PREFIX.starts_with(window)
+                    {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                }) {
+                    return Err(MessageParseError::Truncated {
+                        remainder: bytes.get(index..),
+                    });
+                }
 
                 // Get the slice containing the amplitudes in the sweep data
                 let (bytes, amps) = $amp_parser(bytes)?;
@@ -239,6 +259,42 @@ mod tests {
         ];
         let sweep_data_error = SweepDataStandard::try_from(&bytes[..]).unwrap_err();
         assert_eq!(sweep_data_error, MessageParseError::Incomplete);
+    }
+
+    #[test]
+    fn reject_sweep_with_eeot_bytes() {
+        let length = 112;
+        let bytes = [
+            b'$', b'S', length, 255, 254, 255, 254, 0, 233, 246, 235, 135, 113, 130, 74, 70, 251,
+            124, 186, 231, 115, 199, 203, 64, 112, 146, 24, 170, 197, 77, 105, 121, 139, 134, 91,
+            157, 44, 19, 167, 140, 65, 188, 86, 28, 244, 191, 26, 164, 55, 241, 16, 5, 154, 57,
+            109, 253, 211, 62, 47, 111, 152, 196, 73, 119, 178, 147, 88, 41, 250, 238, 247, 40, 97,
+            230, 102, 169, 151, 249, 116, 66, 4, 80, 234, 3, 183, 71, 107, 237, 198, 175, 179, 36,
+            21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
+            120, 125, 239,
+        ];
+        assert_eq!(
+            SweepDataStandard::try_from(bytes.as_slice()).unwrap_err(),
+            MessageParseError::Truncated {
+                remainder: Some(&bytes[8..])
+            }
+        );
+    }
+
+    #[test]
+    fn reject_sweep_with_config_at_the_end() {
+        let bytes = [
+            36, 83, 112, 215, 210, 214, 212, 212, 216, 212, 210, 214, 213, 212, 215, 212, 212, 212,
+            212, 220, 211, 215, 212, 212, 217, 213, 208, 214, 216, 210, 210, 213, 215, 216, 213,
+            213, 217, 209, 216, 214, 217, 206, 210, 13, 10, 35, 67, 50, 45, 77, 58, 48, 48, 54, 44,
+            48, 48, 52, 44, 48, 49, 46, 49, 50, 66, 50, 48, 13, 10,
+        ];
+        assert_eq!(
+            SweepDataStandard::try_from(bytes.as_slice()).unwrap_err(),
+            MessageParseError::Truncated {
+                remainder: Some(&bytes[45..])
+            }
+        );
     }
 
     #[test]
