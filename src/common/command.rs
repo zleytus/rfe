@@ -3,6 +3,7 @@ use std::borrow::Cow;
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum Command {
     RequestConfig,
+    RequestSerialNumber,
     EnableLcd,
     DisableLcd,
     EnableDumpScreen,
@@ -16,6 +17,7 @@ impl From<Command> for Cow<'static, [u8]> {
     fn from(command: Command) -> Self {
         match command {
             Command::RequestConfig => Cow::Borrowed(&[b'#', 4, b'C', b'0']),
+            Command::RequestSerialNumber => Cow::Borrowed(&[b'#', 4, b'C', b'n']),
             Command::EnableLcd => Cow::Borrowed(&[b'#', 4, b'L', b'1']),
             Command::DisableLcd => Cow::Borrowed(&[b'#', 4, b'L', b'0']),
             Command::EnableDumpScreen => Cow::Borrowed(&[b'#', 4, b'D', b'1']),
@@ -41,6 +43,7 @@ mod tests {
     #[test]
     fn correct_command_size_fields() {
         assert_correct_size!(Command::RequestConfig);
+        assert_correct_size!(Command::RequestSerialNumber);
         assert_correct_size!(Command::EnableLcd);
         assert_correct_size!(Command::DisableLcd);
         assert_correct_size!(Command::EnableDumpScreen);
