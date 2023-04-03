@@ -18,7 +18,7 @@ pub enum Temperature {
 }
 
 impl Temperature {
-    pub const PREFIX: &'static [u8] = b"#T:";
+    pub(crate) const PREFIX: &'static [u8] = b"#T:";
 
     pub fn range(&self) -> RangeInclusive<i8> {
         match self {

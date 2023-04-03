@@ -15,7 +15,7 @@ pub struct SerialNumber {
 }
 
 impl SerialNumber {
-    pub const PREFIX: &'static [u8] = b"#Sn";
+    pub(crate) const PREFIX: &'static [u8] = b"#Sn";
 
     pub fn as_str(&self) -> &str {
         &self.serial_number

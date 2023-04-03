@@ -18,7 +18,7 @@ pub struct ConfigCw {
 }
 
 impl ConfigCw {
-    pub const PREFIX: &'static [u8] = b"#C3-G:";
+    pub(crate) const PREFIX: &'static [u8] = b"#C3-G:";
 }
 
 impl<'a> TryFrom<&'a [u8]> for ConfigCw {

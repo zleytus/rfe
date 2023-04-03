@@ -54,7 +54,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub const PREFIX: &'static [u8] = b"#C3-*:";
+    pub(crate) const PREFIX: &'static [u8] = b"#C3-*:";
 }
 
 impl<'a> TryFrom<&'a [u8]> for Config {

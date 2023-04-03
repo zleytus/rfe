@@ -19,7 +19,7 @@ pub enum InputStage {
 }
 
 impl InputStage {
-    pub const PREFIX: &'static [u8] = b"#a";
+    pub(crate) const PREFIX: &'static [u8] = b"#a";
 }
 
 impl<'a> TryFrom<&'a [u8]> for InputStage {

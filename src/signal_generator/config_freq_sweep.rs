@@ -20,7 +20,7 @@ pub struct ConfigFreqSweep {
     pub timestamp: DateTime<Utc>,
 }
 impl ConfigFreqSweep {
-    pub const PREFIX: &'static [u8] = b"#C3-F:";
+    pub(crate) const PREFIX: &'static [u8] = b"#C3-F:";
 }
 
 impl<'a> TryFrom<&'a [u8]> for ConfigFreqSweep {

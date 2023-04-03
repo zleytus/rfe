@@ -22,7 +22,7 @@ pub struct ConfigAmpSweep {
 }
 
 impl ConfigAmpSweep {
-    pub const PREFIX: &'static [u8] = b"#C3-A:";
+    pub(crate) const PREFIX: &'static [u8] = b"#C3-A:";
 }
 
 impl<'a> TryFrom<&'a [u8]> for ConfigAmpSweep {

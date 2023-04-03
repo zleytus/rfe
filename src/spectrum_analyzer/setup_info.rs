@@ -2,7 +2,7 @@ use super::Model;
 use crate::common::{MessageParseError, SetupInfo};
 
 impl SetupInfo<Model> {
-    pub const PREFIX: &'static [u8] = b"#C2-M:";
+    pub(crate) const PREFIX: &'static [u8] = b"#C2-M:";
 }
 
 impl<'a> TryFrom<&'a [u8]> for SetupInfo<Model> {

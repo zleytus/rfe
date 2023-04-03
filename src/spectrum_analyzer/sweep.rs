@@ -48,7 +48,7 @@ macro_rules! impl_sweep_data {
         }
 
         impl $sweep_data {
-            pub const PREFIX: &'static [u8] = $prefix;
+            pub(crate) const PREFIX: &'static [u8] = $prefix;
         }
 
         impl<'a> TryFrom<&'a [u8]> for $sweep_data {

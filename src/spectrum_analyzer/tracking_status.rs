@@ -14,7 +14,7 @@ pub enum TrackingStatus {
 }
 
 impl TrackingStatus {
-    pub const PREFIX: &'static [u8] = b"#K";
+    pub(crate) const PREFIX: &'static [u8] = b"#K";
 }
 
 impl<'a> TryFrom<&'a [u8]> for TrackingStatus {

@@ -16,7 +16,7 @@ pub enum DspMode {
 }
 
 impl DspMode {
-    pub const PREFIX: &'static [u8] = b"DSP:";
+    pub(crate) const PREFIX: &'static [u8] = b"DSP:";
 }
 
 impl<'a> TryFrom<&'a [u8]> for DspMode {

@@ -97,7 +97,8 @@ pub struct Config {
 }
 
 impl Config {
-    pub const PREFIX: &'static [u8] = b"#C2-F:";
+    pub(crate) const PREFIX: &'static [u8] = b"#C2-F:";
+}
 
 impl<'a> TryFrom<&'a [u8]> for Config {
     type Error = MessageParseError<'a>;
