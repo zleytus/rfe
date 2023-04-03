@@ -72,3 +72,54 @@ pub enum ConnectionError {
 
 pub type ConnectionResult<T> = Result<T, ConnectionError>;
 pub(crate) type SerialPortReader = BufReader<Box<dyn SerialPort>>;
+
+fn bps_to_code(baud_rate: u32) -> super::Result<u8> {
+    match baud_rate {
+        1_200 => Ok(b'1'),
+        2_400 => Ok(b'2'),
+        4_800 => Ok(b'3'),
+        9_600 => Ok(b'4'),
+        19_200 => Ok(b'5'),
+        38_400 => Ok(b'6'),
+        57_600 => Ok(b'7'),
+        115_200 => Ok(b'8'),
+        500_000 => Ok(b'0'),
+        _ => Err(super::Error::InvalidInput("Invalid baud rate".to_string())),
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub(crate) struct BaudRate {
+    bps: u32,
+    code: u8,
+}
+
+impl BaudRate {
+    pub(crate) fn bps(&self) -> u32 {
+        self.bps
+    }
+
+    pub(crate) fn code(&self) -> u8 {
+        self.code
+    }
+}
+
+impl TryFrom<u32> for BaudRate {
+    type Error = super::Error;
+
+    fn try_from(bps: u32) -> Result<Self, Self::Error> {
+        Ok(BaudRate {
+            bps,
+            code: bps_to_code(bps)?,
+        })
+    }
+}
+
+impl Default for BaudRate {
+    fn default() -> Self {
+        BaudRate {
+            bps: 500_000,
+            code: b'0',
+        }
+    }
+}

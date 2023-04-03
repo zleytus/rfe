@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use super::BaudRate;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum Command {
     RequestConfig,
@@ -9,6 +11,7 @@ pub(crate) enum Command {
     EnableDumpScreen,
     DisableDumpScreen,
     Hold,
+    SetBaudRate { baud_rate: BaudRate },
     Reboot,
     PowerOff,
 }
@@ -23,6 +26,7 @@ impl From<Command> for Cow<'static, [u8]> {
             Command::EnableDumpScreen => Cow::Borrowed(&[b'#', 4, b'D', b'1']),
             Command::DisableDumpScreen => Cow::Borrowed(&[b'#', 4, b'D', b'0']),
             Command::Hold => Cow::Borrowed(&[b'#', 4, b'C', b'H']),
+            Command::SetBaudRate { baud_rate } => Cow::Owned(vec![b'#', 4, b'c', baud_rate.code()]),
             Command::Reboot => Cow::Borrowed(&[b'#', 3, b'r']),
             Command::PowerOff => Cow::Borrowed(&[b'#', 3, b'S']),
         }
@@ -49,6 +53,9 @@ mod tests {
         assert_correct_size!(Command::EnableDumpScreen);
         assert_correct_size!(Command::DisableDumpScreen);
         assert_correct_size!(Command::Hold);
+        assert_correct_size!(Command::SetBaudRate {
+            baud_rate: BaudRate::default()
+        });
         assert_correct_size!(Command::Reboot);
         assert_correct_size!(Command::PowerOff);
     }
