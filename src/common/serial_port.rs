@@ -73,6 +73,82 @@ pub enum ConnectionError {
 pub type ConnectionResult<T> = Result<T, ConnectionError>;
 pub(crate) type SerialPortReader = BufReader<Box<dyn SerialPort>>;
 
+/// Checks if a driver for the RF Explorer is installed.
+#[cfg(target_os = "windows")]
+#[tracing::instrument(ret)]
+pub fn is_driver_installed() -> bool {
+    use std::process::{Command, Stdio};
+    let Ok(driver_query) = Command::new("driverquery")
+        .stdout(Stdio::piped())
+        .spawn() else {
+            return false;
+        };
+
+    let Ok(mut find_silabs_driver) = Command::new("findstr")
+        .arg("/c:\"Silicon Labs CP210x\"")
+        .stdin(Stdio::from(driver_query.stdout.unwrap()))
+        .stdout(Stdio::piped())
+        .spawn() else {
+            return false;
+        };
+
+    let Ok(exit_status) = find_silabs_driver.wait() else {
+        return false;
+    };
+
+    debug!(
+        driver_search_command = "driverquery | findstr /c:\"Silicon Labs CP210x\"",
+        driver_found = exit_status.success()
+    );
+
+    exit_status.success()
+}
+
+/// Checks if a driver for the RF Explorer is installed.
+#[cfg(target_os = "macos")]
+#[tracing::instrument(ret)]
+pub fn is_driver_installed() -> bool {
+    use std::path::Path;
+
+    let apple_dext_path =
+        Path::new("/System/Library/DriverExtensions/com.apple.DriverKit-AppleUSBSLCOM.dext");
+    debug!(
+        apple_dext_path = ?apple_dext_path,
+        apple_dext_path.exists = apple_dext_path.exists()
+    );
+
+    let silabs_dext_path =
+        Path::new("/Applications/CP210xVCPDriver.app/Contents/Library/SystemExtensions/com.silabs.cp210x.dext");
+    debug!(
+        silabs_dext_path = ?silabs_dext_path,
+        silabs_dext_path.exists = silabs_dext_path.exists()
+    );
+
+    apple_dext_path.exists() || silabs_dext_path.exists()
+}
+
+/// Checks if a driver for the RF Explorer is installed.
+#[cfg(target_os = "linux")]
+#[tracing::instrument(ret)]
+pub fn is_driver_installed() -> bool {
+    use std::process::Command;
+
+    let Ok(mut cp210x_modinfo) = Command::new("modinfo").arg("cp210x").spawn() else {
+        return false;
+    };
+
+    let Ok(exit_status) = cp210x_modinfo.wait() else {
+        return false;
+    };
+
+    debug!(
+        driver_search_command = "modinfo cp210x",
+        driver_found = exit_status.success()
+    );
+
+    exit_status.success()
+}
+
 fn bps_to_code(baud_rate: u32) -> super::Result<u8> {
     match baud_rate {
         1_200 => Ok(b'1'),

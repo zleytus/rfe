@@ -8,7 +8,7 @@ mod radio_module;
 mod rf_explorer;
 mod screen_data;
 mod serial_number;
-mod serial_port;
+pub mod serial_port;
 mod setup_info;
 
 pub(crate) use command::Command;
