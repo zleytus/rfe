@@ -25,8 +25,9 @@ pub extern "C" fn rfe_spectrum_analyzer_connect() -> *mut SpectrumAnalyzer {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
+    baud_rate: u32,
 ) -> *mut SpectrumAnalyzer {
     let Some(name) = name else {
         return ptr::null_mut();
@@ -36,7 +37,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name(
         return ptr::null_mut();
     };
 
-    if let Some(rfe) = SpectrumAnalyzer::connect_with_name(name) {
+    if let Ok(rfe) = SpectrumAnalyzer::connect_with_name_and_baud_rate(name, baud_rate) {
         Box::into_raw(Box::new(rfe))
     } else {
         ptr::null_mut()

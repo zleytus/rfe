@@ -27,8 +27,9 @@ pub extern "C" fn rfe_signal_generator_connect() -> *mut SignalGenerator {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_signal_generator_connect_with_name(
+pub unsafe extern "C" fn rfe_signal_generator_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
+    baud_rate: u32,
 ) -> *mut SignalGenerator {
     let Some(name) = name else {
         return ptr::null_mut();
@@ -38,7 +39,7 @@ pub unsafe extern "C" fn rfe_signal_generator_connect_with_name(
         return ptr::null_mut();
     };
 
-    if let Some(rfe) = SignalGenerator::connect_with_name(name) {
+    if let Ok(rfe) = SignalGenerator::connect_with_name_and_baud_rate(name, baud_rate) {
         Box::into_raw(Box::new(rfe))
     } else {
         ptr::null_mut()

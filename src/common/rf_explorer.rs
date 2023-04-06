@@ -12,34 +12,46 @@ impl<D: Device> RfExplorer<D> {
     pub(crate) const NEXT_SCREEN_DATA_TIMEOUT: Duration = Duration::from_secs(2);
 
     /// Connects to the first available RF Explorer.
+    #[tracing::instrument(ret)]
     pub fn connect() -> Option<Self> {
-        serialport::available_ports()
-            .unwrap_or_default()
-            .iter()
-            .find_map(|port_info| {
-                let device = D::connect(port_info).ok()?;
+        // For every Silabs CP210X port, we first try to connect using the RF Explorer's fast
+        // default baud rate (500 kbps) and then try to connect using its slow default baud rate
+        // (2.4 kbps)
+        serial_port::silabs_cp210x_ports()
+            .flat_map(|port_info| {
+                [
+                    (port_info.clone(), serial_port::FAST_BAUD_RATE),
+                    (port_info, serial_port::SLOW_BAUD_RATE),
+                ]
+            })
+            .find_map(|(port_info, baud_rate)| {
+                let serial_port = SerialPort::open(&port_info, baud_rate).ok()?;
+                let device = D::connect(serial_port).ok()?;
                 Some(Self { device })
             })
     }
 
-    /// Connects to an RF Explorer with the provided name.
-    pub fn connect_with_name(name: &str) -> Option<Self> {
-        let port_info_with_name = serialport::available_ports()
-            .unwrap_or_default()
-            .into_iter()
-            .find(|port_info| port_info.port_name == name)?;
-
-        let device = D::connect(&port_info_with_name).ok()?;
-        Some(Self { device })
+    /// Connects to an RF Explorer with the provided name and baud rate.
+    #[tracing::instrument(ret, err)]
+    pub fn connect_with_name_and_baud_rate(name: &str, baud_rate: u32) -> ConnectionResult<Self> {
+        let serial_port = SerialPort::open_with_name(name, baud_rate)?;
+        let device = D::connect(serial_port)?;
+        Ok(Self { device })
     }
 
     /// Connects to all available RF Explorers.
+    #[tracing::instrument(ret)]
     pub fn connect_all() -> Vec<Self> {
-        serialport::available_ports()
-            .unwrap_or_default()
-            .iter()
-            .filter_map(|port_info| {
-                let device = D::connect(port_info).ok()?;
+        serial_port::silabs_cp210x_ports()
+            .flat_map(|port_info| {
+                [
+                    (port_info.clone(), serial_port::SLOW_BAUD_RATE),
+                    (port_info, serial_port::FAST_BAUD_RATE),
+                ]
+            })
+            .filter_map(|(port_info, baud_rate)| {
+                let serial_port = SerialPort::open(&port_info, baud_rate).ok()?;
+                let device = D::connect(serial_port).ok()?;
                 Some(Self { device })
             })
             .collect()
