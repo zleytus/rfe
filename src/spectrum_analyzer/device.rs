@@ -2,7 +2,7 @@ use std::{
     fmt::Debug,
     io,
     sync::{Arc, Condvar, Mutex},
-    thread::JoinHandle,
+    thread::{self, JoinHandle},
 };
 
 use tracing::{error, info, trace};
@@ -50,31 +50,47 @@ impl Device for SpectrumAnalyzer {
             serial_number: (Mutex::new(None), Condvar::new()),
         });
 
-        *device.read_thread_handle.lock().unwrap() =
-            Some(SpectrumAnalyzer::spawn_read_thread(device.clone()));
-
-        // Wait to receive a Config before considering this a valid RF Explorer spectrum analyzer
-        let (lock, cvar) = &*device.config;
-        let _ = cvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SpectrumAnalyzer::RECEIVE_FIRST_CONFIG_TIMEOUT,
-                |config| config.is_none(),
-            )
-            .unwrap();
+        // Read messages from the RF Explorer on a background thread
+        let device_clone = device.clone();
+        *device.read_thread_handle.lock().unwrap() = Some(thread::spawn(move || {
+            SpectrumAnalyzer::read_messages(device_clone)
+        }));
 
         // Request the SetupInfo and Config from the RF Explorer
         device.serial_port.send_command(Command::RequestConfig)?;
 
+        let (lock, cvar) = &device.setup_info;
+        if lock.lock().unwrap().is_none() {
+            trace!("Waiting to receive SetupInfo from potential RF Explorer");
+            let (_, wait_result) = cvar
+                .wait_timeout_while(
+                    lock.lock().unwrap(),
+                    SpectrumAnalyzer::RECEIVE_INITIAL_SETUP_INFO_TIMEOUT,
+                    |setup_info| setup_info.is_none(),
+                )
+                .unwrap();
+            if wait_result.timed_out() {
+                error!("Did not receive SetupInfo before timeout");
+                device.stop_reading_messages();
+                return Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()));
+            }
+        }
 
-        // The spectrum analyzer is only valid after receiving a SetupInfo and Config message
-        if device.setup_info.0.lock().unwrap().is_some()
-            && device.config.0.lock().unwrap().is_some()
-        {
-            Ok(device)
-        } else {
-            device.stop_read_thread();
-            Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
+        let (lock, cvar) = &device.config;
+        if lock.lock().unwrap().is_none() {
+            trace!("Waiting to receive Config from potential RF Explorer");
+            let (_, wait_result) = cvar
+                .wait_timeout_while(
+                    lock.lock().unwrap(),
+                    SpectrumAnalyzer::RECEIVE_INITIAL_CONFIG_TIMEOUT,
+                    |config| config.is_none(),
+                )
+                .unwrap();
+            if wait_result.timed_out() {
+                error!("Did not receive Config before timeout");
+                device.stop_reading_messages();
+                return Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()));
+            }
         }
 
         // The largest sweep we could receive contains 65,535 (2^16) points
@@ -93,7 +109,7 @@ impl Device for SpectrumAnalyzer {
         *self.is_reading.lock().unwrap()
     }
 
-    fn process_message(&self, message: Self::Message) {
+    fn cache_message(&self, message: Self::Message) {
         match message {
             Self::Message::Config(config) => {
                 *self.config.0.lock().unwrap() = Some(config);

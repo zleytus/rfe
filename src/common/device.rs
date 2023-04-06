@@ -6,16 +6,17 @@ use std::{
     time::Duration,
 };
 
-pub trait Device: Sized + Send + Sync {
-    const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
-    const RECEIVE_FIRST_CONFIG_TIMEOUT: Duration = Duration::from_secs(1);
-    const EEOT_BYTES: [u8; 5] = [255, 254, 255, 254, 0];
+use tracing::debug;
 
 use super::{ConnectionResult, MessageParseError, SerialNumber, SerialPort};
 
-    fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>>;
+pub trait Device: Debug {
+    const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
+    const RECEIVE_INITIAL_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
+    const RECEIVE_INITIAL_SETUP_INFO_TIMEOUT: Duration = Duration::from_secs(2);
+    const RECEIVE_SERIAL_NUMBER_TIMEOUT: Duration = Duration::from_secs(2);
 
-    fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()>;
+    type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>> + Debug;
 
     fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>>;
 
@@ -25,66 +26,40 @@ use super::{ConnectionResult, MessageParseError, SerialNumber, SerialPort};
 
     fn firmware_version(&self) -> String;
 
-    fn serial_number(&self) -> SerialNumber;
+    fn serial_number(&self) -> io::Result<SerialNumber>;
 
-    fn spawn_read_thread(device: Arc<Self>) -> JoinHandle<()>
-    where
-        Self: 'static,
-    {
-        thread::spawn(move || {
-            let mut message_buf = Vec::new();
-            while device.is_reading() {
-                let read_line_result = device.read_line(&mut message_buf);
+    fn cache_message(&self, message: Self::Message);
 
-                // Time out errors are recoverable so we should try to read again
-                // Other errors are not recoverable and we should exit the thread
-                match read_line_result {
-                    Ok(bytes_read) => trace!("Read {} bytes", bytes_read),
-                    Err(e) if e.kind() == ErrorKind::TimedOut => {
-                        warn!("Read timeout occurred. Attempting to read again.");
-                        continue;
-                    }
-                    Err(e) => {
-                        error!("Unrecoverable read error occured: {:?}", e.kind());
-                        break;
-                    }
-                }
-
-                match Self::Message::parse(&message_buf) {
-                    Ok(message) => {
-                        device.process_message(message);
-                        message_buf.clear();
-                    }
-                    Err(MessageParseError::Incomplete) => {
-                        // Check for Early-End-of-Transmission (EEOT) byte sequences
-                        while let Some(eeot_index) = message_buf
-                            .windows(Self::EEOT_BYTES.len())
-                            .position(|window| window == Self::EEOT_BYTES)
-                        {
-                            warn!("Found partial message with EEOT byte sequence. Removing partial message from message buffer.");
-                            message_buf.drain(0..eeot_index + Self::EEOT_BYTES.len());
-
-                            // Try to parse again after removing the EEOT bytes
-                            match Self::Message::parse(&message_buf) {
-                                Ok(message) => {
-                                    device.process_message(message);
-                                    message_buf.clear();
-                                    break;
-                                }
-                                Err(MessageParseError::Incomplete) => {
-                                    continue;
-                                }
-                                _ => {
-                                    message_buf.clear();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    _ => message_buf.clear(),
+    #[tracing::instrument(skip(device))]
+    fn read_messages(device: Arc<Self>) {
+        debug!("Started reading messages from RF Explorer");
+        let mut message_buf = Vec::new();
+        while device.is_reading() {
+            // Messages from RF Explorers are delimited by \r\n, so we try to read a line from
+            // the serial port into the message buffer
+            if let Err(error) = device.serial_port().read_line(&mut message_buf) {
+                // Time out errors are recoverable so we try to read again
+                // Other errors are not recoverable so we break out of the loop
+                if error.kind() == ErrorKind::TimedOut {
+                    thread::sleep(Duration::from_millis(100));
+                    continue;
+                } else {
+                    break;
                 }
             }
-        })
+
+            match find_message_in_buf(&message_buf) {
+                Ok(message) => {
+                    device.cache_message(message);
+                    message_buf.clear()
+                }
+                Err(MessageParseError::Incomplete) => (),
+                Err(_) => message_buf.clear(),
+            }
+
+            thread::sleep(Duration::from_millis(10));
+        }
+        debug!("Stopped reading messages from RF Explorer");
     }
 
     fn stop_reading_messages(&self);

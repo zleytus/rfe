@@ -2,7 +2,7 @@ use std::{
     fmt::Debug,
     io,
     sync::{Arc, Condvar, Mutex},
-    thread::JoinHandle,
+    thread::{self, JoinHandle},
 };
 
 use tracing::trace;
@@ -73,8 +73,11 @@ impl Device for SignalGenerator {
             serial_number: (Mutex::new(None), Condvar::new()),
         });
 
-        *device.read_thread_handle.lock().unwrap() =
-            Some(SignalGenerator::spawn_read_thread(device.clone()));
+        // Read messages from the RF Explorer on a background thread
+        let device_clone = device.clone();
+        *device.read_thread_handle.lock().unwrap() = Some(thread::spawn(move || {
+            SignalGenerator::read_messages(device_clone)
+        }));
 
         // Request the Config, SetupInfo, and SerialNumber from the RF Explorer
         device.serial_port.send_command(Command::RequestConfig)?;
@@ -84,7 +87,7 @@ impl Device for SignalGenerator {
         let _ = cvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
-                SignalGenerator::RECEIVE_FIRST_CONFIG_TIMEOUT,
+                SignalGenerator::RECEIVE_INITIAL_CONFIG_TIMEOUT,
                 |config| config.is_none(),
             )
             .unwrap();
@@ -108,7 +111,7 @@ impl Device for SignalGenerator {
         *self.is_reading.lock().unwrap()
     }
 
-    fn process_message(&self, message: Self::Message) {
+    fn cache_message(&self, message: Self::Message) {
         match message {
             Self::Message::Config(config) => {
                 *self.config.0.lock().unwrap() = Some(config);
