@@ -4,7 +4,7 @@ use super::{
     Attenuation, Command, Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, Message, PowerLevel,
     Temperature,
 };
-use crate::common::{Error, Frequency, RadioModule, Result, RfExplorer, ScreenData};
+use crate::common::{Device, Error, Frequency, RadioModule, Result, RfExplorer, ScreenData};
 
 impl RfExplorer<SignalGenerator> {
     /// Returns the signal generator's configuration.
@@ -119,14 +119,16 @@ impl RfExplorer<SignalGenerator> {
         stop_power_level: PowerLevel,
         step_delay: Duration,
     ) -> io::Result<()> {
-        self.send_command(Command::StartAmpSweep {
-            cw: cw.into(),
-            start_attenuation,
-            start_power_level,
-            stop_attenuation,
-            stop_power_level,
-            step_delay,
-        })
+        self.device
+            .serial_port()
+            .send_command(Command::StartAmpSweep {
+                cw: cw.into(),
+                start_attenuation,
+                start_power_level,
+                stop_attenuation,
+                stop_power_level,
+                step_delay,
+            })
     }
 
     /// Starts the signal generator's amplitude sweep mode using the expansion module.
@@ -138,13 +140,15 @@ impl RfExplorer<SignalGenerator> {
         stop_power_dbm: f64,
         step_delay: Duration,
     ) -> io::Result<()> {
-        self.send_command(Command::StartAmpSweepExp {
-            cw: cw.into(),
-            start_power_dbm,
-            step_power_db,
-            stop_power_dbm,
-            step_delay,
-        })
+        self.device
+            .serial_port()
+            .send_command(Command::StartAmpSweepExp {
+                cw: cw.into(),
+                start_power_dbm,
+                step_power_db,
+                stop_power_dbm,
+                step_delay,
+            })
     }
 
     /// Starts the signal generator's CW mode.
@@ -154,7 +158,7 @@ impl RfExplorer<SignalGenerator> {
         attenuation: Attenuation,
         power_level: PowerLevel,
     ) -> io::Result<()> {
-        self.send_command(Command::StartCw {
+        self.device.serial_port().send_command(Command::StartCw {
             cw: cw.into(),
             attenuation,
             power_level,
@@ -163,7 +167,7 @@ impl RfExplorer<SignalGenerator> {
 
     /// Starts the signal generator's CW mode using the expansion module.
     pub fn start_cw_exp(&self, cw: impl Into<Frequency>, power_dbm: f64) -> io::Result<()> {
-        self.send_command(Command::StartCwExp {
+        self.device.serial_port().send_command(Command::StartCwExp {
             cw: cw.into(),
             power_dbm,
         })
@@ -179,14 +183,16 @@ impl RfExplorer<SignalGenerator> {
         step_hz: u64,
         step_delay: Duration,
     ) -> io::Result<()> {
-        self.send_command(Command::StartFreqSweep {
-            start: start.into(),
-            attenuation,
-            power_level,
-            sweep_steps,
-            step: Frequency::from_hz(step_hz),
-            step_delay,
-        })
+        self.device
+            .serial_port()
+            .send_command(Command::StartFreqSweep {
+                start: start.into(),
+                attenuation,
+                power_level,
+                sweep_steps,
+                step: Frequency::from_hz(step_hz),
+                step_delay,
+            })
     }
 
     /// Starts the signal generator's frequency sweep mode using the expansion module.
@@ -198,13 +204,15 @@ impl RfExplorer<SignalGenerator> {
         step: impl Into<Frequency>,
         step_delay: Duration,
     ) -> io::Result<()> {
-        self.send_command(Command::StartFreqSweepExp {
-            start: start.into(),
-            power_dbm,
-            sweep_steps,
-            step: step.into(),
-            step_delay,
-        })
+        self.device
+            .serial_port()
+            .send_command(Command::StartFreqSweepExp {
+                start: start.into(),
+                power_dbm,
+                sweep_steps,
+                step: step.into(),
+                step_delay,
+            })
     }
 
     /// Starts the signal generator's tracking mode.
@@ -216,13 +224,15 @@ impl RfExplorer<SignalGenerator> {
         sweep_steps: u16,
         step: impl Into<Frequency>,
     ) -> io::Result<()> {
-        self.send_command(Command::StartTracking {
-            start: start.into(),
-            attenuation,
-            power_level,
-            sweep_steps,
-            step: step.into(),
-        })
+        self.device
+            .serial_port()
+            .send_command(Command::StartTracking {
+                start: start.into(),
+                attenuation,
+                power_level,
+                sweep_steps,
+                step: step.into(),
+            })
     }
 
     /// Starts the signal generator's tracking mode using the expansion module.
@@ -233,17 +243,21 @@ impl RfExplorer<SignalGenerator> {
         sweep_steps: u16,
         step: impl Into<Frequency>,
     ) -> io::Result<()> {
-        self.send_command(Command::StartTrackingExp {
-            start: start.into(),
-            power_dbm,
-            sweep_steps,
-            step: step.into(),
-        })
+        self.device
+            .serial_port()
+            .send_command(Command::StartTrackingExp {
+                start: start.into(),
+                power_dbm,
+                sweep_steps,
+                step: step.into(),
+            })
     }
 
     /// Jumps to a new frequency using the tracking step frequency.
     pub fn tracking_step(&self, steps: u16) -> io::Result<()> {
-        self.send_command(Command::TrackingStep(steps))
+        self.device
+            .serial_port()
+            .send_command(Command::TrackingStep(steps))
     }
 
     /// Sets the callback that is called when the signal generator receives a `Config`.
@@ -268,11 +282,11 @@ impl RfExplorer<SignalGenerator> {
 
     /// Turns on RF power with the current power and frequency configuration.
     pub fn rf_power_on(&self) -> io::Result<()> {
-        self.send_command(Command::RfPowerOn)
+        self.device.serial_port().send_command(Command::RfPowerOn)
     }
 
     /// Turns off RF power.
     pub fn rf_power_off(&self) -> io::Result<()> {
-        self.send_command(Command::RfPowerOff)
+        self.device.serial_port().send_command(Command::RfPowerOff)
     }
 }

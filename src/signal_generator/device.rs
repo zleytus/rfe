@@ -1,23 +1,22 @@
 use std::{
     fmt::Debug,
-    io::{self, BufRead},
+    io,
     sync::{Arc, Condvar, Mutex},
     thread::JoinHandle,
 };
 
-use serialport::SerialPortInfo;
+use tracing::trace;
 
 use super::{
     Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp, ConfigExp, ConfigFreqSweep,
     ConfigFreqSweepExp, Model, Temperature,
 };
 use crate::common::{
-    Callback, ConnectionError, ConnectionResult, Device, ScreenData, SerialNumber,
-    SerialPortReader, SetupInfo,
+    Callback, Command, ConnectionError, ConnectionResult, Device, ScreenData, SerialNumber,
+    SerialPort, SetupInfo,
 };
 
 pub struct SignalGenerator {
-    serial_port: Arc<Mutex<SerialPortReader>>,
     is_reading: Arc<Mutex<bool>>,
     read_thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
     pub(crate) config: Arc<(Mutex<Option<Config>>, Condvar)>,
@@ -40,17 +39,15 @@ pub struct SignalGenerator {
     pub(crate) temperature: Arc<(Mutex<Option<Temperature>>, Condvar)>,
     pub(crate) setup_info: Arc<(Mutex<Option<SetupInfo<Model>>>, Condvar)>,
     serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
-    port_name: String,
+    serial_port: SerialPort,
 }
 
 impl Device for SignalGenerator {
     type Message = super::Message;
 
-    fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>> {
-        let serial_port = crate::common::open(serial_port_info)?;
-
+    #[tracing::instrument(skip(serial_port), ret, err)]
+    fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
         let device = Arc::new(SignalGenerator {
-            serial_port: Arc::new(Mutex::new(serial_port)),
             is_reading: Arc::new(Mutex::new(true)),
             read_thread_handle: Arc::new(Mutex::new(None)),
             config: Arc::new((Mutex::new(None), Condvar::new())),
@@ -73,11 +70,14 @@ impl Device for SignalGenerator {
             temperature: Arc::new((Mutex::new(None), Condvar::new())),
             setup_info: Arc::new((Mutex::new(None), Condvar::new())),
             serial_number: Arc::new((Mutex::new(None), Condvar::new())),
-            port_name: serial_port_info.port_name.clone(),
+            serial_port,
         });
 
         *device.read_thread_handle.lock().unwrap() =
             Some(SignalGenerator::spawn_read_thread(device.clone()));
+
+        // Request the Config, SetupInfo, and SerialNumber from the RF Explorer
+        device.serial_port.send_command(Command::RequestConfig)?;
 
         // Wait to receive a Config before considering this a valid RF Explorer signal generator
         let (lock, cvar) = &*device.config;
@@ -100,8 +100,8 @@ impl Device for SignalGenerator {
         }
     }
 
-    fn read_line(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
-        self.serial_port.lock().unwrap().read_until(b'\n', buf)
+    fn serial_port(&self) -> &SerialPort {
+        &self.serial_port
     }
 
     fn is_reading(&self) -> bool {
@@ -185,18 +185,6 @@ impl Device for SignalGenerator {
         }
     }
 
-    fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
-        self.serial_port
-            .lock()
-            .unwrap()
-            .get_mut()
-            .write_all(bytes.as_ref())
-    }
-
-    fn port_name(&self) -> &str {
-        &self.port_name
-    }
-
     fn firmware_version(&self) -> String {
         if let Some(setup_info) = self.setup_info.0.lock().unwrap().as_ref() {
             setup_info.firmware_version.clone()
@@ -225,10 +213,10 @@ impl Device for SignalGenerator {
 impl Debug for SignalGenerator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SignalGenerator")
-            .field("port_name", &self.port_name)
             .field("setup_info", &self.setup_info)
             .field("config", &self.config)
             .field("serial_number", &self.serial_number)
+            .field("serial_port", &self.serial_port)
             .finish()
     }
 }

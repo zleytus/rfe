@@ -1,21 +1,19 @@
 use std::{
     fmt::Debug,
-    io::{self, BufRead},
+    io,
     sync::{Arc, Condvar, Mutex},
     thread::JoinHandle,
 };
 
-use serialport::SerialPortInfo;
-use tracing::{debug, warn};
+use tracing::{error, info, trace};
 
 use super::{Config, DspMode, InputStage, Sweep, TrackingStatus};
 use crate::common::{
-    self, Callback, ConnectionError, ConnectionResult, Device, ScreenData, SerialNumber,
-    SerialPortReader, SetupInfo,
+    Callback, Command, ConnectionError, ConnectionResult, Device, ScreenData, SerialNumber,
+    SerialPort, SetupInfo,
 };
 
 pub struct SpectrumAnalyzer {
-    serial_port: Arc<Mutex<SerialPortReader>>,
     is_reading: Arc<Mutex<bool>>,
     read_thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
     pub(crate) config: Arc<(Mutex<Option<Config>>, Condvar)>,
@@ -28,18 +26,15 @@ pub struct SpectrumAnalyzer {
     pub(crate) input_stage: Arc<(Mutex<Option<InputStage>>, Condvar)>,
     pub(crate) setup_info: Arc<(Mutex<Option<SetupInfo>>, Condvar)>,
     serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
-    port_name: String,
+    serial_port: SerialPort,
 }
 
 impl Device for SpectrumAnalyzer {
     type Message = super::Message;
 
-    #[tracing::instrument]
-    fn connect(serial_port_info: &SerialPortInfo) -> ConnectionResult<Arc<Self>> {
-        let serial_port = common::open(serial_port_info)?;
-
+    #[tracing::instrument(skip(serial_port), ret, err)]
+    fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
         let device = Arc::new(SpectrumAnalyzer {
-            serial_port: Arc::new(Mutex::new(serial_port)),
             is_reading: Arc::new(Mutex::new(true)),
             read_thread_handle: Arc::new(Mutex::new(None)),
             config: Arc::new((Mutex::new(None), Condvar::new())),
@@ -52,7 +47,7 @@ impl Device for SpectrumAnalyzer {
             input_stage: Arc::new((Mutex::new(None), Condvar::new())),
             setup_info: Arc::new((Mutex::new(None), Condvar::new())),
             serial_number: Arc::new((Mutex::new(None), Condvar::new())),
-            port_name: serial_port_info.port_name.clone(),
+            serial_port,
         });
 
         *device.read_thread_handle.lock().unwrap() =
@@ -68,6 +63,10 @@ impl Device for SpectrumAnalyzer {
             )
             .unwrap();
 
+        // Request the SetupInfo and Config from the RF Explorer
+        device.serial_port.send_command(Command::RequestConfig)?;
+
+
         // The spectrum analyzer is only valid after receiving a SetupInfo and Config message
         if device.setup_info.0.lock().unwrap().is_some()
             && device.config.0.lock().unwrap().is_some()
@@ -77,10 +76,17 @@ impl Device for SpectrumAnalyzer {
             device.stop_read_thread();
             Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
         }
+
+        // The largest sweep we could receive contains 65,535 (2^16) points
+        // To be safe, set the maximum message length to 131,072 (2^17)
+        device.serial_port().set_max_message_len(131_072);
+
+        info!("Received SetupInfo and Config before timeout");
+        Ok(device)
     }
 
-    fn read_line(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
-        self.serial_port.lock().unwrap().read_until(b'\n', buf)
+    fn serial_port(&self) -> &SerialPort {
+        &self.serial_port
     }
 
     fn is_reading(&self) -> bool {
@@ -132,20 +138,6 @@ impl Device for SpectrumAnalyzer {
         }
     }
 
-    #[tracing::instrument(skip(self, bytes))]
-    fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
-        debug!("Sending bytes: {:?}", bytes.as_ref());
-        self.serial_port
-            .lock()
-            .unwrap()
-            .get_mut()
-            .write_all(bytes.as_ref())
-    }
-
-    fn port_name(&self) -> &str {
-        &self.port_name
-    }
-
     fn firmware_version(&self) -> String {
         if let Some(setup_info) = self.setup_info.0.lock().unwrap().as_ref() {
             setup_info.firmware_version.clone()
@@ -174,10 +166,10 @@ impl Device for SpectrumAnalyzer {
 impl Debug for SpectrumAnalyzer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SpectrumAnalyzer")
-            .field("port_name", &self.port_name)
             .field("setup_info", &self.setup_info)
             .field("config", &self.config)
             .field("serial_number", &self.serial_number)
+            .field("serial_port", &self.serial_port)
             .finish()
     }
 }

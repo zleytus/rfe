@@ -20,7 +20,7 @@ pub use radio_module::RadioModule;
 pub use rf_explorer::RfExplorer;
 pub use screen_data::ScreenData;
 pub use serial_number::SerialNumber;
-pub(crate) use serial_port::{open, ConnectionError, ConnectionResult, SerialPortReader};
+pub(crate) use serial_port::{BaudRate, ConnectionError, ConnectionResult, SerialPort};
 pub(crate) use setup_info::SetupInfo;
 
 pub(crate) type Callback<T> = Option<Box<dyn FnMut(T) + Send + 'static>>;

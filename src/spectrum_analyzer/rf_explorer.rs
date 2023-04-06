@@ -7,7 +7,7 @@ use std::{
 };
 
 use num_enum::IntoPrimitive;
-use tracing::{error, info, warn};
+use tracing::{error, info, trace, warn};
 
 use super::{
     CalcMode, Command, Config, DspMode, InputStage, SpectrumAnalyzer, Sweep, TrackingStatus,
@@ -149,13 +149,17 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Starts the spectrum analyzer's Wi-Fi analyzer.
     #[tracing::instrument]
     pub fn start_wifi_analyzer(&self, wifi_band: WifiBand) -> io::Result<()> {
-        self.send_command(Command::StartWifiAnalyzer(wifi_band))
+        self.device
+            .serial_port()
+            .send_command(Command::StartWifiAnalyzer(wifi_band))
     }
 
     /// Stops the spectrum analyzer's Wi-Fi analyzer.
     #[tracing::instrument(skip(self))]
     pub fn stop_wifi_analyzer(&self) -> io::Result<()> {
-        self.send_command(Command::StopWifiAnalyzer)
+        self.device
+            .serial_port()
+            .send_command(Command::StopWifiAnalyzer)
     }
 
     /// Requests the spectrum analyzer enter tracking mode.
@@ -166,10 +170,12 @@ impl RfExplorer<SpectrumAnalyzer> {
         *self.device.tracking_status.0.lock().unwrap() = None;
 
         // Send the command to enter tracking mode
-        self.send_command(Command::StartTracking {
-            start: Frequency::from_hz(start_hz),
-            step: Frequency::from_hz(step_hz),
-        })?;
+        self.device
+            .serial_port()
+            .send_command(Command::StartTracking {
+                start: Frequency::from_hz(start_hz),
+                step: Frequency::from_hz(step_hz),
+            })?;
 
         // Wait to see if we receive a tracking status message in response
         let (lock, condvar) = &*self.device.tracking_status;
@@ -191,7 +197,9 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Steps over the tracking step frequency and makes a measurement.
     #[tracing::instrument(skip(self))]
     pub fn tracking_step(&self, step: u16) -> io::Result<()> {
-        self.send_command(Command::TrackingStep(step))
+        self.device
+            .serial_port()
+            .send_command(Command::TrackingStep(step))
     }
 
     /// Activates the RF Explorer's main radio module.
@@ -202,7 +210,9 @@ impl RfExplorer<SpectrumAnalyzer> {
             ));
         }
 
-        self.send_command(Command::SwitchModuleMain)?;
+        self.device
+            .serial_port()
+            .send_command(Command::SwitchModuleMain)?;
 
         // Wait until config shows that the main radio module is active
         let _ = self.wait_for_config_while(|config| {
@@ -232,7 +242,9 @@ impl RfExplorer<SpectrumAnalyzer> {
             ));
         }
 
-        self.send_command(Command::SwitchModuleExp)?;
+        self.device
+            .serial_port()
+            .send_command(Command::SwitchModuleExp)?;
 
         // Wait until config shows that the expansion radio module is active
         let _ = self.wait_for_config_while(|config| {
@@ -318,9 +330,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         info!("Validating min and max amplitudes");
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
-        // Send the command to change the config
-        info!("Sending 'SetConfig' command");
-        self.send_command(Command::SetConfig {
+        self.device.serial_port().send_command(Command::SetConfig {
             start,
             stop,
             min_amp_dbm,
@@ -374,11 +384,14 @@ impl RfExplorer<SpectrumAnalyzer> {
             ));
         }
 
-        info!("Sending 'SetSweepPoints' command");
         if sweep_points <= 4096 {
-            self.send_command(Command::SetSweepPointsExt(sweep_points))?;
+            self.device
+                .serial_port()
+                .send_command(Command::SetSweepPointsExt(sweep_points))?;
         } else {
-            self.send_command(Command::SetSweepPointsLarge(sweep_points))?;
+            self.device
+                .serial_port()
+                .send_command(Command::SetSweepPointsLarge(sweep_points))?;
         }
 
         // The requested number of sweep points gets rounded down to a number that's a multiple of 16
@@ -412,19 +425,25 @@ impl RfExplorer<SpectrumAnalyzer> {
     /// Sets the spectrum analyzer's calculator mode.
     #[tracing::instrument]
     pub fn set_calc_mode(&self, calc_mode: CalcMode) -> io::Result<()> {
-        self.send_command(Command::SetCalcMode(calc_mode))
+        self.device
+            .serial_port()
+            .send_command(Command::SetCalcMode(calc_mode))
     }
 
     /// Sets the spectrum analyzer's input stage.
     #[tracing::instrument]
     pub fn set_input_stage(&self, input_stage: InputStage) -> io::Result<()> {
-        self.send_command(Command::SetInputStage(input_stage))
+        self.device
+            .serial_port()
+            .send_command(Command::SetInputStage(input_stage))
     }
 
     /// Adds or subtracts an offset to the amplitudes in each sweep.
     #[tracing::instrument]
     pub fn set_offset_db(&self, offset_db: i8) -> io::Result<()> {
-        self.send_command(Command::SetOffsetDB(offset_db))
+        self.device
+            .serial_port()
+            .send_command(Command::SetOffsetDB(offset_db))
     }
 
     /// Sets the spectrum analyzer's DSP mode.
@@ -436,7 +455,9 @@ impl RfExplorer<SpectrumAnalyzer> {
         }
 
         // Send the command to set the DSP mode
-        self.send_command(Command::SetDsp(dsp_mode))?;
+        self.device
+            .serial_port()
+            .send_command(Command::SetDsp(dsp_mode))?;
 
         // Wait to see if we receive a DSP mode message in response
         let (lock, condvar) = &*self.device.dsp_mode;

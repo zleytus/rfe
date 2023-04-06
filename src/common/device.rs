@@ -17,13 +17,11 @@ use super::{ConnectionResult, MessageParseError, SerialNumber, SerialPort};
 
     fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()>;
 
-    fn process_message(&self, message: Self::Message);
+    fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>>;
 
-    fn read_line(&self, buf: &mut Vec<u8>) -> io::Result<usize>;
+    fn serial_port(&self) -> &SerialPort;
 
     fn is_reading(&self) -> bool;
-
-    fn port_name(&self) -> &str;
 
     fn firmware_version(&self) -> String;
 

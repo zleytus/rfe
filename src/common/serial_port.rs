@@ -1,60 +1,129 @@
-use super::Command;
-use serialport::{
-    DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortType, StopBits,
-    UsbPortInfo,
-};
-use std::borrow::Cow;
 use std::{
-    io::{self, BufReader},
+    borrow::Cow,
+    fmt::Debug,
+    io::{self, BufRead, BufReader, Read, Take},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Mutex,
+    },
     time::Duration,
 };
+
+use serialport::{
+    DataBits, FlowControl, Parity, SerialPortInfo, SerialPortType, StopBits, UsbPortInfo,
+};
 use thiserror::Error;
-use tracing::{error, trace, warn};
+use tracing::{debug, error};
 
-const SILICON_LABS_VID: u16 = 4_292;
-const CP210X_UART_BRIDGE_PID: u16 = 60_000;
-const RF_EXPLORER_BAUD_RATE: u32 = 500_000;
+pub(crate) const SLOW_BAUD_RATE: u32 = 2_400;
+pub(crate) const FAST_BAUD_RATE: u32 = 500_000;
 
-fn is_rf_explorer_serial_port(port_type: &SerialPortType) -> bool {
-    matches!(
-        port_type,
-        SerialPortType::UsbPort(UsbPortInfo {
-            vid: SILICON_LABS_VID,
-            pid: CP210X_UART_BRIDGE_PID,
-            ..
-        })
-    )
+pub struct SerialPort {
+    buf_reader: Mutex<BufReader<Take<Box<dyn serialport::SerialPort>>>>,
+    port_info: SerialPortInfo,
+    max_message_len: AtomicU64,
 }
 
-#[tracing::instrument]
-pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortReader> {
-    // On macOS, serial devices show up in /dev twice as /dev/tty.devicename and /dev/cu.devicename
-    // For our purposes, we only want to connect to CU (Call-Up) devices
-    if cfg!(target_os = "macos") && !port_info.port_name.starts_with("/dev/cu.") {
-        return Err(ConnectionError::NotAnRfExplorer);
+impl SerialPort {
+    #[tracing::instrument(ret, err)]
+    pub(crate) fn open(port_info: &SerialPortInfo, baud_rate: u32) -> serialport::Result<Self> {
+        let serial_port = serialport::new(&port_info.port_name, baud_rate)
+            .data_bits(DataBits::Eight)
+            .flow_control(FlowControl::None)
+            .parity(Parity::None)
+            .stop_bits(StopBits::One)
+            .timeout(Duration::from_secs(1))
+            .open()?;
+
+        const INITIAL_LINE_LIMIT: u64 = 128;
+
+        let buf_reader = if cfg!(target_os = "windows") {
+            BufReader::with_capacity(1, serial_port.take(INITIAL_LINE_LIMIT))
+        } else {
+            BufReader::new(serial_port.take(INITIAL_LINE_LIMIT))
+        };
+
+        Ok(SerialPort {
+            buf_reader: Mutex::new(buf_reader),
+            port_info: port_info.clone(),
+            max_message_len: AtomicU64::new(INITIAL_LINE_LIMIT),
+        })
     }
 
-    if !is_rf_explorer_serial_port(&port_info.port_type) {
-        trace!("VID or PID do not match RF Explorer's");
-        return Err(ConnectionError::NotAnRfExplorer);
+    #[tracing::instrument(ret, err)]
+    pub(crate) fn open_with_name(name: &str, baud_rate: u32) -> serialport::Result<Self> {
+        let port_info = serialport::available_ports()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|port_info| port_info.port_name == name)
+            .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
+        Self::open(&port_info, baud_rate)
     }
 
-    let mut serial_port = serialport::new(&port_info.port_name, RF_EXPLORER_BAUD_RATE)
-        .data_bits(DataBits::Eight)
-        .flow_control(FlowControl::None)
-        .parity(Parity::None)
-        .stop_bits(StopBits::One)
-        .timeout(Duration::from_secs(1))
-        .open()?;
-    trace!("Opened serial port connection to potential RF Explorer");
+    #[tracing::instrument(skip(self), err)]
+    pub(crate) fn read_line(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        let mut buf_reader = self.buf_reader.lock().unwrap();
+        buf_reader
+            .get_mut()
+            .set_limit(self.max_message_len.load(Ordering::Relaxed));
+        buf_reader.read_until(b'\n', buf)
+    }
 
-    serial_port.write_all(&Cow::from(Command::RequestConfig))?;
-    trace!("Requested Config and SetupInfo");
+    #[tracing::instrument(skip(self), ret, err, fields(bytes_as_string = String::from_utf8_lossy(bytes.as_ref()).as_ref()))]
+    pub(crate) fn send_bytes(&self, bytes: impl AsRef<[u8]> + Debug) -> io::Result<()> {
+        self.buf_reader
+            .lock()
+            .unwrap()
+            .get_mut()
+            .get_mut()
+            .write_all(bytes.as_ref())
+    }
 
-    if cfg!(target_os = "windows") {
-        Ok(SerialPortReader::with_capacity(1, serial_port))
-    } else {
-        Ok(SerialPortReader::new(serial_port))
+    #[tracing::instrument(skip(self))]
+    pub(crate) fn send_command(
+        &self,
+        command: impl Into<Cow<'static, [u8]>> + Debug,
+    ) -> io::Result<()> {
+        self.send_bytes(command.into())
+    }
+
+    pub(crate) fn port_info(&self) -> &SerialPortInfo {
+        &self.port_info
+    }
+
+    #[tracing::instrument(skip(self), err)]
+    pub(crate) fn baud_rate(&self) -> io::Result<u32> {
+        self.buf_reader
+            .lock()
+            .unwrap()
+            .get_ref()
+            .get_ref()
+            .baud_rate()
+            .map_err(|err| err.into())
+    }
+
+    #[tracing::instrument(skip(self), err)]
+    pub(crate) fn set_baud_rate(&self, baud_rate: u32) -> io::Result<()> {
+        self.buf_reader
+            .lock()
+            .unwrap()
+            .get_mut()
+            .get_mut()
+            .set_baud_rate(baud_rate)
+            .map_err(|err| err.into())
+    }
+
+    pub(crate) fn set_max_message_len(&self, line_limit: u64) {
+        self.max_message_len.store(line_limit, Ordering::Relaxed);
+    }
+}
+
+impl Debug for SerialPort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SerialPort")
+            .field("port_info", &self.port_info)
+            .field("max_message_len", &self.max_message_len)
+            .finish()
     }
 }
 
@@ -71,7 +140,41 @@ pub enum ConnectionError {
 }
 
 pub type ConnectionResult<T> = Result<T, ConnectionError>;
-pub(crate) type SerialPortReader = BufReader<Box<dyn SerialPort>>;
+
+pub(crate) fn silabs_cp210x_ports() -> impl Iterator<Item = SerialPortInfo> {
+    serialport::available_ports()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(is_silabs_cp210x)
+}
+
+const fn is_silabs_cp210x(port_info: &SerialPortInfo) -> bool {
+    const SILABS_VID: u16 = 4_292;
+    const CP210X_PID: u16 = 60_000;
+    matches!(
+        port_info.port_type,
+        SerialPortType::UsbPort(UsbPortInfo {
+            vid: SILABS_VID,
+            pid: CP210X_PID,
+            ..
+        })
+    )
+}
+
+/// Returns the names of serial ports with the VID and PID of an RF Explorer.
+///
+/// # Examples
+///
+/// ```
+/// for port_name in rfe::serial_port::port_names() {
+///     println!("Port name: {port_name}");
+/// }
+/// ```
+pub fn port_names() -> Vec<String> {
+    silabs_cp210x_ports()
+        .map(|port_info| port_info.port_name)
+        .collect()
+}
 
 /// Checks if a driver for the RF Explorer is installed.
 #[cfg(target_os = "windows")]
