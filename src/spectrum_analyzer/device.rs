@@ -155,7 +155,7 @@ impl Device for SpectrumAnalyzer {
             .unwrap_or_default()
     }
 
-    fn stop_read_thread(&self) {
+    fn stop_reading_messages(&self) {
         *self.is_reading.lock().unwrap() = false;
         if let Some(read_thread_handle) = self.read_thread_handle.lock().unwrap().take() {
             let _ = read_thread_handle.join();

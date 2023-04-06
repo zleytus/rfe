@@ -137,6 +137,6 @@ impl<D: Device> RfExplorer<D> {
 
 impl<D: Device> Drop for RfExplorer<D> {
     fn drop(&mut self) {
-        self.device.stop_read_thread();
+        self.device.stop_reading_messages();
     }
 }

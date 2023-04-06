@@ -87,7 +87,7 @@ use super::{ConnectionResult, MessageParseError, SerialNumber, SerialPort};
         })
     }
 
-    fn stop_read_thread(&self);
+    fn stop_reading_messages(&self);
 }
 
 fn find_message_in_buf<M>(message_buf: &[u8]) -> Result<M, MessageParseError>
