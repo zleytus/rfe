@@ -14,19 +14,19 @@ use crate::common::{
 };
 
 pub struct SpectrumAnalyzer {
-    is_reading: Arc<Mutex<bool>>,
-    read_thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
-    pub(crate) config: Arc<(Mutex<Option<Config>>, Condvar)>,
-    pub(crate) config_callback: Arc<Mutex<Callback<Config>>>,
-    pub(crate) sweep: Arc<(Mutex<Option<Sweep>>, Condvar)>,
-    pub(crate) sweep_callback: Arc<Mutex<Callback<Sweep>>>,
-    pub(crate) screen_data: Arc<(Mutex<Option<ScreenData>>, Condvar)>,
-    pub(crate) dsp_mode: Arc<(Mutex<Option<DspMode>>, Condvar)>,
-    pub(crate) tracking_status: Arc<(Mutex<Option<TrackingStatus>>, Condvar)>,
-    pub(crate) input_stage: Arc<(Mutex<Option<InputStage>>, Condvar)>,
-    pub(crate) setup_info: Arc<(Mutex<Option<SetupInfo>>, Condvar)>,
-    serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
     serial_port: SerialPort,
+    is_reading: Mutex<bool>,
+    read_thread_handle: Mutex<Option<JoinHandle<()>>>,
+    pub(crate) config: (Mutex<Option<Config>>, Condvar),
+    pub(crate) config_callback: Mutex<Callback<Config>>,
+    pub(crate) sweep: (Mutex<Option<Sweep>>, Condvar),
+    pub(crate) sweep_callback: Mutex<Callback<Sweep>>,
+    pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
+    pub(crate) dsp_mode: (Mutex<Option<DspMode>>, Condvar),
+    pub(crate) tracking_status: (Mutex<Option<TrackingStatus>>, Condvar),
+    pub(crate) input_stage: (Mutex<Option<InputStage>>, Condvar),
+    pub(crate) setup_info: (Mutex<Option<SetupInfo>>, Condvar),
+    serial_number: (Mutex<Option<SerialNumber>>, Condvar),
 }
 
 impl Device for SpectrumAnalyzer {
@@ -35,19 +35,19 @@ impl Device for SpectrumAnalyzer {
     #[tracing::instrument(skip(serial_port), ret, err)]
     fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
         let device = Arc::new(SpectrumAnalyzer {
-            is_reading: Arc::new(Mutex::new(true)),
-            read_thread_handle: Arc::new(Mutex::new(None)),
-            config: Arc::new((Mutex::new(None), Condvar::new())),
-            config_callback: Arc::new(Mutex::new(None)),
-            sweep: Arc::new((Mutex::new(None), Condvar::new())),
-            sweep_callback: Arc::new(Mutex::new(None)),
-            screen_data: Arc::new((Mutex::new(None), Condvar::new())),
-            dsp_mode: Arc::new((Mutex::new(None), Condvar::new())),
-            tracking_status: Arc::new((Mutex::new(None), Condvar::new())),
-            input_stage: Arc::new((Mutex::new(None), Condvar::new())),
-            setup_info: Arc::new((Mutex::new(None), Condvar::new())),
-            serial_number: Arc::new((Mutex::new(None), Condvar::new())),
             serial_port,
+            is_reading: Mutex::new(true),
+            read_thread_handle: Mutex::new(None),
+            config: (Mutex::new(None), Condvar::new()),
+            config_callback: Mutex::new(None),
+            sweep: (Mutex::new(None), Condvar::new()),
+            sweep_callback: Mutex::new(None),
+            screen_data: (Mutex::new(None), Condvar::new()),
+            dsp_mode: (Mutex::new(None), Condvar::new()),
+            tracking_status: (Mutex::new(None), Condvar::new()),
+            input_stage: (Mutex::new(None), Condvar::new()),
+            setup_info: (Mutex::new(None), Condvar::new()),
+            serial_number: (Mutex::new(None), Condvar::new()),
         });
 
         *device.read_thread_handle.lock().unwrap() =

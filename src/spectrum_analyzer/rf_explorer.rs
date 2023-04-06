@@ -45,7 +45,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     pub fn wait_for_next_sweep_with_timeout(&self, timeout: Duration) -> Result<Sweep> {
         let previous_sweep = self.sweep();
 
-        let (sweep, cond_var) = &*self.device.sweep;
+        let (sweep, cond_var) = &self.device.sweep;
         let (sweep, wait_result) = cond_var
             .wait_timeout_while(sweep.lock().unwrap(), timeout, |sweep| {
                 *sweep == previous_sweep || sweep.is_none()
@@ -72,7 +72,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     pub fn wait_for_next_screen_data_with_timeout(&self, timeout: Duration) -> Result<ScreenData> {
         let previous_screen_data = self.screen_data();
 
-        let (screen_data, condvar) = &*self.device.screen_data;
+        let (screen_data, condvar) = &self.device.screen_data;
         let (screen_data, wait_result) = condvar
             .wait_timeout_while(screen_data.lock().unwrap(), timeout, |screen_data| {
                 *screen_data == previous_screen_data || screen_data.is_none()
@@ -178,7 +178,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             })?;
 
         // Wait to see if we receive a tracking status message in response
-        let (lock, condvar) = &*self.device.tracking_status;
+        let (lock, condvar) = &self.device.tracking_status;
         let (tracking_status, wait_result) = condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
@@ -460,7 +460,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             .send_command(Command::SetDsp(dsp_mode))?;
 
         // Wait to see if we receive a DSP mode message in response
-        let (lock, condvar) = &*self.device.dsp_mode;
+        let (lock, condvar) = &self.device.dsp_mode;
         let (_, wait_result) = condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
@@ -480,7 +480,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         &self,
         condition: impl FnMut(&mut Option<Config>) -> bool,
     ) -> (MutexGuard<Option<Config>>, WaitTimeoutResult) {
-        let (lock, condvar) = &*self.device.config;
+        let (lock, condvar) = &self.device.config;
         condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),

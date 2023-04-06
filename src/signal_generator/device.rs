@@ -17,29 +17,29 @@ use crate::common::{
 };
 
 pub struct SignalGenerator {
-    is_reading: Arc<Mutex<bool>>,
-    read_thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
-    pub(crate) config: Arc<(Mutex<Option<Config>>, Condvar)>,
-    pub(crate) config_callback: Arc<Mutex<Callback<Config>>>,
-    pub(crate) config_exp: Arc<(Mutex<Option<ConfigExp>>, Condvar)>,
-    pub(crate) config_exp_callback: Arc<Mutex<Callback<ConfigExp>>>,
-    pub(crate) config_amp_sweep: Arc<(Mutex<Option<ConfigAmpSweep>>, Condvar)>,
-    pub(crate) config_amp_sweep_callback: Arc<Mutex<Callback<ConfigAmpSweep>>>,
-    pub(crate) config_amp_sweep_exp: Arc<(Mutex<Option<ConfigAmpSweepExp>>, Condvar)>,
-    pub(crate) config_amp_sweep_exp_callback: Arc<Mutex<Callback<ConfigAmpSweepExp>>>,
-    pub(crate) config_cw: Arc<(Mutex<Option<ConfigCw>>, Condvar)>,
-    pub(crate) config_cw_callback: Arc<Mutex<Callback<ConfigCw>>>,
-    pub(crate) config_cw_exp: Arc<(Mutex<Option<ConfigCwExp>>, Condvar)>,
-    pub(crate) config_cw_exp_callback: Arc<Mutex<Callback<ConfigCwExp>>>,
-    pub(crate) config_freq_sweep: Arc<(Mutex<Option<ConfigFreqSweep>>, Condvar)>,
-    pub(crate) config_freq_sweep_callback: Arc<Mutex<Callback<ConfigFreqSweep>>>,
-    pub(crate) config_freq_sweep_exp: Arc<(Mutex<Option<ConfigFreqSweepExp>>, Condvar)>,
-    pub(crate) config_freq_sweep_exp_callback: Arc<Mutex<Callback<ConfigFreqSweepExp>>>,
-    pub(crate) screen_data: Arc<(Mutex<Option<ScreenData>>, Condvar)>,
-    pub(crate) temperature: Arc<(Mutex<Option<Temperature>>, Condvar)>,
-    pub(crate) setup_info: Arc<(Mutex<Option<SetupInfo<Model>>>, Condvar)>,
-    serial_number: Arc<(Mutex<Option<SerialNumber>>, Condvar)>,
     serial_port: SerialPort,
+    is_reading: Mutex<bool>,
+    read_thread_handle: Mutex<Option<JoinHandle<()>>>,
+    pub(crate) config: (Mutex<Option<Config>>, Condvar),
+    pub(crate) config_callback: Mutex<Callback<Config>>,
+    pub(crate) config_exp: (Mutex<Option<ConfigExp>>, Condvar),
+    pub(crate) config_exp_callback: Mutex<Callback<ConfigExp>>,
+    pub(crate) config_amp_sweep: (Mutex<Option<ConfigAmpSweep>>, Condvar),
+    pub(crate) config_amp_sweep_callback: Mutex<Callback<ConfigAmpSweep>>,
+    pub(crate) config_amp_sweep_exp: (Mutex<Option<ConfigAmpSweepExp>>, Condvar),
+    pub(crate) config_amp_sweep_exp_callback: Mutex<Callback<ConfigAmpSweepExp>>,
+    pub(crate) config_cw: (Mutex<Option<ConfigCw>>, Condvar),
+    pub(crate) config_cw_callback: Mutex<Callback<ConfigCw>>,
+    pub(crate) config_cw_exp: (Mutex<Option<ConfigCwExp>>, Condvar),
+    pub(crate) config_cw_exp_callback: Mutex<Callback<ConfigCwExp>>,
+    pub(crate) config_freq_sweep: (Mutex<Option<ConfigFreqSweep>>, Condvar),
+    pub(crate) config_freq_sweep_callback: Mutex<Callback<ConfigFreqSweep>>,
+    pub(crate) config_freq_sweep_exp: (Mutex<Option<ConfigFreqSweepExp>>, Condvar),
+    pub(crate) config_freq_sweep_exp_callback: Mutex<Callback<ConfigFreqSweepExp>>,
+    pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
+    pub(crate) temperature: (Mutex<Option<Temperature>>, Condvar),
+    pub(crate) setup_info: (Mutex<Option<SetupInfo<Model>>>, Condvar),
+    serial_number: (Mutex<Option<SerialNumber>>, Condvar),
 }
 
 impl Device for SignalGenerator {
@@ -48,29 +48,29 @@ impl Device for SignalGenerator {
     #[tracing::instrument(skip(serial_port), ret, err)]
     fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
         let device = Arc::new(SignalGenerator {
-            is_reading: Arc::new(Mutex::new(true)),
-            read_thread_handle: Arc::new(Mutex::new(None)),
-            config: Arc::new((Mutex::new(None), Condvar::new())),
-            config_callback: Arc::new(Mutex::new(None)),
-            config_exp: Arc::new((Mutex::new(None), Condvar::new())),
-            config_exp_callback: Arc::new(Mutex::new(None)),
-            config_cw: Arc::new((Mutex::new(None), Condvar::new())),
-            config_cw_callback: Arc::new(Mutex::new(None)),
-            config_cw_exp: Arc::new((Mutex::new(None), Condvar::new())),
-            config_cw_exp_callback: Arc::new(Mutex::new(None)),
-            config_amp_sweep: Arc::new((Mutex::new(None), Condvar::new())),
-            config_amp_sweep_callback: Arc::new(Mutex::new(None)),
-            config_amp_sweep_exp: Arc::new((Mutex::new(None), Condvar::new())),
-            config_amp_sweep_exp_callback: Arc::new(Mutex::new(None)),
-            config_freq_sweep: Arc::new((Mutex::new(None), Condvar::new())),
-            config_freq_sweep_callback: Arc::new(Mutex::new(None)),
-            config_freq_sweep_exp: Arc::new((Mutex::new(None), Condvar::new())),
-            config_freq_sweep_exp_callback: Arc::new(Mutex::new(None)),
-            screen_data: Arc::new((Mutex::new(None), Condvar::new())),
-            temperature: Arc::new((Mutex::new(None), Condvar::new())),
-            setup_info: Arc::new((Mutex::new(None), Condvar::new())),
-            serial_number: Arc::new((Mutex::new(None), Condvar::new())),
             serial_port,
+            is_reading: Mutex::new(true),
+            read_thread_handle: Mutex::new(None),
+            config: (Mutex::new(None), Condvar::new()),
+            config_callback: Mutex::new(None),
+            config_exp: (Mutex::new(None), Condvar::new()),
+            config_exp_callback: Mutex::new(None),
+            config_cw: (Mutex::new(None), Condvar::new()),
+            config_cw_callback: Mutex::new(None),
+            config_cw_exp: (Mutex::new(None), Condvar::new()),
+            config_cw_exp_callback: Mutex::new(None),
+            config_amp_sweep: (Mutex::new(None), Condvar::new()),
+            config_amp_sweep_callback: Mutex::new(None),
+            config_amp_sweep_exp: (Mutex::new(None), Condvar::new()),
+            config_amp_sweep_exp_callback: Mutex::new(None),
+            config_freq_sweep: (Mutex::new(None), Condvar::new()),
+            config_freq_sweep_callback: Mutex::new(None),
+            config_freq_sweep_exp: (Mutex::new(None), Condvar::new()),
+            config_freq_sweep_exp_callback: Mutex::new(None),
+            screen_data: (Mutex::new(None), Condvar::new()),
+            temperature: (Mutex::new(None), Condvar::new()),
+            setup_info: (Mutex::new(None), Condvar::new()),
+            serial_number: (Mutex::new(None), Condvar::new()),
         });
 
         *device.read_thread_handle.lock().unwrap() =
@@ -80,7 +80,7 @@ impl Device for SignalGenerator {
         device.serial_port.send_command(Command::RequestConfig)?;
 
         // Wait to receive a Config before considering this a valid RF Explorer signal generator
-        let (lock, cvar) = &*device.config;
+        let (lock, cvar) = &device.config;
         let _ = cvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
