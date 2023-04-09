@@ -13,4 +13,4 @@ num_enum = "0.5"
 serialport = "4.2"
 thiserror = "1"
 tracing = "0.1"
-uom = { version = "0.33", features = ["u64"] }
+uom = { version = "0.34.0", features = ["u64"] }
