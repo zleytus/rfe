@@ -317,7 +317,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the spectrum analyzer's configuration.
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self), ret, err)]
     fn set_config(
         &self,
         start: Frequency,
@@ -325,9 +325,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         min_amp_dbm: i16,
         max_amp_dbm: i16,
     ) -> Result<()> {
-        info!("Validating start and stop frequencies");
         self.validate_start_stop(start, stop)?;
-        info!("Validating min and max amplitudes");
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
         self.device.serial_port().send_command(Command::SetConfig {
@@ -337,23 +335,22 @@ impl RfExplorer<SpectrumAnalyzer> {
             max_amp_dbm,
         })?;
 
-        // Function to check whether a config contains the requested values
-        let config_contains_requested_values = |config: &Config| {
-            config.start.abs_diff(start) < config.step
-                && config.stop.abs_diff(stop) < config.step
-                && config.min_amp_dbm == min_amp_dbm
-                && config.max_amp_dbm == max_amp_dbm
-        };
-
         // Check if the current config already contains the requested values
-        if config_contains_requested_values(&self.config()) {
+        if self
+            .config()
+            .contains_start_stop_amp_range(start, stop, min_amp_dbm, max_amp_dbm)
+        {
             return Ok(());
         }
 
         // Wait until the current config contains the requested values
-        info!("Waiting to receive updated config");
+        trace!("Waiting to receive updated 'Config'");
         let (_, wait_result) = self.wait_for_config_while(|config| {
-            config.filter(config_contains_requested_values).is_none()
+            let Some(config) = config else {
+                return true;
+            };
+
+            !config.contains_start_stop_amp_range(start, stop, min_amp_dbm, max_amp_dbm)
         });
 
         if !wait_result.timed_out() {

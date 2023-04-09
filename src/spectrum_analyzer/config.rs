@@ -98,6 +98,20 @@ pub struct Config {
 
 impl Config {
     pub(crate) const PREFIX: &'static [u8] = b"#C2-F:";
+
+    #[tracing::instrument(skip(self), ret, fields(self.start = ?self.start, self.stop = ?self.stop, self.min_amp_dbm = ?self.min_amp_dbm, self.max_amp_dbm = ?self.max_amp_dbm))]
+    pub(crate) fn contains_start_stop_amp_range(
+        &self,
+        start: Frequency,
+        stop: Frequency,
+        min_amp_dbm: i16,
+        max_amp_dbm: i16,
+    ) -> bool {
+        self.start.abs_diff(start) <= self.step
+            && self.stop.abs_diff(stop) <= self.step * 2
+            && self.min_amp_dbm == min_amp_dbm
+            && self.max_amp_dbm == max_amp_dbm
+    }
 }
 
 impl<'a> TryFrom<&'a [u8]> for Config {
