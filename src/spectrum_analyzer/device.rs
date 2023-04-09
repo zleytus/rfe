@@ -198,9 +198,9 @@ impl Device for SpectrumAnalyzer {
 impl Debug for SpectrumAnalyzer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SpectrumAnalyzer")
-            .field("setup_info", &self.setup_info)
-            .field("config", &self.config)
             .field("serial_port", &self.serial_port)
+            .field("setup_info", &self.setup_info.0.lock().unwrap())
+            .field("config", &self.config.0.lock().unwrap())
             .field("serial_number", &self.serial_number.0.lock().unwrap())
             .finish()
     }
