@@ -196,13 +196,29 @@ impl Device for SignalGenerator {
         }
     }
 
-    fn serial_number(&self) -> SerialNumber {
-        self.serial_number
-            .0
-            .lock()
-            .unwrap()
-            .clone()
-            .unwrap_or_default()
+    fn serial_number(&self) -> io::Result<SerialNumber> {
+        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
+            return Ok(serial_number.clone());
+        }
+
+        self.serial_port
+            .send_command(crate::common::Command::RequestSerialNumber)?;
+
+        let (lock, cvar) = &self.serial_number;
+        trace!("Waiting to receive SerialNumber from RF Explorer");
+        let _ = cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SignalGenerator::RECEIVE_SERIAL_NUMBER_TIMEOUT,
+                |serial_number| serial_number.is_none(),
+            )
+            .unwrap();
+
+        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
+            Ok(serial_number.clone())
+        } else {
+            Err(io::ErrorKind::TimedOut.into())
+        }
     }
 
     fn stop_reading_messages(&self) {
@@ -218,8 +234,8 @@ impl Debug for SignalGenerator {
         f.debug_struct("SignalGenerator")
             .field("setup_info", &self.setup_info)
             .field("config", &self.config)
-            .field("serial_number", &self.serial_number)
             .field("serial_port", &self.serial_port)
+            .field("serial_number", &self.serial_number.0.lock().unwrap())
             .finish()
     }
 }

@@ -130,7 +130,11 @@ pub unsafe extern "C" fn rfe_signal_generator_serial_number(
         return Result::NullPtrError;
     };
 
-    let serial_number = CString::new(rfe.serial_number().as_str()).unwrap_or_default();
+    let Ok(serial_number) = rfe.serial_number() else {
+        return Result::IoError;
+    };
+
+    let serial_number = CString::new(serial_number.as_str()).unwrap_or_default();
     let serial_number =
         slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len());
 
