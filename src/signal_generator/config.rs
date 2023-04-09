@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use nom::bytes::complete::tag;
+use nom::bytes::complete::{tag, take};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::{
@@ -143,6 +143,99 @@ impl<'a> TryFrom<&'a [u8]> for Config {
             stop_attenuation,
             stop_power_level,
             rf_power,
+            sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
+            timestamp: Utc::now(),
+        })
+    }
+}
+
+#[derive(Debug, Copy, Clone, Default, PartialEq)]
+pub struct ConfigExp {
+    pub start: Frequency,
+    pub cw: Frequency,
+    pub total_steps: u32,
+    pub step: Frequency,
+    pub power_dbm: f32,
+    pub step_power_dbm: f32,
+    pub start_power_dbm: f32,
+    pub stop_power_dbm: f32,
+    pub rf_power_on: bool,
+    pub sweep_delay: Duration,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ConfigExp {
+    pub const PREFIX: &'static [u8] = b"#C5-*:";
+}
+
+impl<'a> TryFrom<&'a [u8]> for ConfigExp {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        // Parse the prefix of the message
+        let (bytes, _) = tag(Self::PREFIX)(bytes)?;
+
+        // Parse the start frequency
+        let (bytes, start_khz) = parse_frequency(7u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the CW frequency
+        let (bytes, cw_khz) = parse_frequency(7u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the total steps
+        let (bytes, total_steps) = parse_num(4u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the step frequency
+        let (bytes, step_khz) = parse_frequency(7u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the power
+        let (bytes, power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the step power
+        let (bytes, step_power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the start power
+        let (bytes, start_power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the stop power
+        let (bytes, stop_power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the rf power
+        let (bytes, rf_power) = take(1u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the sweep delay
+        let (bytes, sweep_delay_ms) = parse_sweep_delay_ms(bytes)?;
+
+        // Consume any \r or \r\n line endings and make sure there aren't any bytes left
+        let _ = parse_opt_line_ending(bytes)?;
+
+        Ok(ConfigExp {
+            start: Frequency::from_khz(start_khz),
+            cw: Frequency::from_khz(cw_khz),
+            total_steps,
+            step: Frequency::from_khz(step_khz),
+            power_dbm,
+            step_power_dbm,
+            start_power_dbm,
+            stop_power_dbm,
+            rf_power_on: rf_power[0] == b'0',
             sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
             timestamp: Utc::now(),
         })

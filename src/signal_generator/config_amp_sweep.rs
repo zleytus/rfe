@@ -87,6 +87,64 @@ impl<'a> TryFrom<&'a [u8]> for ConfigAmpSweep {
     }
 }
 
+#[derive(Debug, Copy, Clone, Default, PartialEq)]
+pub struct ConfigAmpSweepExp {
+    cw: Frequency,
+    start_power_dbm: f32,
+    step_power_dbm: f32,
+    stop_power_dbm: f32,
+    sweep_delay: Duration,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ConfigAmpSweepExp {
+    pub const PREFIX: &'static [u8] = b"#C5-A:";
+}
+
+impl<'a> TryFrom<&'a [u8]> for ConfigAmpSweepExp {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        // Parse the prefix of the message
+        let (bytes, _) = tag(Self::PREFIX)(bytes)?;
+
+        // Parse the CW frequency
+        let (bytes, cw_khz) = parse_num(7u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the start power
+        let (bytes, start_power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the step power
+        let (bytes, step_power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the stop power
+        let (bytes, stop_power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the sweep delay
+        let (bytes, sweep_delay_ms) = parse_sweep_delay_ms(bytes)?;
+
+        // Consume any \r or \r\n line endings and make sure there aren't any bytes left
+        let _ = parse_opt_line_ending(bytes)?;
+
+        Ok(ConfigAmpSweepExp {
+            cw: Frequency::from_khz(cw_khz),
+            start_power_dbm,
+            step_power_dbm,
+            stop_power_dbm,
+            sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
+            timestamp: Utc::now(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

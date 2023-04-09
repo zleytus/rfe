@@ -76,6 +76,50 @@ impl<'a> TryFrom<&'a [u8]> for ConfigCw {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
+pub struct ConfigCwExp {
+    pub cw: Frequency,
+    pub power_dbm: f32,
+    pub rf_power: RfPower,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ConfigCwExp {
+    pub const PREFIX: &'static [u8] = b"#C5-G:";
+}
+
+impl<'a> TryFrom<&'a [u8]> for ConfigCwExp {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        // Parse the prefix of the message
+        let (bytes, _) = tag(Self::PREFIX)(bytes)?;
+
+        // Parse the CW freq
+        let (bytes, cw_khz) = parse_frequency(7u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the power
+        let (bytes, power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the rf power
+        let (bytes, rf_power) = parse_rf_power(bytes)?;
+
+        // Consume any \r or \r\n line endings and make sure there aren't any bytes left
+        let _ = parse_opt_line_ending(bytes)?;
+
+        Ok(ConfigCwExp {
+            cw: Frequency::from_khz(cw_khz),
+            power_dbm,
+            rf_power,
+            timestamp: Utc::now(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

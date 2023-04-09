@@ -4,12 +4,16 @@ use super::{
 };
 use crate::common::{MessageParseError, ScreenData, SerialNumber, SetupInfo};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Message {
     Config(Config),
     ConfigAmpSweep(ConfigAmpSweep),
     ConfigCw(ConfigCw),
     ConfigFreqSweep(ConfigFreqSweep),
+    ConfigExp(ConfigExp),
+    ConfigAmpSweepExp(ConfigAmpSweepExp),
+    ConfigCwExp(ConfigCwExp),
+    ConfigFreqSweepExp(ConfigFreqSweepExp),
     ScreenData(ScreenData),
     SerialNumber(SerialNumber),
     SetupInfo(SetupInfo<Model>),
@@ -29,6 +33,18 @@ impl<'a> TryFrom<&'a [u8]> for Message {
             Ok(Message::ConfigCw(ConfigCw::try_from(bytes)?))
         } else if bytes.starts_with(ConfigFreqSweep::PREFIX) {
             Ok(Message::ConfigFreqSweep(ConfigFreqSweep::try_from(bytes)?))
+        } else if bytes.starts_with(ConfigExp::PREFIX) {
+            Ok(Message::ConfigExp(ConfigExp::try_from(bytes)?))
+        } else if bytes.starts_with(ConfigAmpSweepExp::PREFIX) {
+            Ok(Message::ConfigAmpSweepExp(ConfigAmpSweepExp::try_from(
+                bytes,
+            )?))
+        } else if bytes.starts_with(ConfigCwExp::PREFIX) {
+            Ok(Message::ConfigCwExp(ConfigCwExp::try_from(bytes)?))
+        } else if bytes.starts_with(ConfigFreqSweepExp::PREFIX) {
+            Ok(Message::ConfigFreqSweepExp(ConfigFreqSweepExp::try_from(
+                bytes,
+            )?))
         } else if bytes.starts_with(ScreenData::PREFIX) {
             Ok(Message::ScreenData(ScreenData::try_from(bytes)?))
         } else if bytes.starts_with(SerialNumber::PREFIX) {

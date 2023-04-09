@@ -79,6 +79,71 @@ impl<'a> TryFrom<&'a [u8]> for ConfigFreqSweep {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
+pub struct ConfigFreqSweepExp {
+    pub start: Frequency,
+    pub total_steps: u32,
+    pub step: Frequency,
+    pub power_dbm: f32,
+    pub rf_power: RfPower,
+    pub sweep_delay: Duration,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ConfigFreqSweepExp {
+    pub const PREFIX: &'static [u8] = b"#C5-F:";
+}
+
+impl<'a> TryFrom<&'a [u8]> for ConfigFreqSweepExp {
+    type Error = MessageParseError<'a>;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        // Parse the prefix of the message
+        let (bytes, _) = tag(Self::PREFIX)(bytes)?;
+
+        // Parse the start frequency
+        let (bytes, start_khz) = parse_frequency(7u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the total steps
+        let (bytes, total_steps) = parse_num(4u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the step frequency
+        let (bytes, step_khz) = parse_frequency(7u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the power
+        let (bytes, power_dbm) = parse_num(5u8)(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the rf power
+        let (bytes, rf_power) = parse_rf_power(bytes)?;
+
+        let (bytes, _) = parse_comma(bytes)?;
+
+        // Parse the sweep delay
+        let (bytes, sweep_delay_ms) = parse_sweep_delay_ms(bytes)?;
+
+        // Consume any \r or \r\n line endings and make sure there aren't any bytes left
+        let _ = parse_opt_line_ending(bytes)?;
+
+        Ok(ConfigFreqSweepExp {
+            start: Frequency::from_khz(start_khz),
+            total_steps,
+            step: Frequency::from_khz(step_khz),
+            power_dbm,
+            rf_power,
+            sweep_delay: Duration::from_millis(u64::from(sweep_delay_ms)),
+            timestamp: Utc::now(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

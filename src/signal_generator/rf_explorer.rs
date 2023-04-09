@@ -1,20 +1,31 @@
 use std::{io, time::Duration};
 
 use super::{
-    Attenuation, Command, Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, Message, PowerLevel,
+    Attenuation, Command, Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp,
+    ConfigExp, ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, SignalGenerator,
     Temperature,
 };
 use crate::common::{Device, Error, Frequency, RadioModule, Result, RfExplorer, ScreenData};
 
 impl RfExplorer<SignalGenerator> {
     /// Returns the signal generator's configuration.
-    pub fn config(&self) -> Config {
-        self.device.config.0.lock().unwrap().unwrap_or_default()
+    pub fn config(&self) -> Option<Config> {
+        *self.device.config.0.lock().unwrap()
+    }
+
+    /// Returns the signal generator's configuration for the expansion radio module.
+    pub fn config_expansion(&self) -> Option<ConfigExp> {
+        *self.device.config_exp.0.lock().unwrap()
     }
 
     /// Returns the signal generator's amplitude sweep mode configuration.
     pub fn config_amp_sweep(&self) -> Option<ConfigAmpSweep> {
         *self.device.config_amp_sweep.0.lock().unwrap()
+    }
+
+    /// Returns the signal generator's amplitude sweep mode configuration for the expansion radio module.
+    pub fn config_amp_sweep_expansion(&self) -> Option<ConfigAmpSweepExp> {
+        *self.device.config_amp_sweep_exp.0.lock().unwrap()
     }
 
     /// Returns the signal generator's CW mode configuration.
@@ -41,7 +52,7 @@ impl RfExplorer<SignalGenerator> {
     pub fn wait_for_next_screen_data_with_timeout(&self, timeout: Duration) -> Result<ScreenData> {
         let previous_screen_data = self.screen_data();
 
-        let (screen_data, condvar) = &*self.device.screen_data;
+        let (screen_data, condvar) = &self.device.screen_data;
         let (screen_data, wait_result) = condvar
             .wait_timeout_while(screen_data.lock().unwrap(), timeout, |screen_data| {
                 *screen_data == previous_screen_data || screen_data.is_none()
@@ -260,24 +271,50 @@ impl RfExplorer<SignalGenerator> {
             .send_command(Command::TrackingStep(steps))
     }
 
-    /// Sets the callback that is called when the signal generator receives a `Config`.
+    /// Sets the callback that is executed when the signal generator receives a `Config`.
     pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
         *self.device.config_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
-    /// Sets the callback that is called when the signal generator receives a `ConfigAmpSweep`.
+    /// Sets the callback that is executed when the signal generator receives a `ConfigExp`.
+    pub fn set_config_exp_callback(&self, cb: impl FnMut(ConfigExp) + Send + 'static) {
+        *self.device.config_exp_callback.lock().unwrap() = Some(Box::new(cb));
+    }
+
+    /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweep`.
     pub fn set_config_amp_sweep_callback(&self, cb: impl FnMut(ConfigAmpSweep) + Send + 'static) {
         *self.device.config_amp_sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
-    /// Sets the callback that is called when the signal generator receives a `ConfigCw`.
+    /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweepExp`.
+    pub fn set_config_amp_sweep_exp_callback(
+        &self,
+        cb: impl FnMut(ConfigAmpSweepExp) + Send + 'static,
+    ) {
+        *self.device.config_amp_sweep_exp_callback.lock().unwrap() = Some(Box::new(cb));
+    }
+
+    /// Sets the callback that is executed when the signal generator receives a `ConfigCw`.
     pub fn set_config_cw_callback(&self, cb: impl FnMut(ConfigCw) + Send + 'static) {
         *self.device.config_cw_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
-    /// Sets the callback that is called when the signal generator receives a `ConfigFreqSweep`.
+    /// Sets the callback that is executed when the signal generator receives a `ConfigCwExp`.
+    pub fn set_config_cw_exp_callback(&self, cb: impl FnMut(ConfigCwExp) + Send + 'static) {
+        *self.device.config_cw_exp_callback.lock().unwrap() = Some(Box::new(cb));
+    }
+
+    /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweep`.
     pub fn set_config_freq_sweep_callback(&self, cb: impl FnMut(ConfigFreqSweep) + Send + 'static) {
         *self.device.config_freq_sweep_callback.lock().unwrap() = Some(Box::new(cb));
+    }
+
+    /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweepExp`.
+    pub fn set_config_freq_sweep_exp_callback(
+        &self,
+        cb: impl FnMut(ConfigFreqSweepExp) + Send + 'static,
+    ) {
+        *self.device.config_freq_sweep_exp_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Turns on RF power with the current power and frequency configuration.
