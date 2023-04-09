@@ -85,7 +85,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         }
     }
 
-    /// Returns the spectrum analyzer's DSP mode.
+    /// Returns the RF Explorer's DSP mode.
     pub fn dsp_mode(&self) -> Option<DspMode> {
         *self.device.dsp_mode.0.lock().unwrap()
     }
