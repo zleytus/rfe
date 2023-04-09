@@ -15,6 +15,7 @@ fn main() {
             include: Some(vec!["rfe".to_string()]),
             ..Default::default()
         },
+        cpp_compat: true,
         ..Default::default()
     };
 
