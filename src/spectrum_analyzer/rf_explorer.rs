@@ -374,7 +374,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub fn set_sweep_points(&self, sweep_points: u16) -> Result<()> {
         // Only 'Plus' models can set the number of points in a sweep
         if !self.active_radio_module().model().is_plus_model() {
@@ -423,7 +423,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the spectrum analyzer's calculator mode.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub fn set_calc_mode(&self, calc_mode: CalcMode) -> io::Result<()> {
         self.device
             .serial_port()
@@ -431,7 +431,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the spectrum analyzer's input stage.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub fn set_input_stage(&self, input_stage: InputStage) -> io::Result<()> {
         self.device
             .serial_port()
@@ -439,7 +439,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Adds or subtracts an offset to the amplitudes in each sweep.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub fn set_offset_db(&self, offset_db: i8) -> io::Result<()> {
         self.device
             .serial_port()
@@ -447,7 +447,7 @@ impl RfExplorer<SpectrumAnalyzer> {
     }
 
     /// Sets the spectrum analyzer's DSP mode.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub fn set_dsp_mode(&self, dsp_mode: DspMode) -> Result<()> {
         // Check to see if the DspMode is already set to the desired value
         if *self.device.dsp_mode.0.lock().unwrap() == Some(dsp_mode) {
@@ -490,7 +490,7 @@ impl RfExplorer<SpectrumAnalyzer> {
             .unwrap()
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self), ret, err)]
     fn validate_start_stop(&self, start: Frequency, stop: Frequency) -> Result<()> {
         if start >= stop {
             return Err(Error::InvalidInput(
@@ -530,7 +530,7 @@ impl RfExplorer<SpectrumAnalyzer> {
         Ok(())
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self), ret, err)]
     fn validate_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         // The bottom amplitude must be less than the top amplitude
         if min_amp_dbm >= max_amp_dbm {
