@@ -16,6 +16,11 @@ fn main() {
             ..Default::default()
         },
         cpp_compat: true,
+        defines: std::collections::HashMap::from_iter([
+            ("target_os = windows".to_string(), "_WIN32".to_string()),
+            ("target_os = macos".to_string(), "__APPLE__".to_string()),
+            ("target_os = linux".to_string(), "__linux__".to_string()),
+        ]),
         ..Default::default()
     };
 
