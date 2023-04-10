@@ -7,7 +7,7 @@ edition = "2021"
 cbindgen = "0.24"
 
 [dependencies]
-rfe = { path = "../" }
+rfe = { path = "../rfe" }
 
 [lib]
 name = "rfe"
