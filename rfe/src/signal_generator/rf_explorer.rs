@@ -5,9 +5,16 @@ use super::{
     ConfigExp, ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, SignalGenerator,
     Temperature,
 };
-use crate::common::{Device, Error, Frequency, RadioModule, Result, RfExplorer, ScreenData};
+use crate::common::{rf_explorer_impl, Device, Error, Frequency, RadioModule, Result, ScreenData};
 
-impl RfExplorer<SignalGenerator> {
+#[derive(Debug)]
+pub struct RfExplorer {
+    device: std::sync::Arc<SignalGenerator>,
+}
+
+impl RfExplorer {
+    rf_explorer_impl!(SignalGenerator);
+
     /// Returns the signal generator's configuration.
     pub fn config(&self) -> Option<Config> {
         *self.device.config.0.lock().unwrap()
@@ -325,5 +332,11 @@ impl RfExplorer<SignalGenerator> {
     /// Turns off RF power.
     pub fn rf_power_off(&self) -> io::Result<()> {
         self.device.serial_port().send_command(Command::RfPowerOff)
+    }
+}
+
+impl Drop for RfExplorer {
+    fn drop(&mut self) {
+        self.device.stop_reading_messages();
     }
 }

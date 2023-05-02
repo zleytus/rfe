@@ -17,7 +17,7 @@ pub use error::{Error, Result};
 pub use frequency::Frequency;
 pub(crate) use message::MessageParseError;
 pub use radio_module::RadioModule;
-pub use rf_explorer::RfExplorer;
+pub(crate) use rf_explorer::rf_explorer_impl;
 pub use screen_data::ScreenData;
 pub use serial_number::SerialNumber;
 pub(crate) use serial_port::{BaudRate, ConnectionError, ConnectionResult, SerialPort};

@@ -10,7 +10,7 @@ use super::{parsers::*, MessageParseError, RadioModule};
 use crate::spectrum_analyzer::Model;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SetupInfo<M: Debug + Clone + Copy + TryFrom<u8> + PartialEq + Eq = Model> {
+pub(crate) struct SetupInfo<M: Debug + Clone + Copy + TryFrom<u8> + PartialEq + Eq = Model> {
     pub main_radio_module: RadioModule<M>,
     pub expansion_radio_module: Option<RadioModule<M>>,
     pub firmware_version: String,

@@ -18,6 +18,6 @@ pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
 pub(crate) use message::Message;
 pub use model::Model;
-pub use rf_explorer::WifiBand;
+pub use rf_explorer::{RfExplorer, WifiBand};
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;

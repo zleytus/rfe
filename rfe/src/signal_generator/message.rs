@@ -5,7 +5,7 @@ use super::{
 use crate::common::{MessageParseError, ScreenData, SerialNumber, SetupInfo};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Message {
+pub(crate) enum Message {
     Config(Config),
     ConfigAmpSweep(ConfigAmpSweep),
     ConfigCw(ConfigCw),

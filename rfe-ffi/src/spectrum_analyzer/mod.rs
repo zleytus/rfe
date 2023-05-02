@@ -10,4 +10,4 @@ use list::SpectrumAnalyzerList;
 use radio_module::SpectrumAnalyzerRadioModule;
 use sweep::Sweep;
 
-type SpectrumAnalyzer = rfe::RfExplorer<rfe::SpectrumAnalyzer>;
+type SpectrumAnalyzer = rfe::spectrum_analyzer::RfExplorer;

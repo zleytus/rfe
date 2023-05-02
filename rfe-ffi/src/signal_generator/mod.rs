@@ -12,4 +12,4 @@ use list::SignalGeneratorList;
 use model::SignalGeneratorModel;
 use radio_module::SignalGeneratorRadioModule;
 
-type SignalGenerator = rfe::RfExplorer<rfe::SignalGenerator>;
+type SignalGenerator = rfe::signal_generator::RfExplorer;

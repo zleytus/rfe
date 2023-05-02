@@ -17,6 +17,7 @@ pub use config_amp_sweep::{ConfigAmpSweep, ConfigAmpSweepExp};
 pub use config_cw::{ConfigCw, ConfigCwExp};
 pub use config_freq_sweep::{ConfigFreqSweep, ConfigFreqSweepExp};
 pub use device::SignalGenerator;
-pub use message::Message;
+pub(crate) use message::Message;
 pub use model::Model;
+pub use rf_explorer::RfExplorer;
 pub use temperature::Temperature;

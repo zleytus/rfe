@@ -10,7 +10,7 @@ use tracing::debug;
 
 use super::{ConnectionResult, MessageParseError, SerialNumber, SerialPort};
 
-pub trait Device: Debug {
+pub(crate) trait Device: Debug {
     const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
     const RECEIVE_INITIAL_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
     const RECEIVE_INITIAL_SETUP_INFO_TIMEOUT: Duration = Duration::from_secs(2);

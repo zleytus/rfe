@@ -12,7 +12,7 @@ use tracing::{error, info, trace, warn};
 use super::{
     CalcMode, Command, Config, DspMode, InputStage, SpectrumAnalyzer, Sweep, TrackingStatus,
 };
-use crate::common::{Device, Error, Frequency, RadioModule, Result, RfExplorer, ScreenData};
+use crate::common::{rf_explorer_impl, Device, Error, Frequency, RadioModule, Result, ScreenData};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
 #[repr(u8)]
@@ -21,10 +21,17 @@ pub enum WifiBand {
     FiveGhz,
 }
 
-impl RfExplorer<SpectrumAnalyzer> {
+#[derive(Debug)]
+pub struct RfExplorer {
+    pub(crate) device: std::sync::Arc<SpectrumAnalyzer>,
+}
+
+impl RfExplorer {
     const MIN_MAX_AMP_RANGE_DBM: RangeInclusive<i16> = -120..=35;
     const MIN_SWEEP_POINTS: u16 = 112;
     const NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
+
+    rf_explorer_impl!(SpectrumAnalyzer);
 
     /// Returns the RF Explorer's current `Config`.
     pub fn config(&self) -> Config {
@@ -555,5 +562,11 @@ impl RfExplorer<SpectrumAnalyzer> {
         }
 
         Ok(())
+    }
+}
+
+impl Drop for RfExplorer {
+    fn drop(&mut self) {
+        self.device.stop_reading_messages();
     }
 }

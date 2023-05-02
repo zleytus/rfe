@@ -18,7 +18,7 @@ use tracing::{debug, error};
 pub(crate) const SLOW_BAUD_RATE: u32 = 2_400;
 pub(crate) const FAST_BAUD_RATE: u32 = 500_000;
 
-pub struct SerialPort {
+pub(crate) struct SerialPort {
     buf_reader: Mutex<BufReader<Take<Box<dyn serialport::SerialPort>>>>,
     port_info: SerialPortInfo,
     max_message_len: AtomicU64,
