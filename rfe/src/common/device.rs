@@ -8,17 +8,48 @@ use std::{
 
 use tracing::debug;
 
-use super::{ConnectionResult, MessageParseError, SerialNumber, SerialPort};
+use super::{
+    Command, ConnectionError, ConnectionResult, MessageParseError, SerialNumber, SerialPort,
+};
 
-pub(crate) trait Device: Debug {
+pub(crate) trait Device: Debug + Sized {
     const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
     const RECEIVE_INITIAL_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
     const RECEIVE_INITIAL_SETUP_INFO_TIMEOUT: Duration = Duration::from_secs(2);
     const RECEIVE_SERIAL_NUMBER_TIMEOUT: Duration = Duration::from_secs(2);
 
     type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>> + Debug;
+    type SetupInfo;
+    type Config;
 
-    fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>>;
+    #[tracing::instrument(skip(serial_port), ret, err)]
+    fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
+        let device = Arc::new(Self::new(serial_port));
+
+        // Read messages from the RF Explorer on a background thread
+        Self::start_read_thread(&device);
+
+        // Request the Config from the RF Explorer to get it to start sending data
+        if let Err(err) = device.serial_port().send_command(Command::RequestConfig) {
+            device.stop_reading_messages();
+            return Err(err.into());
+        }
+
+        // Wait until we've received both a Config and SetupInfo from the RF Explorer
+        if device.wait_for_config().is_ok() && device.wait_for_setup_info().is_ok() {
+            // The largest sweep we could receive contains 65,535 (2^16) points
+            // To be safe, set the maximum message length to 131,072 (2^17)
+            device.serial_port().set_max_message_len(131_072);
+            Ok(device)
+        } else {
+            device.stop_reading_messages();
+            Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
+        }
+    }
+
+    fn new(serial_port: SerialPort) -> Self;
+
+    fn start_read_thread(device: &Arc<Self>);
 
     fn serial_port(&self) -> &SerialPort;
 
@@ -26,7 +57,11 @@ pub(crate) trait Device: Debug {
 
     fn firmware_version(&self) -> String;
 
-    fn serial_number(&self) -> io::Result<SerialNumber>;
+    fn wait_for_config(&self) -> io::Result<Self::Config>;
+
+    fn wait_for_setup_info(&self) -> io::Result<Self::SetupInfo>;
+
+    fn wait_for_serial_number(&self) -> io::Result<SerialNumber>;
 
     fn cache_message(&self, message: Self::Message);
 

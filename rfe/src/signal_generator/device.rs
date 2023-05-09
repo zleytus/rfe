@@ -11,10 +11,7 @@ use super::{
     Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp, ConfigExp, ConfigFreqSweep,
     ConfigFreqSweepExp, Model, Temperature,
 };
-use crate::common::{
-    Callback, Command, ConnectionError, ConnectionResult, Device, ScreenData, SerialNumber,
-    SerialPort, SetupInfo,
-};
+use crate::common::{Callback, Device, ScreenData, SerialNumber, SerialPort, SetupInfo};
 
 pub struct SignalGenerator {
     serial_port: SerialPort,
@@ -44,10 +41,11 @@ pub struct SignalGenerator {
 
 impl Device for SignalGenerator {
     type Message = super::Message;
+    type Config = Config;
+    type SetupInfo = SetupInfo<Model>;
 
-    #[tracing::instrument(skip(serial_port), ret, err)]
-    fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
-        let device = Arc::new(SignalGenerator {
+    fn new(serial_port: SerialPort) -> SignalGenerator {
+        SignalGenerator {
             serial_port,
             is_reading: Mutex::new(true),
             read_thread_handle: Mutex::new(None),
@@ -71,35 +69,82 @@ impl Device for SignalGenerator {
             temperature: (Mutex::new(None), Condvar::new()),
             setup_info: (Mutex::new(None), Condvar::new()),
             serial_number: (Mutex::new(None), Condvar::new()),
-        });
+        }
+    }
 
-        // Read messages from the RF Explorer on a background thread
+    fn start_read_thread(device: &Arc<Self>) {
         let device_clone = device.clone();
         *device.read_thread_handle.lock().unwrap() = Some(thread::spawn(move || {
             SignalGenerator::read_messages(device_clone)
         }));
+    }
 
-        // Request the Config, SetupInfo, and SerialNumber from the RF Explorer
-        device.serial_port.send_command(Command::RequestConfig)?;
+    #[tracing::instrument(skip(self), ret, err)]
+    fn wait_for_config(&self) -> io::Result<Self::Config> {
+        let (lock, cvar) = &self.config;
+        if let Some(config) = *lock.lock().unwrap() {
+            return Ok(config);
+        }
 
-        // Wait to receive a Config before considering this a valid RF Explorer signal generator
-        let (lock, cvar) = &device.config;
-        let _ = cvar
+        if let Some(config) = *cvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 SignalGenerator::RECEIVE_INITIAL_CONFIG_TIMEOUT,
                 |config| config.is_none(),
             )
+            .unwrap()
+            .0
+        {
+            Ok(config)
+        } else {
+            Err(io::ErrorKind::TimedOut.into())
+        }
+    }
+
+    #[tracing::instrument(skip(self), ret, err)]
+    fn wait_for_setup_info(&self) -> io::Result<Self::SetupInfo> {
+        let (lock, cvar) = &self.setup_info;
+        if let Some(ref setup_info) = *lock.lock().unwrap() {
+            return Ok(setup_info.clone());
+        }
+
+        if let Some(ref setup_info) = *cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SignalGenerator::RECEIVE_INITIAL_SETUP_INFO_TIMEOUT,
+                |setup_info| setup_info.is_none(),
+            )
+            .unwrap()
+            .0
+        {
+            Ok(setup_info.clone())
+        } else {
+            Err(io::ErrorKind::TimedOut.into())
+        }
+    }
+
+    fn wait_for_serial_number(&self) -> io::Result<SerialNumber> {
+        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
+            return Ok(serial_number.clone());
+        }
+
+        self.serial_port
+            .send_command(crate::common::Command::RequestSerialNumber)?;
+
+        let (lock, cvar) = &self.serial_number;
+        trace!("Waiting to receive SerialNumber from RF Explorer");
+        let _ = cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SignalGenerator::RECEIVE_SERIAL_NUMBER_TIMEOUT,
+                |serial_number| serial_number.is_none(),
+            )
             .unwrap();
 
-        // The signal generator is only valid after receiving a SetupInfo and Config message
-        if device.setup_info.0.lock().unwrap().is_some()
-            && device.config.0.lock().unwrap().is_some()
-        {
-            Ok(device)
+        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
+            Ok(serial_number.clone())
         } else {
-            device.stop_reading_messages();
-            Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
+            Err(io::ErrorKind::TimedOut.into())
         }
     }
 
@@ -193,31 +238,6 @@ impl Device for SignalGenerator {
             setup_info.firmware_version.clone()
         } else {
             String::default()
-        }
-    }
-
-    fn serial_number(&self) -> io::Result<SerialNumber> {
-        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
-            return Ok(serial_number.clone());
-        }
-
-        self.serial_port
-            .send_command(crate::common::Command::RequestSerialNumber)?;
-
-        let (lock, cvar) = &self.serial_number;
-        trace!("Waiting to receive SerialNumber from RF Explorer");
-        let _ = cvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SignalGenerator::RECEIVE_SERIAL_NUMBER_TIMEOUT,
-                |serial_number| serial_number.is_none(),
-            )
-            .unwrap();
-
-        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
-            Ok(serial_number.clone())
-        } else {
-            Err(io::ErrorKind::TimedOut.into())
         }
     }
 

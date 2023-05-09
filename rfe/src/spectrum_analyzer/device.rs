@@ -5,13 +5,10 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use tracing::{error, info, trace};
+use tracing::trace;
 
 use super::{Config, DspMode, InputStage, Sweep, TrackingStatus};
-use crate::common::{
-    Callback, Command, ConnectionError, ConnectionResult, Device, ScreenData, SerialNumber,
-    SerialPort, SetupInfo,
-};
+use crate::common::{Callback, Device, ScreenData, SerialNumber, SerialPort, SetupInfo};
 
 pub struct SpectrumAnalyzer {
     serial_port: SerialPort,
@@ -31,10 +28,11 @@ pub struct SpectrumAnalyzer {
 
 impl Device for SpectrumAnalyzer {
     type Message = super::Message;
+    type Config = Config;
+    type SetupInfo = SetupInfo;
 
-    #[tracing::instrument(skip(serial_port), ret, err)]
-    fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
-        let device = Arc::new(SpectrumAnalyzer {
+    fn new(serial_port: SerialPort) -> SpectrumAnalyzer {
+        SpectrumAnalyzer {
             serial_port,
             is_reading: Mutex::new(true),
             read_thread_handle: Mutex::new(None),
@@ -48,57 +46,83 @@ impl Device for SpectrumAnalyzer {
             input_stage: (Mutex::new(None), Condvar::new()),
             setup_info: (Mutex::new(None), Condvar::new()),
             serial_number: (Mutex::new(None), Condvar::new()),
-        });
+        }
+    }
 
-        // Read messages from the RF Explorer on a background thread
+    fn start_read_thread(device: &Arc<Self>) {
         let device_clone = device.clone();
         *device.read_thread_handle.lock().unwrap() = Some(thread::spawn(move || {
             SpectrumAnalyzer::read_messages(device_clone)
         }));
+    }
 
-        // Request the SetupInfo and Config from the RF Explorer
-        device.serial_port.send_command(Command::RequestConfig)?;
-
-        let (lock, cvar) = &device.setup_info;
-        if lock.lock().unwrap().is_none() {
-            trace!("Waiting to receive SetupInfo from potential RF Explorer");
-            let (_, wait_result) = cvar
-                .wait_timeout_while(
-                    lock.lock().unwrap(),
-                    SpectrumAnalyzer::RECEIVE_INITIAL_SETUP_INFO_TIMEOUT,
-                    |setup_info| setup_info.is_none(),
-                )
-                .unwrap();
-            if wait_result.timed_out() {
-                error!("Did not receive SetupInfo before timeout");
-                device.stop_reading_messages();
-                return Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()));
-            }
+    #[tracing::instrument(skip(self), ret, err)]
+    fn wait_for_config(&self) -> io::Result<Config> {
+        let (lock, cvar) = &self.config;
+        if let Some(config) = *lock.lock().unwrap() {
+            return Ok(config);
         }
 
-        let (lock, cvar) = &device.config;
-        if lock.lock().unwrap().is_none() {
-            trace!("Waiting to receive Config from potential RF Explorer");
-            let (_, wait_result) = cvar
-                .wait_timeout_while(
-                    lock.lock().unwrap(),
-                    SpectrumAnalyzer::RECEIVE_INITIAL_CONFIG_TIMEOUT,
-                    |config| config.is_none(),
-                )
-                .unwrap();
-            if wait_result.timed_out() {
-                error!("Did not receive Config before timeout");
-                device.stop_reading_messages();
-                return Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()));
-            }
+        if let Some(config) = *cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SpectrumAnalyzer::RECEIVE_INITIAL_CONFIG_TIMEOUT,
+                |config| config.is_none(),
+            )
+            .unwrap()
+            .0
+        {
+            Ok(config)
+        } else {
+            Err(io::ErrorKind::TimedOut.into())
+        }
+    }
+
+    #[tracing::instrument(skip(self), ret, err)]
+    fn wait_for_setup_info(&self) -> io::Result<SetupInfo> {
+        let (lock, cvar) = &self.setup_info;
+        if let Some(ref setup_info) = *lock.lock().unwrap() {
+            return Ok(setup_info.clone());
         }
 
-        // The largest sweep we could receive contains 65,535 (2^16) points
-        // To be safe, set the maximum message length to 131,072 (2^17)
-        device.serial_port().set_max_message_len(131_072);
+        if let Some(ref setup_info) = *cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SpectrumAnalyzer::RECEIVE_INITIAL_SETUP_INFO_TIMEOUT,
+                |setup_info| setup_info.is_none(),
+            )
+            .unwrap()
+            .0
+        {
+            Ok(setup_info.clone())
+        } else {
+            Err(io::ErrorKind::TimedOut.into())
+        }
+    }
 
-        info!("Received SetupInfo and Config before timeout");
-        Ok(device)
+    fn wait_for_serial_number(&self) -> io::Result<SerialNumber> {
+        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
+            return Ok(serial_number.clone());
+        }
+
+        self.serial_port
+            .send_command(crate::common::Command::RequestSerialNumber)?;
+
+        let (lock, cvar) = &self.serial_number;
+        trace!("Waiting to receive SerialNumber from RF Explorer");
+        let _ = cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                SpectrumAnalyzer::RECEIVE_SERIAL_NUMBER_TIMEOUT,
+                |serial_number| serial_number.is_none(),
+            )
+            .unwrap();
+
+        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
+            Ok(serial_number.clone())
+        } else {
+            Err(io::ErrorKind::TimedOut.into())
+        }
     }
 
     fn serial_port(&self) -> &SerialPort {
@@ -159,31 +183,6 @@ impl Device for SpectrumAnalyzer {
             setup_info.firmware_version.clone()
         } else {
             String::default()
-        }
-    }
-
-    fn serial_number(&self) -> io::Result<SerialNumber> {
-        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
-            return Ok(serial_number.clone());
-        }
-
-        self.serial_port
-            .send_command(crate::common::Command::RequestSerialNumber)?;
-
-        let (lock, cvar) = &self.serial_number;
-        trace!("Waiting to receive SerialNumber from RF Explorer");
-        let _ = cvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SpectrumAnalyzer::RECEIVE_SERIAL_NUMBER_TIMEOUT,
-                |serial_number| serial_number.is_none(),
-            )
-            .unwrap();
-
-        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
-            Ok(serial_number.clone())
-        } else {
-            Err(io::ErrorKind::TimedOut.into())
         }
     }
 

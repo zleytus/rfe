@@ -74,6 +74,7 @@ macro_rules! rf_explorer_impl {
         /// Returns the RF Explorer's serial number.
         #[tracing::instrument(skip(self))]
         pub fn serial_number(&self) -> io::Result<$crate::common::SerialNumber> {
+            self.device.wait_for_serial_number()
         }
 
         /// Turns on the RF Explorer's LCD screen.
