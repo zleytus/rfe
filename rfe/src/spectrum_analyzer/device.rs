@@ -1,7 +1,10 @@
 use std::{
     fmt::Debug,
     io,
-    sync::{Arc, Condvar, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex,
+    },
     thread::{self, JoinHandle},
 };
 
@@ -12,7 +15,7 @@ use crate::common::{Callback, Device, ScreenData, SerialNumber, SerialPort, Setu
 
 pub struct SpectrumAnalyzer {
     serial_port: SerialPort,
-    is_reading: Mutex<bool>,
+    is_reading: AtomicBool,
     read_thread_handle: Mutex<Option<JoinHandle<()>>>,
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
     pub(crate) config_callback: Mutex<Callback<Config>>,
@@ -34,7 +37,7 @@ impl Device for SpectrumAnalyzer {
     fn new(serial_port: SerialPort) -> SpectrumAnalyzer {
         SpectrumAnalyzer {
             serial_port,
-            is_reading: Mutex::new(true),
+            is_reading: AtomicBool::new(true),
             read_thread_handle: Mutex::new(None),
             config: (Mutex::new(None), Condvar::new()),
             config_callback: Mutex::new(None),
@@ -130,7 +133,7 @@ impl Device for SpectrumAnalyzer {
     }
 
     fn is_reading(&self) -> bool {
-        *self.is_reading.lock().unwrap()
+        self.is_reading.load(Ordering::Relaxed)
     }
 
     fn cache_message(&self, message: Self::Message) {
@@ -187,7 +190,7 @@ impl Device for SpectrumAnalyzer {
     }
 
     fn stop_reading_messages(&self) {
-        *self.is_reading.lock().unwrap() = false;
+        self.is_reading.store(false, Ordering::Relaxed);
         if let Some(read_thread_handle) = self.read_thread_handle.lock().unwrap().take() {
             let _ = read_thread_handle.join();
         }
