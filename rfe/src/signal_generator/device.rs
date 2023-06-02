@@ -203,14 +203,6 @@ impl Device for SignalGenerator {
         }
     }
 
-    fn firmware_version(&self) -> String {
-        if let Some(setup_info) = self.setup_info.0.lock().unwrap().as_ref() {
-            setup_info.firmware_version.clone()
-        } else {
-            String::default()
-        }
-    }
-
     fn stop_reading_messages(&self) {
         self.is_reading.store(false, Ordering::Relaxed);
         if let Some(read_thread_handle) = self.read_thread_handle.lock().unwrap().take() {

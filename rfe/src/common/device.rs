@@ -46,8 +46,6 @@ pub(crate) trait Device: Debug + Sized {
 
     fn is_reading(&self) -> bool;
 
-    fn firmware_version(&self) -> String;
-
     fn request_device_info(&self) -> io::Result<()>;
 
     fn wait_for_device_info(&self) -> bool;

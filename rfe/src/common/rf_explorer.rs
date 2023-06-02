@@ -68,7 +68,11 @@ macro_rules! rf_explorer_impl {
         /// Returns the RF Explorer's firmware version.
         #[tracing::instrument(skip(self))]
         pub fn firmware_version(&self) -> String {
-            self.device.firmware_version()
+            if let Some(setup_info) = self.device.setup_info.0.lock().unwrap().as_ref() {
+                setup_info.firmware_version.clone()
+            } else {
+                String::default()
+            }
         }
 
         /// Returns the RF Explorer's serial number.
