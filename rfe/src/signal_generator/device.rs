@@ -83,6 +83,12 @@ impl Device for SignalGenerator {
         }));
     }
 
+    #[tracing::instrument(skip(self))]
+    fn request_device_info(&self) -> io::Result<()> {
+        self.serial_port
+            .send_command(crate::common::Command::RequestConfig)
+    }
+
     #[tracing::instrument(skip(self), ret)]
     fn wait_for_device_info(&self) -> bool {
         let (config_lock, config_cvar) = &self.config;

@@ -8,9 +8,7 @@ use std::{
 
 use tracing::debug;
 
-use super::{
-    Command, ConnectionError, ConnectionResult, MessageParseError, SerialNumber, SerialPort,
-};
+use super::{ConnectionError, ConnectionResult, MessageParseError, SerialNumber, SerialPort};
 
 pub(crate) trait Device: Debug + Sized {
     const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
@@ -25,13 +23,11 @@ pub(crate) trait Device: Debug + Sized {
         // Read messages from the RF Explorer on a background thread
         Self::start_read_thread(&device);
 
-        // Request the Config from the RF Explorer to get it to start sending data
-        if let Err(err) = device.serial_port().send_command(Command::RequestConfig) {
+        if let Err(err) = device.request_device_info() {
             device.stop_reading_messages();
             return Err(err.into());
         }
 
-        // Wait until we've received valid information from the device
         if device.wait_for_device_info() {
             // The largest sweep we could receive contains 65,535 (2^16) points
             // To be safe, set the maximum message length to 131,072 (2^17)
@@ -52,6 +48,8 @@ pub(crate) trait Device: Debug + Sized {
     fn is_reading(&self) -> bool;
 
     fn firmware_version(&self) -> String;
+
+    fn request_device_info(&self) -> io::Result<()>;
 
     fn wait_for_device_info(&self) -> bool;
 
