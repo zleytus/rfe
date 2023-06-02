@@ -6,6 +6,7 @@ use std::{
         Arc, Condvar, Mutex,
     },
     thread::{self, JoinHandle},
+    time::Duration,
 };
 
 use tracing::trace;
@@ -42,10 +43,10 @@ pub struct SignalGenerator {
     serial_number: (Mutex<Option<SerialNumber>>, Condvar),
 }
 
+const RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT: Duration = Duration::from_secs(2);
+
 impl Device for SignalGenerator {
     type Message = super::Message;
-    type Config = Config;
-    type SetupInfo = SetupInfo<Model>;
 
     fn new(serial_port: SerialPort) -> SignalGenerator {
         SignalGenerator {
@@ -82,48 +83,35 @@ impl Device for SignalGenerator {
         }));
     }
 
-    #[tracing::instrument(skip(self), ret, err)]
-    fn wait_for_config(&self) -> io::Result<Self::Config> {
-        let (lock, cvar) = &self.config;
-        if let Some(config) = *lock.lock().unwrap() {
-            return Ok(config);
+    #[tracing::instrument(skip(self), ret)]
+    fn wait_for_device_info(&self) -> bool {
+        let (config_lock, config_cvar) = &self.config;
+        let (setup_info_lock, setup_info_cvar) = &self.setup_info;
+
+        // Check to see if we've already received a Config and SetupInfo
+        if config_lock.lock().unwrap().is_some() && setup_info_lock.lock().unwrap().is_some() {
+            return true;
         }
 
-        if let Some(config) = *cvar
+        // Wait to see if we receive a Config and SetupInfo before timing out
+        config_cvar
             .wait_timeout_while(
-                lock.lock().unwrap(),
-                SignalGenerator::RECEIVE_INITIAL_CONFIG_TIMEOUT,
+                config_lock.lock().unwrap(),
+                RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
                 |config| config.is_none(),
             )
             .unwrap()
             .0
-        {
-            Ok(config)
-        } else {
-            Err(io::ErrorKind::TimedOut.into())
-        }
-    }
-
-    #[tracing::instrument(skip(self), ret, err)]
-    fn wait_for_setup_info(&self) -> io::Result<Self::SetupInfo> {
-        let (lock, cvar) = &self.setup_info;
-        if let Some(ref setup_info) = *lock.lock().unwrap() {
-            return Ok(setup_info.clone());
-        }
-
-        if let Some(ref setup_info) = *cvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SignalGenerator::RECEIVE_INITIAL_SETUP_INFO_TIMEOUT,
-                |setup_info| setup_info.is_none(),
-            )
-            .unwrap()
-            .0
-        {
-            Ok(setup_info.clone())
-        } else {
-            Err(io::ErrorKind::TimedOut.into())
-        }
+            .is_some()
+            && setup_info_cvar
+                .wait_timeout_while(
+                    setup_info_lock.lock().unwrap(),
+                    RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+                    |setup_info| setup_info.is_none(),
+                )
+                .unwrap()
+                .0
+                .is_some()
     }
 
     fn wait_for_serial_number(&self) -> io::Result<SerialNumber> {

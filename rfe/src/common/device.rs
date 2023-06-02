@@ -14,13 +14,9 @@ use super::{
 
 pub(crate) trait Device: Debug + Sized {
     const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
-    const RECEIVE_INITIAL_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
-    const RECEIVE_INITIAL_SETUP_INFO_TIMEOUT: Duration = Duration::from_secs(2);
     const RECEIVE_SERIAL_NUMBER_TIMEOUT: Duration = Duration::from_secs(2);
 
     type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>> + Debug;
-    type SetupInfo;
-    type Config;
 
     #[tracing::instrument(skip(serial_port), ret, err)]
     fn connect(serial_port: SerialPort) -> ConnectionResult<Arc<Self>> {
@@ -35,8 +31,8 @@ pub(crate) trait Device: Debug + Sized {
             return Err(err.into());
         }
 
-        // Wait until we've received both a Config and SetupInfo from the RF Explorer
-        if device.wait_for_config().is_ok() && device.wait_for_setup_info().is_ok() {
+        // Wait until we've received valid information from the device
+        if device.wait_for_device_info() {
             // The largest sweep we could receive contains 65,535 (2^16) points
             // To be safe, set the maximum message length to 131,072 (2^17)
             device.serial_port().set_max_message_len(131_072);
@@ -57,9 +53,7 @@ pub(crate) trait Device: Debug + Sized {
 
     fn firmware_version(&self) -> String;
 
-    fn wait_for_config(&self) -> io::Result<Self::Config>;
-
-    fn wait_for_setup_info(&self) -> io::Result<Self::SetupInfo>;
+    fn wait_for_device_info(&self) -> bool;
 
     fn wait_for_serial_number(&self) -> io::Result<SerialNumber>;
 
