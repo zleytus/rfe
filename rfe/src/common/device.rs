@@ -8,11 +8,10 @@ use std::{
 
 use tracing::debug;
 
-use super::{ConnectionError, ConnectionResult, MessageParseError, SerialNumber, SerialPort};
+use super::{ConnectionError, ConnectionResult, MessageParseError, SerialPort};
 
 pub(crate) trait Device: Debug + Sized {
     const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
-    const RECEIVE_SERIAL_NUMBER_TIMEOUT: Duration = Duration::from_secs(2);
 
     type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>> + Debug;
 
@@ -52,8 +51,6 @@ pub(crate) trait Device: Debug + Sized {
     fn request_device_info(&self) -> io::Result<()>;
 
     fn wait_for_device_info(&self) -> bool;
-
-    fn wait_for_serial_number(&self) -> io::Result<SerialNumber>;
 
     fn cache_message(&self, message: Self::Message);
 

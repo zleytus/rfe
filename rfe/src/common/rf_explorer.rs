@@ -74,7 +74,29 @@ macro_rules! rf_explorer_impl {
         /// Returns the RF Explorer's serial number.
         #[tracing::instrument(skip(self))]
         pub fn serial_number(&self) -> io::Result<$crate::common::SerialNumber> {
-            self.device.wait_for_serial_number()
+            if let Some(ref serial_number) = *self.device.serial_number.0.lock().unwrap() {
+                return Ok(serial_number.clone());
+            }
+
+            self.device
+                .serial_port()
+                .send_command(crate::common::Command::RequestSerialNumber)?;
+
+            let (lock, cvar) = &self.device.serial_number;
+            tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
+            let _ = cvar
+                .wait_timeout_while(
+                    lock.lock().unwrap(),
+                    std::time::Duration::from_secs(2),
+                    |serial_number| serial_number.is_none(),
+                )
+                .unwrap();
+
+            if let Some(ref serial_number) = *self.device.serial_number.0.lock().unwrap() {
+                Ok(serial_number.clone())
+            } else {
+                Err(io::ErrorKind::TimedOut.into())
+            }
         }
 
         /// Turns on the RF Explorer's LCD screen.

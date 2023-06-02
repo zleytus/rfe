@@ -9,8 +9,6 @@ use std::{
     time::Duration,
 };
 
-use tracing::trace;
-
 use super::{
     Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp, ConfigExp, ConfigFreqSweep,
     ConfigFreqSweepExp, Model, Temperature,
@@ -40,7 +38,7 @@ pub struct SignalGenerator {
     pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
     pub(crate) temperature: (Mutex<Option<Temperature>>, Condvar),
     pub(crate) setup_info: (Mutex<Option<SetupInfo<Model>>>, Condvar),
-    serial_number: (Mutex<Option<SerialNumber>>, Condvar),
+    pub(crate) serial_number: (Mutex<Option<SerialNumber>>, Condvar),
 }
 
 const RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT: Duration = Duration::from_secs(2);
@@ -118,31 +116,6 @@ impl Device for SignalGenerator {
                 .unwrap()
                 .0
                 .is_some()
-    }
-
-    fn wait_for_serial_number(&self) -> io::Result<SerialNumber> {
-        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
-            return Ok(serial_number.clone());
-        }
-
-        self.serial_port
-            .send_command(crate::common::Command::RequestSerialNumber)?;
-
-        let (lock, cvar) = &self.serial_number;
-        trace!("Waiting to receive SerialNumber from RF Explorer");
-        let _ = cvar
-            .wait_timeout_while(
-                lock.lock().unwrap(),
-                SignalGenerator::RECEIVE_SERIAL_NUMBER_TIMEOUT,
-                |serial_number| serial_number.is_none(),
-            )
-            .unwrap();
-
-        if let Some(ref serial_number) = *self.serial_number.0.lock().unwrap() {
-            Ok(serial_number.clone())
-        } else {
-            Err(io::ErrorKind::TimedOut.into())
-        }
     }
 
     fn serial_port(&self) -> &SerialPort {
