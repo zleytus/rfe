@@ -14,7 +14,7 @@ pub(crate) use command::Command;
 pub use config::{CalcMode, Config, Mode};
 pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
-pub(crate) use message::Message;
+pub use message::Message;
 pub use model::Model;
 pub use rf_explorer::{RfExplorer, WifiBand};
 pub use sweep::Sweep;
