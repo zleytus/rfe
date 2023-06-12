@@ -4,9 +4,10 @@ use num_enum::TryFromPrimitive;
 
 use crate::Frequency;
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
 pub enum Model {
+    #[default]
     Rfe6Gen = 60,
     Rfe6GenExpansion = 61,
 }

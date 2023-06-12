@@ -4,12 +4,13 @@ use num_enum::TryFromPrimitive;
 
 use crate::Frequency;
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
 pub enum Model {
     Rfe433M = 0,
     Rfe868M = 1,
     Rfe915M = 2,
+    #[default]
     RfeWSub1G = 3,
     Rfe24G = 4,
     RfeWSub3G = 5,
