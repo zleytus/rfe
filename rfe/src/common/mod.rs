@@ -12,7 +12,7 @@ pub mod serial_port;
 mod setup_info;
 
 pub(crate) use command::Command;
-pub(crate) use device::Device;
+pub use device::{Device, MessageContainer};
 pub use error::{Error, Result};
 pub use frequency::Frequency;
 pub(crate) use message::MessageParseError;
