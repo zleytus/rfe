@@ -9,7 +9,7 @@ readme = "README.md"
 [dependencies]
 chrono = "0.4"
 nom = "7"
-num_enum = "0.5"
+num_enum = "0.6.1"
 serialport = "4.2.1"
 thiserror = "1"
 tracing = "0.1"
