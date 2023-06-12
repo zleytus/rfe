@@ -1,18 +1,23 @@
 use std::{
     fmt::Debug,
     io,
-    ops::RangeInclusive,
-    sync::{MutexGuard, WaitTimeoutResult},
+    ops::{Deref, RangeInclusive},
+    sync::{Condvar, Mutex, MutexGuard, WaitTimeoutResult},
     time::Duration,
 };
 
 use num_enum::IntoPrimitive;
 use tracing::{error, info, trace, warn};
 
-use super::{
-    CalcMode, Command, Config, DspMode, InputStage, SpectrumAnalyzer, Sweep, TrackingStatus,
+use super::{CalcMode, Command, Config, DspMode, InputStage, Sweep, TrackingStatus};
+use crate::{
+    common::{
+        Callback, Error, Frequency, RadioModule, Result, RfExplorer, RfExplorerMessageContainer,
+        ScreenData, SetupInfo,
+    },
+    serial_port::ConnectionResult,
+    SerialNumber,
 };
-use crate::common::{rf_explorer_impl, Device, Error, Frequency, RadioModule, Result, ScreenData};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
 #[repr(u8)]
@@ -22,25 +27,71 @@ pub enum WifiBand {
 }
 
 #[derive(Debug)]
-pub struct RfExplorer {
-    pub(crate) device: std::sync::Arc<SpectrumAnalyzer>,
+pub struct SpectrumAnalyzer {
+    rfe: RfExplorer<MessageContainer>,
 }
 
-impl RfExplorer {
+impl SpectrumAnalyzer {
     const MIN_MAX_AMP_RANGE_DBM: RangeInclusive<i16> = -120..=35;
     const MIN_SWEEP_POINTS: u16 = 112;
     const NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
 
-    rf_explorer_impl!(SpectrumAnalyzer);
+    pub fn connect() -> Option<Self> {
+        Some(Self {
+            rfe: RfExplorer::connect()?,
+        })
+    }
+
+    pub fn connect_with_name_and_baud_rate(name: &str, baud_rate: u32) -> ConnectionResult<Self> {
+        Ok(Self {
+            rfe: RfExplorer::connect_with_name_and_baud_rate(name, baud_rate)?,
+        })
+    }
+
+    pub fn connect_all() -> Vec<Self> {
+        RfExplorer::connect_all()
+            .into_iter()
+            .map(|rfe| Self { rfe })
+            .collect()
+    }
+
+    pub fn serial_number(&self) -> io::Result<crate::common::SerialNumber> {
+        if let Some(ref serial_number) = *self.message_container().serial_number.0.lock().unwrap() {
+            return Ok(serial_number.clone());
+        }
+
+        self.send_command(crate::common::Command::RequestSerialNumber)?;
+
+        let (lock, cvar) = &self.message_container().serial_number;
+        tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
+        let _ = cvar
+            .wait_timeout_while(
+                lock.lock().unwrap(),
+                std::time::Duration::from_secs(2),
+                |serial_number| serial_number.is_none(),
+            )
+            .unwrap();
+
+        if let Some(ref serial_number) = *self.message_container().serial_number.0.lock().unwrap() {
+            Ok(serial_number.clone())
+        } else {
+            Err(io::ErrorKind::TimedOut.into())
+        }
+    }
 
     /// Returns the RF Explorer's current `Config`.
     pub fn config(&self) -> Config {
-        self.device.config.0.lock().unwrap().unwrap_or_default()
+        self.message_container()
+            .config
+            .0
+            .lock()
+            .unwrap()
+            .unwrap_or_default()
     }
 
     /// Returns the most recent `Sweep` measured by the RF Explorer.
     pub fn sweep(&self) -> Option<Sweep> {
-        self.device.sweep.0.lock().unwrap().clone()
+        self.message_container().sweep.0.lock().unwrap().clone()
     }
 
     /// Waits for the RF Explorer to measure its next `Sweep`.
@@ -52,7 +103,7 @@ impl RfExplorer {
     pub fn wait_for_next_sweep_with_timeout(&self, timeout: Duration) -> Result<Sweep> {
         let previous_sweep = self.sweep();
 
-        let (sweep, cond_var) = &self.device.sweep;
+        let (sweep, cond_var) = &self.message_container().sweep;
         let (sweep, wait_result) = cond_var
             .wait_timeout_while(sweep.lock().unwrap(), timeout, |sweep| {
                 *sweep == previous_sweep || sweep.is_none()
@@ -67,19 +118,26 @@ impl RfExplorer {
 
     /// Returns the most recent `ScreenData` captured by the RF Explorer.
     pub fn screen_data(&self) -> Option<ScreenData> {
-        self.device.screen_data.0.lock().unwrap().clone()
+        self.message_container()
+            .screen_data
+            .0
+            .lock()
+            .unwrap()
+            .clone()
     }
 
     /// Waits for the RF Explorer to capture its next `ScreenData`.
     pub fn wait_for_next_screen_data(&self) -> Result<ScreenData> {
-        self.wait_for_next_screen_data_with_timeout(Self::NEXT_SCREEN_DATA_TIMEOUT)
+        self.wait_for_next_screen_data_with_timeout(
+            RfExplorer::<MessageContainer>::NEXT_SCREEN_DATA_TIMEOUT,
+        )
     }
 
     /// Waits for the RF Explorer to capture its next `ScreenData` or for the timeout duration to elapse.
     pub fn wait_for_next_screen_data_with_timeout(&self, timeout: Duration) -> Result<ScreenData> {
         let previous_screen_data = self.screen_data();
 
-        let (screen_data, condvar) = &self.device.screen_data;
+        let (screen_data, condvar) = &self.message_container().screen_data;
         let (screen_data, wait_result) = condvar
             .wait_timeout_while(screen_data.lock().unwrap(), timeout, |screen_data| {
                 *screen_data == previous_screen_data || screen_data.is_none()
@@ -94,21 +152,21 @@ impl RfExplorer {
 
     /// Returns the RF Explorer's DSP mode.
     pub fn dsp_mode(&self) -> Option<DspMode> {
-        *self.device.dsp_mode.0.lock().unwrap()
+        *self.message_container().dsp_mode.0.lock().unwrap()
     }
 
     /// Returns the status of tracking mode (enabled or disabled).
     pub fn tracking_status(&self) -> Option<TrackingStatus> {
-        *self.device.tracking_status.0.lock().unwrap()
+        *self.message_container().tracking_status.0.lock().unwrap()
     }
 
     pub fn input_stage(&self) -> Option<InputStage> {
-        *self.device.input_stage.0.lock().unwrap()
+        *self.message_container().input_stage.0.lock().unwrap()
     }
 
     /// Returns the main radio module.
     pub fn main_radio_module(&self) -> RadioModule {
-        self.device
+        self.message_container()
             .setup_info
             .0
             .lock()
@@ -120,7 +178,7 @@ impl RfExplorer {
 
     /// Returns the expansion radio module (if one exists).
     pub fn expansion_radio_module(&self) -> Option<RadioModule> {
-        self.device
+        self.message_container()
             .setup_info
             .0
             .lock()
@@ -156,17 +214,13 @@ impl RfExplorer {
     /// Starts the spectrum analyzer's Wi-Fi analyzer.
     #[tracing::instrument]
     pub fn start_wifi_analyzer(&self, wifi_band: WifiBand) -> io::Result<()> {
-        self.device
-            .serial_port()
-            .send_command(Command::StartWifiAnalyzer(wifi_band))
+        self.send_command(Command::StartWifiAnalyzer(wifi_band))
     }
 
     /// Stops the spectrum analyzer's Wi-Fi analyzer.
     #[tracing::instrument(skip(self))]
     pub fn stop_wifi_analyzer(&self) -> io::Result<()> {
-        self.device
-            .serial_port()
-            .send_command(Command::StopWifiAnalyzer)
+        self.send_command(Command::StopWifiAnalyzer)
     }
 
     /// Requests the spectrum analyzer enter tracking mode.
@@ -174,22 +228,20 @@ impl RfExplorer {
     pub fn request_tracking(&self, start_hz: u64, step_hz: u64) -> Result<TrackingStatus> {
         // Set the tracking status to None so we can tell whether or not we've received a new
         // tracking status message by checking for Some
-        *self.device.tracking_status.0.lock().unwrap() = None;
+        *self.message_container().tracking_status.0.lock().unwrap() = None;
 
         // Send the command to enter tracking mode
-        self.device
-            .serial_port()
-            .send_command(Command::StartTracking {
-                start: Frequency::from_hz(start_hz),
-                step: Frequency::from_hz(step_hz),
-            })?;
+        self.send_command(Command::StartTracking {
+            start: Frequency::from_hz(start_hz),
+            step: Frequency::from_hz(step_hz),
+        })?;
 
         // Wait to see if we receive a tracking status message in response
-        let (lock, condvar) = &self.device.tracking_status;
+        let (lock, condvar) = &self.message_container().tracking_status;
         let (tracking_status, wait_result) = condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
-                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
                 |tracking_status| tracking_status.is_some(),
             )
             .unwrap();
@@ -197,16 +249,16 @@ impl RfExplorer {
         if !wait_result.timed_out() {
             Ok(tracking_status.unwrap_or_default())
         } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+            Err(Error::TimedOut(
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
+            ))
         }
     }
 
     /// Steps over the tracking step frequency and makes a measurement.
     #[tracing::instrument(skip(self))]
     pub fn tracking_step(&self, step: u16) -> io::Result<()> {
-        self.device
-            .serial_port()
-            .send_command(Command::TrackingStep(step))
+        self.send_command(Command::TrackingStep(step))
     }
 
     /// Activates the RF Explorer's main radio module.
@@ -217,9 +269,7 @@ impl RfExplorer {
             ));
         }
 
-        self.device
-            .serial_port()
-            .send_command(Command::SwitchModuleMain)?;
+        self.send_command(Command::SwitchModuleMain)?;
 
         // Wait until config shows that the main radio module is active
         let _ = self.wait_for_config_while(|config| {
@@ -231,7 +281,9 @@ impl RfExplorer {
         if self.active_radio_module().is_main() {
             Ok(())
         } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+            Err(Error::TimedOut(
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
+            ))
         }
     }
 
@@ -249,9 +301,7 @@ impl RfExplorer {
             ));
         }
 
-        self.device
-            .serial_port()
-            .send_command(Command::SwitchModuleExp)?;
+        self.send_command(Command::SwitchModuleExp)?;
 
         // Wait until config shows that the expansion radio module is active
         let _ = self.wait_for_config_while(|config| {
@@ -263,7 +313,9 @@ impl RfExplorer {
         if self.active_radio_module().is_expansion() {
             Ok(())
         } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+            Err(Error::TimedOut(
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
+            ))
         }
     }
 
@@ -335,7 +387,7 @@ impl RfExplorer {
         self.validate_start_stop(start, stop)?;
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
-        self.device.serial_port().send_command(Command::SetConfig {
+        self.send_command(Command::SetConfig {
             start,
             stop,
             min_amp_dbm,
@@ -354,8 +406,8 @@ impl RfExplorer {
         trace!("Waiting to receive updated 'Config'");
         let (_, wait_result) = self.wait_for_config_while(|config| {
             let Some(config) = config else {
-                return true;
-            };
+                    return true;
+                };
 
             !config.contains_start_stop_amp_range(start, stop, min_amp_dbm, max_amp_dbm)
         });
@@ -363,18 +415,20 @@ impl RfExplorer {
         if !wait_result.timed_out() {
             Ok(())
         } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+            Err(Error::TimedOut(
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
+            ))
         }
     }
 
     /// Sets the callback that is called when the spectrum analyzer receives a `Sweep`.
     pub fn set_sweep_callback(&self, cb: impl FnMut(Sweep) + Send + 'static) {
-        *self.device.sweep_callback.lock().unwrap() = Some(Box::new(cb));
+        *self.message_container().sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Sets the callback that is called when the spectrum analyzer receives a `Config`.
     pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
-        *self.device.config_callback.lock().unwrap() = Some(Box::new(cb));
+        *self.message_container().config_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.
@@ -389,13 +443,9 @@ impl RfExplorer {
         }
 
         if sweep_points <= 4096 {
-            self.device
-                .serial_port()
-                .send_command(Command::SetSweepPointsExt(sweep_points))?;
+            self.send_command(Command::SetSweepPointsExt(sweep_points))?;
         } else {
-            self.device
-                .serial_port()
-                .send_command(Command::SetSweepPointsLarge(sweep_points))?;
+            self.send_command(Command::SetSweepPointsLarge(sweep_points))?;
         }
 
         // The requested number of sweep points gets rounded down to a number that's a multiple of 16
@@ -422,53 +472,47 @@ impl RfExplorer {
             Ok(())
         } else {
             warn!("Failed to receive updated config");
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+            Err(Error::TimedOut(
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
+            ))
         }
     }
 
     /// Sets the spectrum analyzer's calculator mode.
     #[tracing::instrument(skip(self))]
     pub fn set_calc_mode(&self, calc_mode: CalcMode) -> io::Result<()> {
-        self.device
-            .serial_port()
-            .send_command(Command::SetCalcMode(calc_mode))
+        self.send_command(Command::SetCalcMode(calc_mode))
     }
 
     /// Sets the spectrum analyzer's input stage.
     #[tracing::instrument(skip(self))]
     pub fn set_input_stage(&self, input_stage: InputStage) -> io::Result<()> {
-        self.device
-            .serial_port()
-            .send_command(Command::SetInputStage(input_stage))
+        self.send_command(Command::SetInputStage(input_stage))
     }
 
     /// Adds or subtracts an offset to the amplitudes in each sweep.
     #[tracing::instrument(skip(self))]
     pub fn set_offset_db(&self, offset_db: i8) -> io::Result<()> {
-        self.device
-            .serial_port()
-            .send_command(Command::SetOffsetDB(offset_db))
+        self.send_command(Command::SetOffsetDB(offset_db))
     }
 
     /// Sets the spectrum analyzer's DSP mode.
     #[tracing::instrument(skip(self))]
     pub fn set_dsp_mode(&self, dsp_mode: DspMode) -> Result<()> {
         // Check to see if the DspMode is already set to the desired value
-        if *self.device.dsp_mode.0.lock().unwrap() == Some(dsp_mode) {
+        if *self.message_container().dsp_mode.0.lock().unwrap() == Some(dsp_mode) {
             return Ok(());
         }
 
         // Send the command to set the DSP mode
-        self.device
-            .serial_port()
-            .send_command(Command::SetDsp(dsp_mode))?;
+        self.send_command(Command::SetDsp(dsp_mode))?;
 
         // Wait to see if we receive a DSP mode message in response
-        let (lock, condvar) = &self.device.dsp_mode;
+        let (lock, condvar) = &self.message_container().dsp_mode;
         let (_, wait_result) = condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
-                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
                 |new_dsp_mode| *new_dsp_mode != Some(dsp_mode),
             )
             .unwrap();
@@ -476,7 +520,9 @@ impl RfExplorer {
         if !wait_result.timed_out() {
             Ok(())
         } else {
-            Err(Error::TimedOut(SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT))
+            Err(Error::TimedOut(
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
+            ))
         }
     }
 
@@ -484,11 +530,11 @@ impl RfExplorer {
         &self,
         condition: impl FnMut(&mut Option<Config>) -> bool,
     ) -> (MutexGuard<Option<Config>>, WaitTimeoutResult) {
-        let (lock, condvar) = &self.device.config;
+        let (lock, condvar) = &self.message_container().config;
         condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
-                SpectrumAnalyzer::COMMAND_RESPONSE_TIMEOUT,
+                RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
                 condition,
             )
             .unwrap()
@@ -507,18 +553,18 @@ impl RfExplorer {
         let min_max_freq = active_model.min_freq()..=active_model.max_freq();
         if !min_max_freq.contains(&start) {
             return Err(Error::InvalidInput(format!(
-                "The start frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
-                start.as_mhz_f64(),
-                min_max_freq.start().as_mhz_f64(),
-                min_max_freq.end().as_mhz_f64()
-            )));
+                    "The start frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
+                    start.as_mhz_f64(),
+                    min_max_freq.start().as_mhz_f64(),
+                    min_max_freq.end().as_mhz_f64()
+                )));
         } else if !min_max_freq.contains(&stop) {
             return Err(Error::InvalidInput(format!(
-                "The stop frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
-                stop.as_mhz(),
-                min_max_freq.start().as_mhz_f64(),
-                min_max_freq.end().as_mhz_f64()
-            )));
+                    "The stop frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
+                    stop.as_mhz(),
+                    min_max_freq.start().as_mhz_f64(),
+                    min_max_freq.end().as_mhz_f64()
+                )));
         }
 
         let min_max_span = active_model.min_span()..=active_model.max_span();
@@ -565,8 +611,129 @@ impl RfExplorer {
     }
 }
 
-impl Drop for RfExplorer {
-    fn drop(&mut self) {
-        self.device.stop_reading_messages();
+impl Deref for SpectrumAnalyzer {
+    type Target = RfExplorer<MessageContainer>;
+    fn deref(&self) -> &Self::Target {
+        &self.rfe
+    }
+}
+
+#[derive(Default)]
+pub struct MessageContainer {
+    pub(crate) config: (Mutex<Option<Config>>, Condvar),
+    pub(crate) config_callback: Mutex<Callback<Config>>,
+    pub(crate) sweep: (Mutex<Option<Sweep>>, Condvar),
+    pub(crate) sweep_callback: Mutex<Callback<Sweep>>,
+    pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
+    pub(crate) dsp_mode: (Mutex<Option<DspMode>>, Condvar),
+    pub(crate) tracking_status: (Mutex<Option<TrackingStatus>>, Condvar),
+    pub(crate) input_stage: (Mutex<Option<InputStage>>, Condvar),
+    pub(crate) setup_info: (Mutex<Option<SetupInfo>>, Condvar),
+    pub(crate) serial_number: (Mutex<Option<SerialNumber>>, Condvar),
+}
+
+impl crate::common::MessageContainer for MessageContainer {
+    type Message = super::Message;
+
+    fn cache_message(&self, message: Self::Message) {
+        match message {
+            Self::Message::Config(config) => {
+                *self.config.0.lock().unwrap() = Some(config);
+                self.config.1.notify_one();
+                if let Some(ref mut cb) = *self.config_callback.lock().unwrap() {
+                    cb(config);
+                }
+            }
+            Self::Message::Sweep(sweep) => {
+                *self.sweep.0.lock().unwrap() = Some(sweep);
+                self.sweep.1.notify_one();
+                if let Some(ref mut cb) = *self.sweep_callback.lock().unwrap() {
+                    if let Some(ref sweep) = *self.sweep.0.lock().unwrap() {
+                        cb(sweep.clone());
+                    }
+                }
+            }
+            Self::Message::ScreenData(screen_data) => {
+                *self.screen_data.0.lock().unwrap() = Some(screen_data);
+                self.screen_data.1.notify_one();
+            }
+            Self::Message::DspMode(dsp_mode) => {
+                *self.dsp_mode.0.lock().unwrap() = Some(dsp_mode);
+                self.dsp_mode.1.notify_one();
+            }
+            Self::Message::InputStage(input_stage) => {
+                *self.input_stage.0.lock().unwrap() = Some(input_stage);
+                self.input_stage.1.notify_one();
+            }
+            Self::Message::TrackingStatus(tracking_status) => {
+                *self.tracking_status.0.lock().unwrap() = Some(tracking_status);
+                self.tracking_status.1.notify_one();
+            }
+            Self::Message::SerialNumber(serial_number) => {
+                *self.serial_number.0.lock().unwrap() = Some(serial_number);
+                self.serial_number.1.notify_one();
+            }
+            Self::Message::SetupInfo(setup_info) => {
+                *self.setup_info.0.lock().unwrap() = Some(setup_info);
+                self.setup_info.1.notify_one();
+            }
+        }
+    }
+
+    fn wait_for_device_info(&self) -> bool {
+        let (config_lock, config_cvar) = &self.config;
+        let (setup_info_lock, setup_info_cvar) = &self.setup_info;
+
+        // Check to see if we've already received a Config and SetupInfo
+        if config_lock.lock().unwrap().is_some() && setup_info_lock.lock().unwrap().is_some() {
+            return true;
+        }
+
+        // Wait to see if we receive a Config and SetupInfo before timing out
+        config_cvar
+            .wait_timeout_while(
+                config_lock.lock().unwrap(),
+                RfExplorer::<MessageContainer>::RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+                |config| config.is_none(),
+            )
+            .unwrap()
+            .0
+            .is_some()
+            && setup_info_cvar
+                .wait_timeout_while(
+                    setup_info_lock.lock().unwrap(),
+                    RfExplorer::<MessageContainer>::RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+                    |setup_info| setup_info.is_none(),
+                )
+                .unwrap()
+                .0
+                .is_some()
+    }
+}
+
+impl RfExplorerMessageContainer for MessageContainer {
+    type Model = super::Model;
+
+    fn setup_info(&self) -> Option<SetupInfo<Self::Model>> {
+        self.setup_info.0.lock().unwrap().clone()
+    }
+
+    fn screen_data(&self) -> Option<ScreenData> {
+        self.screen_data.0.lock().unwrap().clone()
+    }
+}
+
+impl Debug for MessageContainer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MessageContainer")
+            .field("config", &self.config.0.lock().unwrap())
+            .field("sweep", &self.sweep.0.lock().unwrap())
+            .field("screen_data", &self.screen_data.0.lock().unwrap())
+            .field("dsp_mode", &self.dsp_mode.0.lock().unwrap())
+            .field("tracking_status", &self.tracking_status.0.lock().unwrap())
+            .field("input_stage", &self.input_stage.0.lock().unwrap())
+            .field("setup_info", &self.setup_info.0.lock().unwrap())
+            .field("serial_number", &self.serial_number.0.lock().unwrap())
+            .finish()
     }
 }

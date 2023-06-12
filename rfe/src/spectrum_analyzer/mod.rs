@@ -16,6 +16,6 @@ pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
 pub use message::Message;
 pub use model::Model;
-pub use rf_explorer::{RfExplorer, WifiBand};
+pub use rf_explorer::{SpectrumAnalyzer as RfExplorer, WifiBand};
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
