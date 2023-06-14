@@ -15,7 +15,7 @@ pub(crate) use command::Command;
 pub use device::{Device, MessageContainer};
 pub use error::{Error, Result};
 pub use frequency::Frequency;
-pub(crate) use message::MessageParseError;
+pub use message::MessageParseError;
 pub use radio_module::RadioModule;
 pub use rf_explorer::{RfExplorer, RfExplorerMessageContainer};
 pub use screen_data::ScreenData;
