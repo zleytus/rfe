@@ -3,7 +3,8 @@ use std::{convert::TryFrom, ops::RangeInclusive};
 use nom::{bytes::complete::tag, combinator::map_res, number::complete::u8 as nom_u8};
 use num_enum::TryFromPrimitive;
 
-use crate::common::{parsers::*, MessageParseError};
+use crate::common::MessageParseError;
+use crate::rf_explorer::parsers::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]

@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use super::BaudRate;
+use crate::common::BaudRate;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum Command {

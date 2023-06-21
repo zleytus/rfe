@@ -3,8 +3,8 @@ use std::convert::TryInto;
 use chrono::{DateTime, Utc};
 use nom::{bytes::complete::tag, bytes::streaming::take, combinator::map_res};
 
-use super::MessageParseError;
-use crate::common::parsers::*;
+use super::parsers::*;
+use crate::common::MessageParseError;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ScreenData {

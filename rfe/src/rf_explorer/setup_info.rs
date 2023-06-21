@@ -6,7 +6,8 @@ use nom::{
     combinator::{map, map_res},
 };
 
-use super::{parsers::*, MessageParseError, RadioModule};
+use super::{parsers::*, RadioModule};
+use crate::common::MessageParseError;
 use crate::spectrum_analyzer::Model;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,7 +1,9 @@
-use super::{CalcMode, Mode};
-use crate::common::parsers::*;
-use nom::{combinator::map_res, IResult};
 use std::{convert::TryFrom, str::FromStr};
+
+use nom::{combinator::map_res, IResult};
+
+use super::{CalcMode, Mode};
+use crate::rf_explorer::parsers::*;
 
 pub(super) fn parse_amplitude<T: FromStr>(bytes: &[u8]) -> IResult<&[u8], T> {
     parse_num(4u8)(bytes)

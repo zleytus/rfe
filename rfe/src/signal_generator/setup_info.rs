@@ -1,5 +1,6 @@
 use super::Model;
-use crate::common::{MessageParseError, SetupInfo};
+use crate::common::MessageParseError;
+use crate::rf_explorer::SetupInfo;
 
 impl SetupInfo<Model> {
     pub(crate) const PREFIX: &'static [u8] = b"#C3-M:";
@@ -15,7 +16,7 @@ impl<'a> TryFrom<&'a [u8]> for SetupInfo<Model> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{RadioModule, SetupInfo};
+    use crate::rf_explorer::{RadioModule, SetupInfo};
     use crate::signal_generator::Model;
 
     #[test]

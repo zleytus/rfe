@@ -9,7 +9,8 @@ use nom::{
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::{
-    common::{parsers::*, Frequency, MessageParseError},
+    common::{Frequency, MessageParseError},
+    rf_explorer::parsers::*,
     spectrum_analyzer::parsers::*,
 };
 

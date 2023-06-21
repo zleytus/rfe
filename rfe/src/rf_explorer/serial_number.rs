@@ -7,7 +7,8 @@ use nom::{
     sequence::preceded,
 };
 
-use super::{parsers::*, MessageParseError};
+use super::parsers::*;
+use crate::common::MessageParseError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct SerialNumber {

@@ -2,7 +2,8 @@ use super::{
     sweep::{SweepDataExt, SweepDataLarge, SweepDataStandard},
     Config, DspMode, InputStage, Model, Sweep, TrackingStatus,
 };
-use crate::common::{MessageParseError, ScreenData, SerialNumber, SetupInfo};
+use crate::common::MessageParseError;
+use crate::rf_explorer::{ScreenData, SerialNumber, SetupInfo};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Message {

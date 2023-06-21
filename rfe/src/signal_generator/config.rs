@@ -5,7 +5,8 @@ use nom::bytes::complete::{tag, take};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::{
-    common::{parsers::*, Frequency, MessageParseError},
+    common::{Frequency, MessageParseError},
+    rf_explorer::parsers::*,
     signal_generator::parsers::*,
 };
 

@@ -10,13 +10,10 @@ use num_enum::IntoPrimitive;
 use tracing::{error, info, trace, warn};
 
 use super::{CalcMode, Command, Config, DspMode, InputStage, Sweep, TrackingStatus};
-use crate::{
-    common::{
-        Callback, Error, Frequency, RadioModule, Result, RfExplorer, RfExplorerMessageContainer,
-        ScreenData, SetupInfo,
-    },
-    serial_port::ConnectionResult,
-    SerialNumber,
+use crate::common::{ConnectionResult, Error, Frequency, Result};
+use crate::rf_explorer::{
+    Callback, RadioModule, RfExplorer, RfExplorerMessageContainer, ScreenData, SerialNumber,
+    SetupInfo,
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
@@ -55,12 +52,12 @@ impl SpectrumAnalyzer {
             .collect()
     }
 
-    pub fn serial_number(&self) -> io::Result<crate::common::SerialNumber> {
+    pub fn serial_number(&self) -> io::Result<crate::SerialNumber> {
         if let Some(ref serial_number) = *self.message_container().serial_number.0.lock().unwrap() {
             return Ok(serial_number.clone());
         }
 
-        self.send_command(crate::common::Command::RequestSerialNumber)?;
+        self.send_command(crate::rf_explorer::Command::RequestSerialNumber)?;
 
         let (lock, cvar) = &self.message_container().serial_number;
         tracing::trace!("Waiting to receive SerialNumber from RF Explorer");

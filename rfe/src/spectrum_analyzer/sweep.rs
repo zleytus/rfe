@@ -10,7 +10,8 @@ use nom::{
 };
 
 use super::{Config, Model};
-use crate::common::{parsers::*, MessageParseError, SetupInfo};
+use crate::common::MessageParseError;
+use crate::rf_explorer::{parsers::*, SetupInfo};
 
 #[derive(Clone, PartialEq)]
 pub enum Sweep {

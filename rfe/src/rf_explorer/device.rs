@@ -1,9 +1,7 @@
 use std::{borrow::Cow, fmt::Debug, io, time::Duration};
 
-use super::{
-    BaudRate, Command, ConnectionResult, Device, MessageContainer, RadioModule, ScreenData,
-    SetupInfo,
-};
+use super::{Command, RadioModule, ScreenData, SetupInfo};
+use crate::common::{BaudRate, ConnectionResult, Device, MessageContainer};
 
 #[derive(Debug)]
 pub struct RfExplorer<M: RfExplorerMessageContainer + 'static> {

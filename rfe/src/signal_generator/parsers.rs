@@ -1,7 +1,9 @@
-use super::{Attenuation, PowerLevel, RfPower};
-use crate::common::parsers::*;
-use nom::{combinator::map_res, IResult};
 use std::convert::TryFrom;
+
+use nom::{combinator::map_res, IResult};
+
+use super::{Attenuation, PowerLevel, RfPower};
+use crate::rf_explorer::parsers::*;
 
 pub(super) fn parse_attenuation(bytes: &[u8]) -> IResult<&[u8], Attenuation> {
     map_res(parse_num::<u8>(1u8), Attenuation::try_from)(bytes)

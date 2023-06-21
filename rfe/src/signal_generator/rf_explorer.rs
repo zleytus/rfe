@@ -10,12 +10,10 @@ use super::{
     Attenuation, Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp, ConfigExp,
     ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, Temperature,
 };
-use crate::{
-    common::{
-        Callback, RfExplorer, RfExplorerMessageContainer, ScreenData, SerialNumber, SetupInfo,
-    },
-    serial_port::ConnectionResult,
-    Frequency, RadioModule,
+use crate::common::{ConnectionResult, Frequency};
+use crate::rf_explorer::{
+    Callback, RadioModule, RfExplorer, RfExplorerMessageContainer, ScreenData, SerialNumber,
+    SetupInfo,
 };
 
 #[derive(Debug)]
@@ -43,12 +41,12 @@ impl SignalGenerator {
             .collect()
     }
 
-    pub fn serial_number(&self) -> io::Result<crate::common::SerialNumber> {
+    pub fn serial_number(&self) -> io::Result<crate::SerialNumber> {
         if let Some(ref serial_number) = *self.message_container().serial_number.0.lock().unwrap() {
             return Ok(serial_number.clone());
         }
 
-        self.send_command(crate::common::Command::RequestSerialNumber)?;
+        self.send_command(crate::rf_explorer::Command::RequestSerialNumber)?;
 
         let (lock, cvar) = &self.message_container().serial_number;
         tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
