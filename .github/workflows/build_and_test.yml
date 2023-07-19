@@ -27,6 +27,16 @@ jobs:
       run: cargo build --verbose
     - name: Build rfe and rfe-ffi (release)
       run: cargo build --verbose --release
+    - name: Build C examples (shared library)
+      working-directory: ./rfe-ffi/bindings/rfe-c
+      run: |
+        cmake -S . -B build -DBUILD_SHARED_LIBS=ON
+        cmake --build build
+    - name: Build C examples (static library)
+      working-directory: ./rfe-ffi/bindings/rfe-c
+      run: |
+        cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
+        cmake --build build
     - name: Run tests
       run: cargo test --verbose
     - uses: actions/upload-artifact@v3
