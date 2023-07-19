@@ -94,7 +94,6 @@ impl<M: MessageContainer> Device<M> {
                 ]
             })
             .filter_map(|(port_info, baud_rate)| {
-                println!("{port_info:#?}, {baud_rate}");
                 let serial_port = SerialPort::open(&port_info, baud_rate).ok()?;
                 Self::connect_internal(serial_port, init_command.as_ref()).ok()
             })
