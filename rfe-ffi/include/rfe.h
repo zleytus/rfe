@@ -462,19 +462,23 @@ enum Result rfe_signal_generator_start_tracking_exp(const SignalGenerator *rfe,
 enum Result rfe_signal_generator_tracking_step(const SignalGenerator *rfe, uint16_t steps);
 
 enum Result rfe_signal_generator_set_config_callback(const SignalGenerator *rfe,
-                                                     void (*callback)(struct SignalGeneratorConfig config, void *user_data),
+                                                     void (*callback)(struct SignalGeneratorConfig config,
+                                                                      void *user_data),
                                                      void *user_data);
 
 enum Result rfe_signal_generator_set_config_amp_sweep_callback(const SignalGenerator *rfe,
-                                                               void (*callback)(struct SignalGeneratorConfigAmpSweep config, void *user_data),
+                                                               void (*callback)(struct SignalGeneratorConfigAmpSweep config,
+                                                                                void *user_data),
                                                                void *user_data);
 
 enum Result rfe_signal_generator_set_config_cw_callback(const SignalGenerator *rfe,
-                                                        void (*callback)(struct SignalGeneratorConfigCw config, void *user_data),
+                                                        void (*callback)(struct SignalGeneratorConfigCw config,
+                                                                         void *user_data),
                                                         void *user_data);
 
 enum Result rfe_signal_generator_set_config_freq_sweep_callback(const SignalGenerator *rfe,
-                                                                void (*callback)(struct SignalGeneratorConfigFreqSweep config, void *user_data),
+                                                                void (*callback)(struct SignalGeneratorConfigFreqSweep config,
+                                                                                 void *user_data),
                                                                 void *user_data);
 
 enum Result rfe_signal_generator_rf_power_on(const SignalGenerator *rfe);
@@ -618,11 +622,13 @@ enum Result rfe_spectrum_analyzer_set_min_max_amps(const SpectrumAnalyzer *rfe,
                                                    int16_t max_amp_dbm);
 
 enum Result rfe_spectrum_analyzer_set_sweep_callback(const SpectrumAnalyzer *rfe,
-                                                     void (*callback)(struct Sweep sweep, void *user_data),
+                                                     void (*callback)(struct Sweep sweep,
+                                                                      void *user_data),
                                                      void *user_data);
 
 enum Result rfe_spectrum_analyzer_set_config_callback(const SpectrumAnalyzer *rfe,
-                                                      void (*callback)(struct SpectrumAnalyzerConfig config, void *user_data),
+                                                      void (*callback)(struct SpectrumAnalyzerConfig config,
+                                                                       void *user_data),
                                                       void *user_data);
 
 enum Result rfe_spectrum_analyzer_set_sweep_points(const SpectrumAnalyzer *rfe,
