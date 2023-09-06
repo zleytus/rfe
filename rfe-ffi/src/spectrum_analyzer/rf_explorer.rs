@@ -593,6 +593,18 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_sweep_callback(
+    rfe: Option<&SpectrumAnalyzer>,
+) -> Result {
+    if let Some(rfe) = rfe {
+        rfe.remove_sweep_callback();
+        Result::Success
+    } else {
+        Result::NullPtrError
+    }
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
     callback: Option<extern "C" fn(config: SpectrumAnalyzerConfig, user_data: *mut c_void)>,
@@ -615,6 +627,18 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
 
     rfe.set_config_callback(cb);
     Result::Success
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_config_callback(
+    rfe: Option<&SpectrumAnalyzer>,
+) -> Result {
+    if let Some(rfe) = rfe {
+        rfe.remove_config_callback();
+        Result::Success
+    } else {
+        Result::NullPtrError
+    }
 }
 
 #[no_mangle]

@@ -466,20 +466,28 @@ enum Result rfe_signal_generator_set_config_callback(const SignalGenerator *rfe,
                                                                       void *user_data),
                                                      void *user_data);
 
+enum Result rfe_signal_generator_remove_config_callback(const SignalGenerator *rfe);
+
 enum Result rfe_signal_generator_set_config_amp_sweep_callback(const SignalGenerator *rfe,
                                                                void (*callback)(struct SignalGeneratorConfigAmpSweep config,
                                                                                 void *user_data),
                                                                void *user_data);
+
+enum Result rfe_signal_generator_remove_config_amp_sweep_callback(const SignalGenerator *rfe);
 
 enum Result rfe_signal_generator_set_config_cw_callback(const SignalGenerator *rfe,
                                                         void (*callback)(struct SignalGeneratorConfigCw config,
                                                                          void *user_data),
                                                         void *user_data);
 
+enum Result rfe_signal_generator_remove_config_cw_callback(const SignalGenerator *rfe);
+
 enum Result rfe_signal_generator_set_config_freq_sweep_callback(const SignalGenerator *rfe,
                                                                 void (*callback)(struct SignalGeneratorConfigFreqSweep config,
                                                                                  void *user_data),
                                                                 void *user_data);
+
+enum Result rfe_signal_generator_remove_config_freq_sweep_callback(const SignalGenerator *rfe);
 
 enum Result rfe_signal_generator_rf_power_on(const SignalGenerator *rfe);
 
@@ -626,10 +634,14 @@ enum Result rfe_spectrum_analyzer_set_sweep_callback(const SpectrumAnalyzer *rfe
                                                                       void *user_data),
                                                      void *user_data);
 
+enum Result rfe_spectrum_analyzer_remove_sweep_callback(const SpectrumAnalyzer *rfe);
+
 enum Result rfe_spectrum_analyzer_set_config_callback(const SpectrumAnalyzer *rfe,
                                                       void (*callback)(struct SpectrumAnalyzerConfig config,
                                                                        void *user_data),
                                                       void *user_data);
+
+enum Result rfe_spectrum_analyzer_remove_config_callback(const SpectrumAnalyzer *rfe);
 
 enum Result rfe_spectrum_analyzer_set_sweep_points(const SpectrumAnalyzer *rfe,
                                                    uint16_t sweep_points);

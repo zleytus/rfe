@@ -423,9 +423,19 @@ impl SpectrumAnalyzer {
         *self.message_container().sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
+    /// Removes the callback that is called when the spectrum analyzer receives a `Sweep`.
+    pub fn remove_sweep_callback(&self) {
+        *self.message_container().sweep_callback.lock().unwrap() = None;
+    }
+
     /// Sets the callback that is called when the spectrum analyzer receives a `Config`.
     pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
         *self.message_container().config_callback.lock().unwrap() = Some(Box::new(cb));
+    }
+
+    /// Removes the callback that is called when the spectrum analyzer receives a `Config`.
+    pub fn remove_config_callback(&self) {
+        *self.message_container().sweep_callback.lock().unwrap() = None;
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.

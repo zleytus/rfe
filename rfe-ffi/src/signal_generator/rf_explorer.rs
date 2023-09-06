@@ -609,6 +609,18 @@ pub extern "C" fn rfe_signal_generator_set_config_callback(
 }
 
 #[no_mangle]
+pub extern "C" fn rfe_signal_generator_remove_config_callback(
+    rfe: Option<&SignalGenerator>,
+) -> Result {
+    if let Some(rfe) = rfe {
+        rfe.remove_config_callback();
+        Result::Success
+    } else {
+        Result::NullPtrError
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigAmpSweep, user_data: *mut c_void)>,
@@ -637,6 +649,18 @@ pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
 }
 
 #[no_mangle]
+pub extern "C" fn rfe_signal_generator_remove_config_amp_sweep_callback(
+    rfe: Option<&SignalGenerator>,
+) -> Result {
+    if let Some(rfe) = rfe {
+        rfe.remove_config_amp_sweep_callback();
+        Result::Success
+    } else {
+        Result::NullPtrError
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigCw, user_data: *mut c_void)>,
@@ -659,6 +683,18 @@ pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
 
     rfe.set_config_cw_callback(cb);
     Result::Success
+}
+
+#[no_mangle]
+pub extern "C" fn rfe_signal_generator_remove_config_cw_callback(
+    rfe: Option<&SignalGenerator>,
+) -> Result {
+    if let Some(rfe) = rfe {
+        rfe.remove_config_cw_callback();
+        Result::Success
+    } else {
+        Result::NullPtrError
+    }
 }
 
 #[no_mangle]
@@ -687,6 +723,18 @@ pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
 
     rfe.set_config_freq_sweep_callback(cb);
     Result::Success
+}
+
+#[no_mangle]
+pub extern "C" fn rfe_signal_generator_remove_config_freq_sweep_callback(
+    rfe: Option<&SignalGenerator>,
+) -> Result {
+    if let Some(rfe) = rfe {
+        rfe.remove_config_freq_sweep_callback();
+        Result::Success
+    } else {
+        Result::NullPtrError
+    }
 }
 
 #[no_mangle]

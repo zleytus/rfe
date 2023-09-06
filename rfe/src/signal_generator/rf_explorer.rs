@@ -301,9 +301,19 @@ impl SignalGenerator {
         *self.message_container().config_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
+    /// Removes the callback that is executed when the signal generator receives a `Config`.
+    pub fn remove_config_callback(&self) {
+        *self.message_container().config_callback.lock().unwrap() = None;
+    }
+
     /// Sets the callback that is executed when the signal generator receives a `ConfigExp`.
     pub fn set_config_exp_callback(&self, cb: impl FnMut(ConfigExp) + Send + 'static) {
         *self.message_container().config_exp_callback.lock().unwrap() = Some(Box::new(cb));
+    }
+
+    /// Removes the callback that is executed when the signal generator receives a `ConfigExp`.
+    pub fn remove_config_exp_callback(&self) {
+        *self.message_container().config_exp_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweep`.
@@ -313,6 +323,15 @@ impl SignalGenerator {
             .config_amp_sweep_callback
             .lock()
             .unwrap() = Some(Box::new(cb));
+    }
+
+    /// Removes the callback that is executed when the signal generator receives a `ConfigAmpSweep`.
+    pub fn remove_config_amp_sweep_callback(&self) {
+        *self
+            .message_container()
+            .config_amp_sweep_callback
+            .lock()
+            .unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweepExp`.
@@ -327,9 +346,23 @@ impl SignalGenerator {
             .unwrap() = Some(Box::new(cb));
     }
 
+    /// Removes the callback that is executed when the signal generator receives a `ConfigAmpSweepExp`.
+    pub fn remove_config_amp_sweep_exp_callback(&self) {
+        *self
+            .message_container()
+            .config_amp_sweep_exp_callback
+            .lock()
+            .unwrap() = None;
+    }
+
     /// Sets the callback that is executed when the signal generator receives a `ConfigCw`.
     pub fn set_config_cw_callback(&self, cb: impl FnMut(ConfigCw) + Send + 'static) {
         *self.message_container().config_cw_callback.lock().unwrap() = Some(Box::new(cb));
+    }
+
+    /// Removes the callback that is executed when the signal generator receives a `ConfigCw`.
+    pub fn remove_config_cw_callback(&self) {
+        *self.message_container().config_cw_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigCwExp`.
@@ -341,6 +374,15 @@ impl SignalGenerator {
             .unwrap() = Some(Box::new(cb));
     }
 
+    /// Removes the callback that is executed when the signal generator receives a `ConfigCwExp`.
+    pub fn remove_config_cw_exp_callback(&self) {
+        *self
+            .message_container()
+            .config_cw_exp_callback
+            .lock()
+            .unwrap() = None;
+    }
+
     /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweep`.
     pub fn set_config_freq_sweep_callback(&self, cb: impl FnMut(ConfigFreqSweep) + Send + 'static) {
         *self
@@ -348,6 +390,15 @@ impl SignalGenerator {
             .config_freq_sweep_callback
             .lock()
             .unwrap() = Some(Box::new(cb));
+    }
+
+    /// Removes the callback that is executed when the signal generator receives a `ConfigFreqSweep`.
+    pub fn remove_config_freq_sweep_callback(&self) {
+        *self
+            .message_container()
+            .config_freq_sweep_callback
+            .lock()
+            .unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweepExp`.
@@ -360,6 +411,15 @@ impl SignalGenerator {
             .config_freq_sweep_exp_callback
             .lock()
             .unwrap() = Some(Box::new(cb));
+    }
+
+    /// Removes the callback that is executed when the signal generator receives a `ConfigFreqSweepExp`.
+    pub fn remove_config_freq_sweep_exp_callback(&self) {
+        *self
+            .message_container()
+            .config_freq_sweep_exp_callback
+            .lock()
+            .unwrap() = None;
     }
 
     /// Turns on RF power with the current power and frequency configuration.
