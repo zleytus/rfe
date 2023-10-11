@@ -611,10 +611,10 @@ enum Result rfe_spectrum_analyzer_set_start_stop(const SpectrumAnalyzer *rfe,
                                                  uint64_t start_hz,
                                                  uint64_t stop_hz);
 
-enum Result rfe_set_start_stop_sweep_points(const SpectrumAnalyzer *rfe,
-                                            uint64_t start_hz,
-                                            uint64_t stop_hz,
-                                            uint16_t sweep_points);
+enum Result rfe_spectrum_analyzer_set_start_stop_sweep_points(const SpectrumAnalyzer *rfe,
+                                                              uint64_t start_hz,
+                                                              uint64_t stop_hz,
+                                                              uint16_t sweep_points);
 
 enum Result rfe_spectrum_analyzer_set_center_span(const SpectrumAnalyzer *rfe,
                                                   uint64_t center_hz,

@@ -512,7 +512,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_start_stop(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_set_start_stop_sweep_points(
+pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_points(
     rfe: Option<&SpectrumAnalyzer>,
     start_hz: u64,
     stop_hz: u64,
