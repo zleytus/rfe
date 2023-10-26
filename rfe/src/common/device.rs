@@ -35,7 +35,6 @@ impl<M: MessageContainer> Device<M> {
         };
 
         // Read messages from the device on a background thread
-        // let device_clone = device.clone();
         let messages = device.messages.clone();
         let serial_port = device.serial_port.clone();
         let is_reading = device.is_reading.clone();
