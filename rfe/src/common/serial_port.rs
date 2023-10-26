@@ -188,7 +188,7 @@ pub fn is_driver_installed() -> bool {
         };
 
     let Ok(mut find_silabs_driver) = Command::new("findstr")
-        .arg("/c:\"Silicon Labs CP210x\"")
+        .arg(r#""/c:"Silicon Labs CP210x""#)
         .stdin(Stdio::from(driver_query.stdout.unwrap()))
         .stdout(Stdio::piped())
         .spawn() else {
@@ -200,7 +200,7 @@ pub fn is_driver_installed() -> bool {
     };
 
     debug!(
-        driver_search_command = "driverquery | findstr /c:\"Silicon Labs CP210x\"",
+        driver_search_command = r#"driverquery | findstr /c:"Silicon Labs CP210x""#,
         driver_found = exit_status.success()
     );
 
