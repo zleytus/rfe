@@ -26,7 +26,7 @@ pub(crate) struct SerialPort {
 
 impl SerialPort {
     #[tracing::instrument(ret, err)]
-    pub(crate) fn open(port_info: &SerialPortInfo, baud_rate: u32) -> serialport::Result<Self> {
+    pub(crate) fn open(port_info: &SerialPortInfo, baud_rate: u32) -> ConnectionResult<Self> {
         let serial_port = serialport::new(&port_info.port_name, baud_rate)
             .data_bits(DataBits::Eight)
             .flow_control(FlowControl::None)
@@ -51,12 +51,12 @@ impl SerialPort {
     }
 
     #[tracing::instrument(ret, err)]
-    pub(crate) fn open_with_name(name: &str, baud_rate: u32) -> serialport::Result<Self> {
+    pub(crate) fn open_with_name(name: &str, baud_rate: u32) -> ConnectionResult<Self> {
         let port_info = serialport::available_ports()
             .unwrap_or_default()
             .into_iter()
             .find(|port_info| port_info.port_name == name)
-            .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
+            .ok_or_else(|| ConnectionError::UsbSerialDeviceNotFound(name.to_string()))?;
         Self::open(&port_info, baud_rate)
     }
 
@@ -129,14 +129,17 @@ impl Debug for SerialPort {
 
 #[derive(Error, Debug)]
 pub enum ConnectionError {
-    #[error(transparent)]
-    Io(#[from] io::Error),
-
-    #[error("Attempted to connect to a device that is not an RF Explorer")]
-    NotAnRfExplorer,
+    #[error("RF Explorer device info was not received")]
+    DeviceInfoNotReceived,
 
     #[error(transparent)]
-    SerialPort(#[from] serialport::Error),
+    InitCommandFailedToSend(#[from] io::Error),
+
+    #[error(transparent)]
+    SerialPortFailedToOpen(#[from] serialport::Error),
+
+    #[error("A USB serial device with the name '{0}' could not be found")]
+    UsbSerialDeviceNotFound(String),
 }
 
 pub type ConnectionResult<T> = Result<T, ConnectionError>;
