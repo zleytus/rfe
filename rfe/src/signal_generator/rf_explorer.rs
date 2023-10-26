@@ -10,7 +10,7 @@ use super::{
     Attenuation, Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp, ConfigExp,
     ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, Temperature,
 };
-use crate::common::{ConnectionResult, Frequency};
+use crate::common::{ConnectionError, ConnectionResult, Frequency};
 use crate::rf_explorer::{
     Callback, RadioModule, RfExplorer, RfExplorerMessageContainer, ScreenData, SerialNumber,
     SetupInfo,
@@ -544,17 +544,17 @@ impl crate::common::MessageContainer for MessageContainer {
         }
     }
 
-    fn wait_for_device_info(&self) -> bool {
+    fn wait_for_device_info(&self) -> ConnectionResult<()> {
         let (config_lock, config_cvar) = &self.config;
         let (setup_info_lock, setup_info_cvar) = &self.setup_info;
 
         // Check to see if we've already received a Config and SetupInfo
         if config_lock.lock().unwrap().is_some() && setup_info_lock.lock().unwrap().is_some() {
-            return true;
+            return Ok(());
         }
 
         // Wait to see if we receive a Config and SetupInfo before timing out
-        config_cvar
+        if config_cvar
             .wait_timeout_while(
                 config_lock.lock().unwrap(),
                 RfExplorer::<MessageContainer>::RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
@@ -572,6 +572,11 @@ impl crate::common::MessageContainer for MessageContainer {
                 .unwrap()
                 .0
                 .is_some()
+        {
+            Ok(())
+        } else {
+            Err(ConnectionError::DeviceInfoNotReceived)
+        }
     }
 }
 

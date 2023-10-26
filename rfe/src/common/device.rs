@@ -12,7 +12,7 @@ use std::{
 
 use tracing::debug;
 
-use super::{serial_port, ConnectionError, ConnectionResult, MessageParseError, SerialPort};
+use super::{serial_port, ConnectionResult, MessageParseError, SerialPort};
 
 #[derive(Debug)]
 pub struct Device<M: MessageContainer + 'static> {
@@ -47,15 +47,15 @@ impl<M: MessageContainer> Device<M> {
             return Err(err.into());
         }
 
-        if device.messages.wait_for_device_info() {
-            // The largest sweep we could receive contains 65,535 (2^16) points
-            // To be safe, set the maximum message length to 131,072 (2^17)
-            device.serial_port.set_max_message_len(131_072);
-            Ok(device)
-        } else {
+        if let Err(err) = device.messages().wait_for_device_info() {
             device.stop_reading_messages();
-            Err(ConnectionError::Io(io::ErrorKind::TimedOut.into()))
+            return Err(err);
         }
+
+        // The largest sweep we could receive contains 65,535 (2^16) points
+        // To be safe, set the maximum message length to 131,072 (2^17)
+        device.serial_port.set_max_message_len(131_072);
+        Ok(device)
     }
 
     pub fn connect(device_init_command: impl AsRef<[u8]>) -> Option<Self> {
@@ -171,7 +171,7 @@ impl<M: MessageContainer> Drop for Device<M> {
 pub trait MessageContainer: Default + Debug + Send + Sync {
     type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>> + Debug;
     fn cache_message(&self, message: Self::Message);
-    fn wait_for_device_info(&self) -> bool;
+    fn wait_for_device_info(&self) -> ConnectionResult<()>;
 }
 
 fn find_message_in_buf<M>(message_buf: &[u8]) -> Result<M, MessageParseError>
