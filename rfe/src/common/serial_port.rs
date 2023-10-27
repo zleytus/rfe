@@ -13,7 +13,7 @@ use serialport::{
     DataBits, FlowControl, Parity, SerialPortInfo, SerialPortType, StopBits, UsbPortInfo,
 };
 use thiserror::Error;
-use tracing::{debug, error};
+// use tracing::{debug, error};
 
 pub(crate) const SLOW_BAUD_RATE: u32 = 2_400;
 pub(crate) const FAST_BAUD_RATE: u32 = 500_000;
@@ -25,8 +25,11 @@ pub(crate) struct SerialPort {
 }
 
 impl SerialPort {
-    #[tracing::instrument(ret, err)]
+    // #[tracing::instrument(ret, err)]
     pub(crate) fn open(port_info: &SerialPortInfo, baud_rate: u32) -> ConnectionResult<Self> {
+        println!("SerialPort::open");
+        println!("\tport_info: {port_info:?}");
+        println!("\tbaud_rate: {baud_rate}");
         let serial_port = serialport::new(&port_info.port_name, baud_rate)
             .data_bits(DataBits::Eight)
             .flow_control(FlowControl::None)
@@ -50,7 +53,7 @@ impl SerialPort {
         })
     }
 
-    #[tracing::instrument(ret, err)]
+    // #[tracing::instrument(ret, err)]
     pub(crate) fn open_with_name(name: &str, baud_rate: u32) -> ConnectionResult<Self> {
         let port_info = serialport::available_ports()
             .unwrap_or_default()
@@ -60,7 +63,7 @@ impl SerialPort {
         Self::open(&port_info, baud_rate)
     }
 
-    #[tracing::instrument(skip(self), err)]
+    // #[tracing::instrument(skip(self), err)]
     pub(crate) fn read_line(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
         let mut buf_reader = self.buf_reader.lock().unwrap();
         buf_reader
@@ -69,8 +72,10 @@ impl SerialPort {
         buf_reader.read_until(b'\n', buf)
     }
 
-    #[tracing::instrument(skip(self), ret, err, fields(bytes_as_string = String::from_utf8_lossy(bytes.as_ref()).as_ref()))]
+    // #[tracing::instrument(skip(self), ret, err, fields(bytes_as_string = String::from_utf8_lossy(bytes.as_ref()).as_ref()))]
     pub(crate) fn send_bytes(&self, bytes: impl AsRef<[u8]> + Debug) -> io::Result<()> {
+        println!("SerialPort::send_bytes");
+        println!("\tbytes: {}", String::from_utf8_lossy(bytes.as_ref()));
         self.buf_reader
             .lock()
             .unwrap()
@@ -79,7 +84,7 @@ impl SerialPort {
             .write_all(bytes.as_ref())
     }
 
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub(crate) fn send_command(
         &self,
         command: impl Into<Cow<'static, [u8]>> + Debug,
@@ -91,7 +96,7 @@ impl SerialPort {
         &self.port_info
     }
 
-    #[tracing::instrument(skip(self), err)]
+    // #[tracing::instrument(skip(self), err)]
     pub(crate) fn baud_rate(&self) -> io::Result<u32> {
         self.buf_reader
             .lock()
@@ -102,7 +107,7 @@ impl SerialPort {
             .map_err(|err| err.into())
     }
 
-    #[tracing::instrument(skip(self), err)]
+    // #[tracing::instrument(skip(self), err)]
     pub(crate) fn set_baud_rate(&self, baud_rate: u32) -> io::Result<()> {
         self.buf_reader
             .lock()
@@ -181,7 +186,7 @@ pub fn port_names() -> Vec<String> {
 
 /// Checks if a driver for the RF Explorer is installed.
 #[cfg(target_os = "windows")]
-#[tracing::instrument(ret)]
+// #[tracing::instrument(ret)]
 pub fn is_driver_installed() -> bool {
     use std::process::{Command, Stdio};
     let Ok(driver_query) = Command::new("driverquery")
@@ -202,33 +207,33 @@ pub fn is_driver_installed() -> bool {
         return false;
     };
 
-    debug!(
-        driver_search_command = r#"driverquery | findstr /c:"Silicon Labs CP210x""#,
-        driver_found = exit_status.success()
-    );
+    // debug!(
+    // driver_search_command = r#"driverquery | findstr /c:"Silicon Labs CP210x""#,
+    // driver_found = exit_status.success()
+    // );
 
     exit_status.success()
 }
 
 /// Checks if a driver for the RF Explorer is installed.
 #[cfg(target_os = "macos")]
-#[tracing::instrument(ret)]
+// #[tracing::instrument(ret)]
 pub fn is_driver_installed() -> bool {
     use std::path::Path;
 
     let apple_dext_path =
         Path::new("/System/Library/DriverExtensions/com.apple.DriverKit-AppleUSBSLCOM.dext");
-    debug!(
-        apple_dext_path = ?apple_dext_path,
-        apple_dext_path.exists = apple_dext_path.exists()
-    );
+    // println!(
+    // "apple_dext_path = ?apple_dext_path,
+    // apple_dext_path.exists = apple_dext_path.exists()"
+    // );
 
     let silabs_dext_path =
         Path::new("/Applications/CP210xVCPDriver.app/Contents/Library/SystemExtensions/com.silabs.cp210x.dext");
-    debug!(
-        silabs_dext_path = ?silabs_dext_path,
-        silabs_dext_path.exists = silabs_dext_path.exists()
-    );
+    // println!(
+    // silabs_dext_path = ?silabs_dext_path,
+    // silabs_dext_path.exists = silabs_dext_path.exists()
+    // );
 
     apple_dext_path.exists() || silabs_dext_path.exists()
 }

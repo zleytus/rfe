@@ -10,8 +10,6 @@ use std::{
     time::Duration,
 };
 
-use tracing::debug;
-
 use super::{serial_port, ConnectionError, ConnectionResult, MessageParseError, SerialPort};
 
 #[derive(Debug)]
@@ -42,11 +40,13 @@ impl<M: MessageContainer> Device<M> {
             Self::read_messages(serial_port, messages, is_reading)
         }));
 
+        println!("Sending device init command");
         if let Err(err) = device.serial_port.send_bytes(device_init_command) {
             device.stop_reading_messages();
             return Err(err.into());
         }
 
+        println!("Waiting for Config and SetupInfo");
         if let Err(err) = device.messages().wait_for_device_info() {
             device.stop_reading_messages();
             return Err(err);
@@ -70,8 +70,32 @@ impl<M: MessageContainer> Device<M> {
                 ]
             })
             .find_map(|(port_info, baud_rate)| {
-                let serial_port = SerialPort::open(&port_info, baud_rate).ok()?;
-                Self::connect_internal(serial_port, device_init_command.as_ref()).ok()
+                let serial_port = SerialPort::open(&port_info, baud_rate);
+                match serial_port {
+                    Ok(serial_port) => {
+                        println!("SerialPort::open succeeded");
+                        println!("Attempting to verify opened serial port belongs to RF Explorer");
+                        let result =
+                            Self::connect_internal(serial_port, device_init_command.as_ref());
+                        match result {
+                            Ok(device) => {
+                                println!("Success. Serial port belongs to an RF Explorer.");
+                                Some(device)
+                            }
+                            Err(err) => {
+                                println!(
+                                    "Failed to verify serial port belongs to RF Explorer: {}",
+                                    err
+                                );
+                                None
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        println!("SerialPort::open failed: {:?}", err);
+                        None
+                    }
+                }
             })
     }
 
@@ -100,12 +124,13 @@ impl<M: MessageContainer> Device<M> {
     }
 
     fn read_messages(serial_port: Arc<SerialPort>, messages: Arc<M>, is_reading: Arc<AtomicBool>) {
-        debug!("Started reading messages from device");
+        println!("Started reading messages from device");
         let mut message_buf = Vec::new();
         while is_reading.load(Ordering::Relaxed) {
             // Messages from devices are delimited by \r\n, so we try to read a line from
             // the serial port into the message buffer
             if let Err(error) = serial_port.read_line(&mut message_buf) {
+                println!("Error reading line from device: {}", error);
                 // Time out errors are recoverable so we try to read again
                 // Other errors are not recoverable so we break out of the loop
                 if error.kind() == ErrorKind::TimedOut {
@@ -118,6 +143,7 @@ impl<M: MessageContainer> Device<M> {
 
             match find_message_in_buf(&message_buf) {
                 Ok(message) => {
+                    println!("Found message in buffer: {:?}", message);
                     messages.cache_message(message);
                     message_buf.clear()
                 }
@@ -127,7 +153,7 @@ impl<M: MessageContainer> Device<M> {
 
             thread::sleep(Duration::from_millis(10));
         }
-        debug!("Stopped reading messages from device");
+        println!("Stopped reading messages from device");
     }
 
     pub fn messages(&self) -> &M {

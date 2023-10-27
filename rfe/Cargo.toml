@@ -12,5 +12,5 @@ nom = "7"
 num_enum = "0.7"
 serialport = "4.2.2"
 thiserror = "1"
-tracing = "0.1"
+# tracing = "0.1"
 uom = { version = "0.35.0", features = ["u64"] }

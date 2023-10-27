@@ -49,7 +49,7 @@ impl SignalGenerator {
         self.send_command(crate::rf_explorer::Command::RequestSerialNumber)?;
 
         let (lock, cvar) = &self.message_container().serial_number;
-        tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
+        // tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
         let _ = cvar
             .wait_timeout_while(
                 lock.lock().unwrap(),

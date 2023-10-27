@@ -7,7 +7,7 @@ use std::{
 };
 
 use num_enum::IntoPrimitive;
-use tracing::{error, info, trace, warn};
+// use tracing::{error, info, trace, warn};
 
 use super::{CalcMode, Command, Config, DspMode, InputStage, Sweep, TrackingStatus};
 use crate::common::{ConnectionError, ConnectionResult, Error, Frequency, Result};
@@ -60,7 +60,7 @@ impl SpectrumAnalyzer {
         self.send_command(crate::rf_explorer::Command::RequestSerialNumber)?;
 
         let (lock, cvar) = &self.message_container().serial_number;
-        tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
+        println!("Waiting to receive SerialNumber from RF Explorer");
         let _ = cvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
@@ -209,19 +209,19 @@ impl SpectrumAnalyzer {
     }
 
     /// Starts the spectrum analyzer's Wi-Fi analyzer.
-    #[tracing::instrument]
+    // #[tracing::instrument]
     pub fn start_wifi_analyzer(&self, wifi_band: WifiBand) -> io::Result<()> {
         self.send_command(Command::StartWifiAnalyzer(wifi_band))
     }
 
     /// Stops the spectrum analyzer's Wi-Fi analyzer.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn stop_wifi_analyzer(&self) -> io::Result<()> {
         self.send_command(Command::StopWifiAnalyzer)
     }
 
     /// Requests the spectrum analyzer enter tracking mode.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn request_tracking(&self, start_hz: u64, step_hz: u64) -> Result<TrackingStatus> {
         // Set the tracking status to None so we can tell whether or not we've received a new
         // tracking status message by checking for Some
@@ -253,7 +253,7 @@ impl SpectrumAnalyzer {
     }
 
     /// Steps over the tracking step frequency and makes a measurement.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn tracking_step(&self, step: u16) -> io::Result<()> {
         self.send_command(Command::TrackingStep(step))
     }
@@ -366,14 +366,14 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn set_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         let config = self.config();
         self.set_config(config.start, config.stop, min_amp_dbm, max_amp_dbm)
     }
 
     /// Sets the spectrum analyzer's configuration.
-    #[tracing::instrument(skip(self), ret, err)]
+    // #[tracing::instrument(skip(self), ret, err)]
     fn set_config(
         &self,
         start: Frequency,
@@ -400,7 +400,7 @@ impl SpectrumAnalyzer {
         }
 
         // Wait until the current config contains the requested values
-        trace!("Waiting to receive updated 'Config'");
+        println!("Waiting to receive updated 'Config'");
         let (_, wait_result) = self.wait_for_config_while(|config| {
             let Some(config) = config else {
                     return true;
@@ -439,7 +439,7 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn set_sweep_points(&self, sweep_points: u16) -> Result<()> {
         // Only 'Plus' models can set the number of points in a sweep
         if !self.active_radio_module().model().is_plus_model() {
@@ -468,7 +468,7 @@ impl SpectrumAnalyzer {
         }
 
         // Wait until the current config contains the requested sweep points
-        info!("Waiting to receive updated config");
+        // info!("Waiting to receive updated config");
         let (_, wait_result) = self.wait_for_config_while(|config| {
             config
                 .filter(|config| config.sweep_points == expected_sweep_points)
@@ -478,7 +478,7 @@ impl SpectrumAnalyzer {
         if !wait_result.timed_out() {
             Ok(())
         } else {
-            warn!("Failed to receive updated config");
+            // warn!("Failed to receive updated config");
             Err(Error::TimedOut(
                 RfExplorer::<MessageContainer>::COMMAND_RESPONSE_TIMEOUT,
             ))
@@ -486,25 +486,25 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the spectrum analyzer's calculator mode.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn set_calc_mode(&self, calc_mode: CalcMode) -> io::Result<()> {
         self.send_command(Command::SetCalcMode(calc_mode))
     }
 
     /// Sets the spectrum analyzer's input stage.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn set_input_stage(&self, input_stage: InputStage) -> io::Result<()> {
         self.send_command(Command::SetInputStage(input_stage))
     }
 
     /// Adds or subtracts an offset to the amplitudes in each sweep.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn set_offset_db(&self, offset_db: i8) -> io::Result<()> {
         self.send_command(Command::SetOffsetDB(offset_db))
     }
 
     /// Sets the spectrum analyzer's DSP mode.
-    #[tracing::instrument(skip(self))]
+    // #[tracing::instrument(skip(self))]
     pub fn set_dsp_mode(&self, dsp_mode: DspMode) -> Result<()> {
         // Check to see if the DspMode is already set to the desired value
         if *self.message_container().dsp_mode.0.lock().unwrap() == Some(dsp_mode) {
@@ -547,7 +547,7 @@ impl SpectrumAnalyzer {
             .unwrap()
     }
 
-    #[tracing::instrument(skip(self), ret, err)]
+    // #[tracing::instrument(skip(self), ret, err)]
     fn validate_start_stop(&self, start: Frequency, stop: Frequency) -> Result<()> {
         if start >= stop {
             return Err(Error::InvalidInput(
@@ -587,11 +587,10 @@ impl SpectrumAnalyzer {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self), ret, err)]
+    // #[tracing::instrument(skip(self), ret, err)]
     fn validate_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         // The bottom amplitude must be less than the top amplitude
         if min_amp_dbm >= max_amp_dbm {
-            error!("");
             return Err(Error::InvalidInput(
                 "The minimum amplitude must be less than the maximum amplitude".to_string(),
             ));

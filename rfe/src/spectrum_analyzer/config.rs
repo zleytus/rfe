@@ -100,7 +100,7 @@ pub struct Config {
 impl Config {
     pub(crate) const PREFIX: &'static [u8] = b"#C2-F:";
 
-    #[tracing::instrument(skip(self), ret, fields(self.start = ?self.start, self.stop = ?self.stop, self.min_amp_dbm = ?self.min_amp_dbm, self.max_amp_dbm = ?self.max_amp_dbm))]
+    // #[tracing::instrument(skip(self), ret, fields(self.start = ?self.start, self.stop = ?self.stop, self.min_amp_dbm = ?self.min_amp_dbm, self.max_amp_dbm = ?self.max_amp_dbm))]
     pub(crate) fn contains_start_stop_amp_range(
         &self,
         start: Frequency,

@@ -20,8 +20,12 @@ pub enum Message {
 impl<'a> TryFrom<&'a [u8]> for Message {
     type Error = MessageParseError<'a>;
 
-    #[tracing::instrument(ret, err, fields(bytes_as_string = String::from_utf8_lossy(bytes).as_ref()))]
+    // #[tracing::instrument(ret, err, fields(bytes_as_string = String::from_utf8_lossy(bytes).as_ref()))]
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        println!(
+            "Message::try_from(bytes: '{}')",
+            String::from_utf8_lossy(bytes).trim_end()
+        );
         if bytes.starts_with(Config::PREFIX) {
             Ok(Message::Config(Config::try_from(bytes)?))
         } else if bytes.starts_with(DspMode::PREFIX) {
