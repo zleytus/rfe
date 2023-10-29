@@ -162,7 +162,7 @@ impl SpectrumAnalyzer {
     }
 
     /// Returns the main radio module.
-    pub fn main_radio_module(&self) -> RadioModule {
+    pub fn main_radio_module(&self) -> Option<RadioModule> {
         self.message_container()
             .setup_info
             .0
@@ -188,9 +188,9 @@ impl SpectrumAnalyzer {
     /// Returns the active radio module.
     pub fn active_radio_module(&self) -> RadioModule {
         if self.config().is_expansion_radio_module_active {
-            self.expansion_radio_module().unwrap()
+            self.expansion_radio_module().unwrap_or_default()
         } else {
-            self.main_radio_module()
+            self.main_radio_module().unwrap_or_default()
         }
     }
 
@@ -199,7 +199,7 @@ impl SpectrumAnalyzer {
         let expansion_radio_module = self.expansion_radio_module();
         if expansion_radio_module.is_some() {
             if self.config().is_expansion_radio_module_active {
-                Some(self.main_radio_module())
+                self.main_radio_module()
             } else {
                 expansion_radio_module
             }

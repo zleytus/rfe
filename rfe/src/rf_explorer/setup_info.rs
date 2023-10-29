@@ -12,7 +12,7 @@ use crate::spectrum_analyzer::Model;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetupInfo<M: Debug + Clone + Copy + TryFrom<u8> + PartialEq + Eq + Default = Model> {
-    pub main_radio_module: RadioModule<M>,
+    pub main_radio_module: Option<RadioModule<M>>,
     pub expansion_radio_module: Option<RadioModule<M>>,
     pub firmware_version: String,
 }
@@ -26,7 +26,15 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
         let (bytes, _) = tag(prefix)(bytes)?;
 
         // Parse the main model
-        let (bytes, main_model) = map_res(parse_num(3), M::try_from)(bytes)?;
+        let (bytes, main_model) = map_res(parse_num(3), |num| {
+            if let Ok(model) = M::try_from(num) {
+                Ok(Some(model))
+            } else if num == 255 {
+                Ok(None)
+            } else {
+                Err(())
+            }
+        })(bytes)?;
 
         let (bytes, _) = tag(",")(bytes)?;
 
@@ -51,7 +59,7 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
         let _ = parse_opt_line_ending(bytes)?;
 
         Ok(SetupInfo {
-            main_radio_module: RadioModule::Main { model: main_model },
+            main_radio_module: main_model.map(|model| RadioModule::Main { model }),
             expansion_radio_module: exp_model.map(|model| RadioModule::Expansion { model }),
             firmware_version,
         })

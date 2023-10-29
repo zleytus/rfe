@@ -24,9 +24,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C3-M:060,255,01.15\r\n".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::Rfe6Gen
-            }
+            })
         );
         assert_eq!(setup.expansion_radio_module, None);
         assert_eq!(setup.firmware_version, "01.15");
@@ -37,9 +37,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C3-M:060,061,01.15\r\n".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::Rfe6Gen
-            }
+            })
         );
         assert_eq!(
             setup.expansion_radio_module,

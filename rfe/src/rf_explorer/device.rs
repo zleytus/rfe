@@ -65,11 +65,11 @@ impl<M: RfExplorerMessageContainer> RfExplorer<M> {
         self.device.send_bytes(bytes)
     }
 
-    pub fn main_radio_module(&self) -> RadioModule<M::Model> {
+    pub fn main_radio_module(&self) -> Option<RadioModule<M::Model>> {
         if let Some(setup_info) = self.message_container().setup_info() {
             setup_info.main_radio_module
         } else {
-            RadioModule::default()
+            None
         }
     }
 

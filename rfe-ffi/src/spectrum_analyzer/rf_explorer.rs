@@ -395,11 +395,15 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_module(
     rfe: Option<&SpectrumAnalyzer>,
     radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
 ) -> Result {
-    if let (Some(rfe), Some(radio_module)) = (rfe, radio_module) {
-        *radio_module = rfe.main_radio_module().into();
+    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
+        return Result::NullPtrError;
+    };
+
+    if let Some(module) = rfe.main_radio_module() {
+        *radio_module = module.into();
         Result::Success
     } else {
-        Result::NullPtrError
+        Result::NoData
     }
 }
 
@@ -416,7 +420,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_module(
         *radio_module = module.into();
         Result::Success
     } else {
-        Result::InvalidOperationError
+        Result::NoData
     }
 }
 

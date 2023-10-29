@@ -360,11 +360,15 @@ pub extern "C" fn rfe_signal_generator_main_radio_module(
     rfe: Option<&SignalGenerator>,
     radio_module: Option<&mut SignalGeneratorRadioModule>,
 ) -> Result {
-    if let (Some(rfe), Some(radio_module)) = (rfe, radio_module) {
-        *radio_module = rfe.main_radio_module().into();
+    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
+        return Result::NullPtrError;
+    };
+
+    if let Some(module) = rfe.main_radio_module() {
+        *radio_module = module.into();
         Result::Success
     } else {
-        Result::NullPtrError
+        Result::NoData
     }
 }
 

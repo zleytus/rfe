@@ -137,13 +137,13 @@ impl SignalGenerator {
 
     pub fn active_radio_module(&self) -> RadioModule<Model> {
         let Some(exp_module) = self.expansion_radio_module() else {
-            return self.main_radio_module();
+            return self.main_radio_module().unwrap_or_default();
         };
 
         if self.config_expansion().is_some() {
             exp_module
         } else {
-            self.main_radio_module()
+            self.main_radio_module().unwrap_or_default()
         }
     }
 
@@ -153,7 +153,7 @@ impl SignalGenerator {
         };
 
         if self.config_expansion().is_some() {
-            Some(self.main_radio_module())
+            self.main_radio_module()
         } else {
             Some(exp_module)
         }

@@ -24,9 +24,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:003,255,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::RfeWSub1G
-            }
+            })
         );
         assert_eq!(setup.expansion_radio_module, None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -37,9 +37,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:004,255,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::Rfe24G
-            }
+            })
         );
         assert_eq!(setup.expansion_radio_module, None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -50,9 +50,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:003,004,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::RfeWSub1G
-            }
+            })
         );
         assert_eq!(
             setup.expansion_radio_module,
@@ -68,9 +68,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:003,005,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::RfeWSub1G
-            }
+            })
         );
         assert_eq!(
             setup.expansion_radio_module,
@@ -86,9 +86,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:006,005,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::Rfe6G
-            }
+            })
         );
         assert_eq!(
             setup.expansion_radio_module,
@@ -104,9 +104,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:010,255,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::RfeWSub1GPlus
-            }
+            })
         );
         assert_eq!(setup.expansion_radio_module, None);
         assert_eq!(setup.firmware_version, "XX.XXXX");
@@ -117,9 +117,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:010,012,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::RfeWSub1GPlus
-            }
+            })
         );
         assert_eq!(
             setup.expansion_radio_module,
@@ -135,9 +135,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:010,013,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::RfeWSub1GPlus
-            }
+            })
         );
         assert_eq!(
             setup.expansion_radio_module,
@@ -153,9 +153,9 @@ mod tests {
         let setup = SetupInfo::<Model>::try_from(b"#C2-M:010,014,XX.XXXX".as_ref()).unwrap();
         assert_eq!(
             setup.main_radio_module,
-            RadioModule::Main {
+            Some(RadioModule::Main {
                 model: Model::RfeWSub1GPlus
-            }
+            })
         );
         assert_eq!(
             setup.expansion_radio_module,
@@ -167,8 +167,9 @@ mod tests {
     }
 
     #[test]
-    fn reject_setup_without_main_model() {
-        assert!(SetupInfo::<Model>::try_from(b"#C2-M:255,005,01.12B26".as_ref()).is_err());
+    fn accept_setup_without_main_model() {
+        assert!(SetupInfo::<Model>::try_from(b"#C2-M:255,005,01.12B26".as_ref()).is_ok());
+        assert!(SetupInfo::<Model>::try_from(b"#C2-M:255,014,03.41".as_ref()).is_ok());
     }
 
     #[test]
