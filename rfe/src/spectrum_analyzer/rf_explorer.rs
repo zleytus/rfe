@@ -52,13 +52,18 @@ impl SpectrumAnalyzer {
             .collect()
     }
 
-    pub fn serial_number(&self) -> io::Result<crate::SerialNumber> {
+    /// Returns the RF Explorer's serial number, if it exists.
+    pub fn serial_number(&self) -> Option<SerialNumber> {
+        // Return the serial number if we've already received it
         if let Some(ref serial_number) = *self.message_container().serial_number.0.lock().unwrap() {
-            return Ok(serial_number.clone());
+            return Some(serial_number.clone());
         }
 
-        self.send_command(crate::rf_explorer::Command::RequestSerialNumber)?;
+        // If we haven't already received the serial number, request it from the RF Explorer
+        self.send_command(crate::rf_explorer::Command::RequestSerialNumber)
+            .ok()?;
 
+        // Wait 2 seconds for the RF Explorer to send its serial number
         let (lock, cvar) = &self.message_container().serial_number;
         tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
         let _ = cvar
@@ -69,11 +74,7 @@ impl SpectrumAnalyzer {
             )
             .unwrap();
 
-        if let Some(ref serial_number) = *self.message_container().serial_number.0.lock().unwrap() {
-            Ok(serial_number.clone())
-        } else {
-            Err(io::ErrorKind::TimedOut.into())
-        }
+        (*self.message_container().serial_number.0.lock().unwrap()).clone()
     }
 
     /// Returns the RF Explorer's current `Config`.

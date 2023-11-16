@@ -128,8 +128,8 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
         return Result::NullPtrError;
     };
 
-    let Ok(serial_number) = rfe.serial_number() else {
-        return Result::IoError;
+    let Some(serial_number) = rfe.serial_number() else {
+        return Result::NoData;
     };
 
     let serial_number = CString::new(serial_number.as_str()).unwrap_or_default();
