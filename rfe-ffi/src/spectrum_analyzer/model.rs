@@ -20,6 +20,10 @@ pub enum SpectrumAnalyzerModel {
     Rfe24GPlus = 12,
     Rfe4GPlus = 13,
     Rfe6GPlus = 14,
+    RfeMW5G3G = 16,
+    RfeMW5G4G = 17,
+    RfeMW5G5G = 18,
+    Unknown = 19,
 }
 
 impl From<Model> for SpectrumAnalyzerModel {
@@ -37,6 +41,10 @@ impl From<Model> for SpectrumAnalyzerModel {
             Model::Rfe24GPlus => Self::Rfe24GPlus,
             Model::Rfe4GPlus => Self::Rfe4GPlus,
             Model::Rfe6GPlus => Self::Rfe6GPlus,
+            Model::RfeMW5G3G => Self::RfeMW5G3G,
+            Model::RfeMW5G4G => Self::RfeMW5G4G,
+            Model::RfeMW5G5G => Self::RfeMW5G5G,
+            Model::Unknown => Self::Unknown,
         }
     }
 }
@@ -56,6 +64,10 @@ impl From<SpectrumAnalyzerModel> for Model {
             SpectrumAnalyzerModel::Rfe24GPlus => Self::Rfe24GPlus,
             SpectrumAnalyzerModel::Rfe4GPlus => Self::Rfe4GPlus,
             SpectrumAnalyzerModel::Rfe6GPlus => Self::Rfe6GPlus,
+            SpectrumAnalyzerModel::RfeMW5G3G => Self::RfeMW5G3G,
+            SpectrumAnalyzerModel::RfeMW5G4G => Self::RfeMW5G4G,
+            SpectrumAnalyzerModel::RfeMW5G5G => Self::RfeMW5G5G,
+            SpectrumAnalyzerModel::Unknown => Self::Unknown,
         }
     }
 }
