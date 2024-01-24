@@ -9,8 +9,8 @@ readme = "README.md"
 [dependencies]
 chrono = "0.4"
 nom = "7"
-serialport = "4.2.2"
 num_enum = { version = "0.7", features = ["complex-expressions"] }
+serialport = "4.3.0"
 thiserror = "1"
 tracing = "0.1"
 uom = { version = "0.35.0", features = ["u64"] }
