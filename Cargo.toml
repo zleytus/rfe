@@ -1,6 +1,6 @@
 [workspace]
 
 members = [
-    "rfe",
+    "lib",
     "rfe-ffi",
 ]
