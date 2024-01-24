@@ -2,9 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -19,30 +19,30 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Install serialport-rs dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt install pkg-config libudev-dev
-    - name: Build rfe and rfe-ffi (debug)
-      run: cargo build --verbose
-    - name: Build rfe and rfe-ffi (release)
-      run: cargo build --verbose --release
-    - name: Build C examples (shared library)
-      working-directory: ./rfe-ffi/bindings/rfe-c
-      run: |
-        cmake -S . -B build -DBUILD_SHARED_LIBS=ON
-        cmake --build build
-    - name: Build C examples (static library)
-      working-directory: ./rfe-ffi/bindings/rfe-c
-      run: |
-        cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
-        cmake --build build
-    - name: Run tests
-      run: cargo test --verbose
-    - uses: actions/upload-artifact@v3
-      with:
-        name: ${{ matrix.os }}-artifacts
-        path: |
-          ${{ github.workspace }}/target/release/*.dll
-          ${{ github.workspace }}/target/release/*.dylib
-          ${{ github.workspace }}/target/release/*.so
+      - uses: actions/checkout@v3
+      - name: Install serialport-rs dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt install pkg-config libudev-dev
+      - name: Build rfe and rfe-ffi (debug)
+        run: cargo build --verbose
+      - name: Build rfe and rfe-ffi (release)
+        run: cargo build --verbose --release
+      - name: Build C examples (shared library)
+        working-directory: ./ffi/bindings/rfe-c
+        run: |
+          cmake -S . -B build -DBUILD_SHARED_LIBS=ON
+          cmake --build build
+      - name: Build C examples (static library)
+        working-directory: ./ffi/bindings/rfe-c
+        run: |
+          cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
+          cmake --build build
+      - name: Run tests
+        run: cargo test --verbose
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: |
+            ${{ github.workspace }}/target/release/*.dll
+            ${{ github.workspace }}/target/release/*.dylib
+            ${{ github.workspace }}/target/release/*.so
