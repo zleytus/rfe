@@ -76,7 +76,7 @@ impl Display for CalcMode {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Config {
     pub start: Frequency,
     pub step: Frequency,
