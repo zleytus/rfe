@@ -1,7 +1,6 @@
 use std::{
     fmt::Debug,
     io,
-    ops::Deref,
     sync::{Condvar, Mutex},
     time::Duration,
 };
@@ -10,41 +9,22 @@ use super::{
     Attenuation, Config, ConfigAmpSweep, ConfigAmpSweepExp, ConfigCw, ConfigCwExp, ConfigExp,
     ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, Temperature,
 };
-use crate::common::{ConnectionError, ConnectionResult, Frequency};
 use crate::rf_explorer::{
-    Callback, RadioModule, RfExplorer, RfExplorerMessageContainer, ScreenData, SerialNumber,
-    SetupInfo,
+    Callback, RadioModule, ScreenData, SerialNumber, SetupInfo, NEXT_SCREEN_DATA_TIMEOUT,
+    RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+};
+use crate::{
+    common::{ConnectionError, ConnectionResult, Device, Frequency},
+    rf_explorer::impl_rf_explorer,
 };
 
-#[derive(Debug)]
-pub struct SignalGenerator {
-    rfe: RfExplorer<MessageContainer>,
-}
+impl_rf_explorer!(SignalGenerator, MessageContainer);
 
 impl SignalGenerator {
-    pub fn connect() -> Option<Self> {
-        Some(Self {
-            rfe: RfExplorer::connect()?,
-        })
-    }
-
-    pub fn connect_with_name_and_baud_rate(name: &str, baud_rate: u32) -> ConnectionResult<Self> {
-        Ok(Self {
-            rfe: RfExplorer::connect_with_name_and_baud_rate(name, baud_rate)?,
-        })
-    }
-
-    pub fn connect_all() -> Vec<Self> {
-        RfExplorer::connect_all()
-            .into_iter()
-            .map(|rfe| Self { rfe })
-            .collect()
-    }
-
     /// Returns the RF Explorer's serial number, if it exists.
     pub fn serial_number(&self) -> Option<SerialNumber> {
         // Return the serial number if we've already received it
-        if let Some(ref serial_number) = *self.message_container().serial_number.0.lock().unwrap() {
+        if let Some(ref serial_number) = *self.messages().serial_number.0.lock().unwrap() {
             return Some(serial_number.clone());
         }
 
@@ -53,7 +33,7 @@ impl SignalGenerator {
             .ok()?;
 
         // Wait 2 seconds for the RF Explorer to send its serial number
-        let (lock, cvar) = &self.message_container().serial_number;
+        let (lock, cvar) = &self.messages().serial_number;
         tracing::trace!("Waiting to receive SerialNumber from RF Explorer");
         let _ = cvar
             .wait_timeout_while(
@@ -63,55 +43,59 @@ impl SignalGenerator {
             )
             .unwrap();
 
-        (*self.message_container().serial_number.0.lock().unwrap()).clone()
+        (*self.messages().serial_number.0.lock().unwrap()).clone()
+    }
+
+    pub fn firmware_version(&self) -> String {
+        self.messages()
+            .setup_info
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|setup_info| setup_info.firmware_version.clone())
+            .unwrap_or_default()
     }
 
     pub fn config(&self) -> Option<Config> {
-        *self.message_container().config.0.lock().unwrap()
+        *self.messages().config.0.lock().unwrap()
     }
 
     pub fn config_expansion(&self) -> Option<ConfigExp> {
-        *self.message_container().config_exp.0.lock().unwrap()
+        *self.messages().config_exp.0.lock().unwrap()
     }
 
     pub fn config_amp_sweep(&self) -> Option<ConfigAmpSweep> {
-        *self.message_container().config_amp_sweep.0.lock().unwrap()
+        *self.messages().config_amp_sweep.0.lock().unwrap()
     }
 
     pub fn config_amp_sweep_expansion(&self) -> Option<ConfigAmpSweepExp> {
-        *self
-            .message_container()
-            .config_amp_sweep_exp
-            .0
-            .lock()
-            .unwrap()
+        *self.messages().config_amp_sweep_exp.0.lock().unwrap()
     }
 
     pub fn config_cw(&self) -> Option<ConfigCw> {
-        *self.message_container().config_cw.0.lock().unwrap()
+        *self.messages().config_cw.0.lock().unwrap()
     }
 
     pub fn config_cw_expansion(&self) -> Option<ConfigCwExp> {
-        *self.message_container().config_cw_exp.0.lock().unwrap()
+        *self.messages().config_cw_exp.0.lock().unwrap()
     }
 
     pub fn config_freq_sweep(&self) -> Option<ConfigFreqSweep> {
-        *self.message_container().config_freq_sweep.0.lock().unwrap()
+        *self.messages().config_freq_sweep.0.lock().unwrap()
     }
 
     pub fn config_freq_sweep_expansion(&self) -> Option<ConfigFreqSweepExp> {
-        *self
-            .message_container()
-            .config_freq_sweep_exp
-            .0
-            .lock()
-            .unwrap()
+        *self.messages().config_freq_sweep_exp.0.lock().unwrap()
+    }
+
+    /// Returns the most recent `ScreenData` captured by the RF Explorer.
+    pub fn screen_data(&self) -> Option<ScreenData> {
+        self.messages().screen_data.0.lock().unwrap().clone()
     }
 
     pub fn wait_for_next_screen_data(&self) -> crate::Result<ScreenData> {
-        self.wait_for_next_screen_data_with_timeout(
-            RfExplorer::<MessageContainer>::NEXT_SCREEN_DATA_TIMEOUT,
-        )
+        self.wait_for_next_screen_data_with_timeout(NEXT_SCREEN_DATA_TIMEOUT)
     }
 
     pub fn wait_for_next_screen_data_with_timeout(
@@ -119,7 +103,7 @@ impl SignalGenerator {
         timeout: Duration,
     ) -> crate::Result<ScreenData> {
         let previous_screen_data = self.screen_data();
-        let (screen_data, condvar) = &self.message_container().screen_data;
+        let (screen_data, condvar) = &self.messages().screen_data;
         let (screen_data, wait_result) = condvar
             .wait_timeout_while(screen_data.lock().unwrap(), timeout, |screen_data| {
                 *screen_data == previous_screen_data || screen_data.is_none()
@@ -133,7 +117,31 @@ impl SignalGenerator {
     }
 
     pub fn temperature(&self) -> Option<Temperature> {
-        *self.message_container().temperature.0.lock().unwrap()
+        *self.messages().temperature.0.lock().unwrap()
+    }
+
+    /// Returns the main radio module.
+    pub fn main_radio_module(&self) -> Option<RadioModule<Model>> {
+        self.messages()
+            .setup_info
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .main_radio_module
+    }
+
+    /// Returns the expansion radio module (if one exists).
+    pub fn expansion_radio_module(&self) -> Option<RadioModule<Model>> {
+        self.messages()
+            .setup_info
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .expansion_radio_module
     }
 
     pub fn active_radio_module(&self) -> RadioModule<Model> {
@@ -299,40 +307,32 @@ impl SignalGenerator {
 
     /// Sets the callback that is executed when the signal generator receives a `Config`.
     pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
-        *self.message_container().config_callback.lock().unwrap() = Some(Box::new(cb));
+        *self.messages().config_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `Config`.
     pub fn remove_config_callback(&self) {
-        *self.message_container().config_callback.lock().unwrap() = None;
+        *self.messages().config_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigExp`.
     pub fn set_config_exp_callback(&self, cb: impl FnMut(ConfigExp) + Send + 'static) {
-        *self.message_container().config_exp_callback.lock().unwrap() = Some(Box::new(cb));
+        *self.messages().config_exp_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigExp`.
     pub fn remove_config_exp_callback(&self) {
-        *self.message_container().config_exp_callback.lock().unwrap() = None;
+        *self.messages().config_exp_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweep`.
     pub fn set_config_amp_sweep_callback(&self, cb: impl FnMut(ConfigAmpSweep) + Send + 'static) {
-        *self
-            .message_container()
-            .config_amp_sweep_callback
-            .lock()
-            .unwrap() = Some(Box::new(cb));
+        *self.messages().config_amp_sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigAmpSweep`.
     pub fn remove_config_amp_sweep_callback(&self) {
-        *self
-            .message_container()
-            .config_amp_sweep_callback
-            .lock()
-            .unwrap() = None;
+        *self.messages().config_amp_sweep_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweepExp`.
@@ -341,7 +341,7 @@ impl SignalGenerator {
         cb: impl FnMut(ConfigAmpSweepExp) + Send + 'static,
     ) {
         *self
-            .message_container()
+            .messages()
             .config_amp_sweep_exp_callback
             .lock()
             .unwrap() = Some(Box::new(cb));
@@ -350,7 +350,7 @@ impl SignalGenerator {
     /// Removes the callback that is executed when the signal generator receives a `ConfigAmpSweepExp`.
     pub fn remove_config_amp_sweep_exp_callback(&self) {
         *self
-            .message_container()
+            .messages()
             .config_amp_sweep_exp_callback
             .lock()
             .unwrap() = None;
@@ -358,48 +358,32 @@ impl SignalGenerator {
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigCw`.
     pub fn set_config_cw_callback(&self, cb: impl FnMut(ConfigCw) + Send + 'static) {
-        *self.message_container().config_cw_callback.lock().unwrap() = Some(Box::new(cb));
+        *self.messages().config_cw_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigCw`.
     pub fn remove_config_cw_callback(&self) {
-        *self.message_container().config_cw_callback.lock().unwrap() = None;
+        *self.messages().config_cw_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigCwExp`.
     pub fn set_config_cw_exp_callback(&self, cb: impl FnMut(ConfigCwExp) + Send + 'static) {
-        *self
-            .message_container()
-            .config_cw_exp_callback
-            .lock()
-            .unwrap() = Some(Box::new(cb));
+        *self.messages().config_cw_exp_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigCwExp`.
     pub fn remove_config_cw_exp_callback(&self) {
-        *self
-            .message_container()
-            .config_cw_exp_callback
-            .lock()
-            .unwrap() = None;
+        *self.messages().config_cw_exp_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweep`.
     pub fn set_config_freq_sweep_callback(&self, cb: impl FnMut(ConfigFreqSweep) + Send + 'static) {
-        *self
-            .message_container()
-            .config_freq_sweep_callback
-            .lock()
-            .unwrap() = Some(Box::new(cb));
+        *self.messages().config_freq_sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigFreqSweep`.
     pub fn remove_config_freq_sweep_callback(&self) {
-        *self
-            .message_container()
-            .config_freq_sweep_callback
-            .lock()
-            .unwrap() = None;
+        *self.messages().config_freq_sweep_callback.lock().unwrap() = None;
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweepExp`.
@@ -408,7 +392,7 @@ impl SignalGenerator {
         cb: impl FnMut(ConfigFreqSweepExp) + Send + 'static,
     ) {
         *self
-            .message_container()
+            .messages()
             .config_freq_sweep_exp_callback
             .lock()
             .unwrap() = Some(Box::new(cb));
@@ -417,7 +401,7 @@ impl SignalGenerator {
     /// Removes the callback that is executed when the signal generator receives a `ConfigFreqSweepExp`.
     pub fn remove_config_freq_sweep_exp_callback(&self) {
         *self
-            .message_container()
+            .messages()
             .config_freq_sweep_exp_callback
             .lock()
             .unwrap() = None;
@@ -434,15 +418,8 @@ impl SignalGenerator {
     }
 }
 
-impl Deref for SignalGenerator {
-    type Target = RfExplorer<MessageContainer>;
-    fn deref(&self) -> &Self::Target {
-        &self.rfe
-    }
-}
-
 #[derive(Default)]
-pub struct MessageContainer {
+struct MessageContainer {
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
     pub(crate) config_callback: Mutex<Callback<Config>>,
     pub(crate) config_exp: (Mutex<Option<ConfigExp>>, Condvar),
@@ -558,7 +535,7 @@ impl crate::common::MessageContainer for MessageContainer {
         if config_cvar
             .wait_timeout_while(
                 config_lock.lock().unwrap(),
-                RfExplorer::<MessageContainer>::RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+                RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
                 |config| config.is_none(),
             )
             .unwrap()
@@ -567,7 +544,7 @@ impl crate::common::MessageContainer for MessageContainer {
             && setup_info_cvar
                 .wait_timeout_while(
                     setup_info_lock.lock().unwrap(),
-                    RfExplorer::<MessageContainer>::RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+                    RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
                     |setup_info| setup_info.is_none(),
                 )
                 .unwrap()
@@ -578,18 +555,6 @@ impl crate::common::MessageContainer for MessageContainer {
         } else {
             Err(ConnectionError::DeviceInfoNotReceived)
         }
-    }
-}
-
-impl RfExplorerMessageContainer for MessageContainer {
-    type Model = super::Model;
-
-    fn setup_info(&self) -> Option<SetupInfo<Self::Model>> {
-        self.setup_info.0.lock().unwrap().clone()
-    }
-
-    fn screen_data(&self) -> Option<ScreenData> {
-        self.screen_data.0.lock().unwrap().clone()
     }
 }
 
