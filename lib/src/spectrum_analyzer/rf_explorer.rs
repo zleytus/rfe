@@ -70,19 +70,189 @@ impl SpectrumAnalyzer {
             .unwrap_or_default()
     }
 
-    /// Returns the most recent `Sweep` measured by the RF Explorer.
-    pub fn sweep(&self) -> Option<Sweep> {
-        self.message_container().sweep.0.lock().unwrap().clone()
+    fn config(&self) -> MutexGuard<Option<Config>> {
+        self.messages().config.0.lock().unwrap()
     }
 
-    /// Waits for the RF Explorer to measure its next `Sweep`.
-    pub fn wait_for_next_sweep(&self) -> Result<Sweep> {
+    /// The start frequency of the RF Explorer's sweeps.
+    pub fn start_freq(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.start_freq)
+            .unwrap_or_default()
+    }
+
+    /// The step size of the RF Explorer's sweeps.
+    pub fn step_size(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.step_size)
+            .unwrap_or_default()
+    }
+
+    /// The stop frequency of the RF Explorer's sweeps.
+    pub fn stop_freq(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.stop_freq)
+            .unwrap_or_default()
+    }
+
+    /// The center frequency of the RF Explorer's sweeps.
+    pub fn center_freq(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.center_freq)
+            .unwrap_or_default()
+    }
+
+    /// The span of the RF Explorer's sweeps.
+    pub fn span(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.span)
+            .unwrap_or_default()
+    }
+
+    /// The minimum supported frequency of the RF Explorer.
+    pub fn min_freq(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.min_freq)
+            .unwrap_or_default()
+    }
+
+    /// The maximum supported frequency of the RF Explorer.
+    pub fn max_freq(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.max_freq)
+            .unwrap_or_default()
+    }
+
+    /// The maximum supported span of the RF Explorer.
+    pub fn max_span(&self) -> Frequency {
+        self.config()
+            .as_ref()
+            .map(|config| config.max_span)
+            .unwrap_or_default()
+    }
+
+    /// The resolution bandwidth of the RF Explorer.
+    pub fn rbw(&self) -> Option<Frequency> {
+        self.config()
+            .as_ref()
+            .map(|config| config.rbw)
+            .unwrap_or_default()
+    }
+
+    /// The minimum amplitude of sweeps displayed on the RF Explorer's screen.
+    pub fn min_amp_dbm(&self) -> i16 {
+        self.config()
+            .as_ref()
+            .map(|config| config.min_amp_dbm)
+            .unwrap_or_default()
+    }
+
+    /// The maximum amplitude of sweeps displayed on the RF Explorer's screen.
+    pub fn max_amp_dbm(&self) -> i16 {
+        self.config()
+            .as_ref()
+            .map(|config| config.max_amp_dbm)
+            .unwrap_or_default()
+    }
+
+    /// The amplitude offset of sweeps displayed on the RF Explorer's screen.
+    pub fn amp_offset_db(&self) -> Option<i8> {
+        self.config()
+            .as_ref()
+            .map(|config| config.amp_offset_db)
+            .unwrap_or_default()
+    }
+
+    /// The number of amplitudes in the RF Explorer's sweeps.
+    pub fn sweep_len(&self) -> u16 {
+        self.config()
+            .as_ref()
+            .map(|config| config.sweep_len)
+            .unwrap_or_default()
+    }
+
+    fn is_expansion_radio_module_active(&self) -> bool {
+        self.config()
+            .as_ref()
+            .map(|config| config.is_expansion_radio_module_active)
+            .unwrap_or_default()
+    }
+
+    /// The current `Mode` of the RF Explorer.
+    pub fn mode(&self) -> Mode {
+        self.config()
+            .as_ref()
+            .map(|config| config.mode)
+            .unwrap_or_default()
+    }
+
+    /// The current `CalcMode` of the RF Explorer.
+    pub fn calc_mode(&self) -> Option<CalcMode> {
+        self.config()
+            .as_ref()
+            .map(|config| config.calc_mode)
+            .unwrap_or_default()
+    }
+
+    /// The amplitudes of the most recent sweep measured by the RF Explorer.
+    pub fn sweep(&self) -> Option<Vec<f32>> {
+        self.rfe
+            .messages()
+            .sweep
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|sweep| sweep.amplitudes_dbm.clone())
+    }
+
+    /// Fills the buffer with the amplitudes of the most recent sweep and returns the length of the sweep.
+    pub fn fill_buf_with_sweep(&self, buf: &mut [f32]) -> Result<usize> {
+        if let Some(sweep) = self.messages().sweep.0.lock().unwrap().as_ref() {
+            let sweep_len = sweep.amplitudes_dbm.len();
+            if buf.len() >= sweep_len {
+                buf[0..sweep_len].copy_from_slice(sweep.amplitudes_dbm.as_slice());
+                Ok(sweep_len)
+            } else {
+                Err(Error::InvalidInput(
+                    "The buffer is too small to fit the sweep".to_string(),
+                ))
+            }
+        } else {
+            Err(Error::InvalidOperation(
+                "No sweeps have been measured by the RF Explorer".to_string(),
+            ))
+        }
+    }
+
+    /// Waits for the RF Explorer to measure the next sweep.
+    pub fn wait_for_next_sweep(&self) -> Result<Vec<f32>> {
         self.wait_for_next_sweep_with_timeout(Self::NEXT_SWEEP_TIMEOUT)
     }
 
-    /// Waits for the RF Explorer to measure its next `Sweep` or for the timeout duration to elapse.
-    pub fn wait_for_next_sweep_with_timeout(&self, timeout: Duration) -> Result<Sweep> {
-        let previous_sweep = self.sweep();
+    /// Waits for the RF Explorer to measure the next sweep and fills the buffer with its amplitudes.
+    pub fn wait_for_next_sweep_and_fill_buf(&self, buf: &mut [f32]) -> Result<usize> {
+        self.wait_for_next_sweep_with_timeout_and_fill_buf(Self::NEXT_SWEEP_TIMEOUT, buf)
+    }
+
+    /// Waits for the RF Explorer to measure the next sweep or for the timeout duration to elapse.
+    pub fn wait_for_next_sweep_with_timeout(&self, timeout: Duration) -> Result<Vec<f32>> {
+        let previous_sweep_timestamp = self
+            .rfe
+            .messages()
+            .sweep
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|sweep| sweep.timestamp);
 
         let (sweep, cond_var) = &self.messages().sweep;
         // Wait until the timestamp of the previous sweep and the next sweep are different
@@ -94,19 +264,47 @@ impl SpectrumAnalyzer {
             .unwrap();
 
         match &*sweep {
-            Some(sweep) if !wait_result.timed_out() => Ok(sweep.clone()),
+            Some(sweep) if !wait_result.timed_out() => Ok(sweep.amplitudes_dbm.clone()),
             _ => Err(Error::TimedOut(timeout)),
+        }
+    }
+
+    /// Waits for the RF Explorer to measure the next sweep, or for the timeout duration to elapse,
+    /// and fills the buffer with its amplitudes.
+    pub fn wait_for_next_sweep_with_timeout_and_fill_buf(
+        &self,
+        timeout: Duration,
+        buf: &mut [f32],
+    ) -> Result<usize> {
+        let previous_sweep_timestamp = self
+            .rfe
+            .messages()
+            .sweep
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|sweep| sweep.timestamp);
+
+        let (sweep, cond_var) = &self.messages().sweep;
+        // Wait until the timestamp of the previous sweep and the next sweep are different
+        let (_, wait_result) = cond_var
+            .wait_timeout_while(sweep.lock().unwrap(), timeout, |sweep| {
+                sweep.as_ref().map(|sweep| sweep.timestamp) == previous_sweep_timestamp
+                    || sweep.is_none()
+            })
+            .unwrap();
+
+        if !wait_result.timed_out() {
+            self.fill_buf_with_sweep(buf)
+        } else {
+            Err(Error::TimedOut(timeout))
         }
     }
 
     /// Returns the most recent `ScreenData` captured by the RF Explorer.
     pub fn screen_data(&self) -> Option<ScreenData> {
-        self.message_container()
-            .screen_data
-            .0
-            .lock()
-            .unwrap()
-            .clone()
+        self.messages().screen_data.0.lock().unwrap().clone()
     }
 
     /// Waits for the RF Explorer to capture its next `ScreenData`.
@@ -183,7 +381,7 @@ impl SpectrumAnalyzer {
     pub fn inactive_radio_module(&self) -> Option<RadioModule> {
         let expansion_radio_module = self.expansion_radio_module();
         if expansion_radio_module.is_some() {
-            if self.config().is_expansion_radio_module_active {
+            if self.is_expansion_radio_module_active() {
                 self.main_radio_module()
             } else {
                 expansion_radio_module
@@ -254,6 +452,7 @@ impl SpectrumAnalyzer {
         // Wait until config shows that the main radio module is active
         let _ = self.wait_for_config_while(|config| {
             config
+                .as_ref()
                 .filter(|config| !config.is_expansion_radio_module_active)
                 .is_none()
         });
@@ -284,6 +483,7 @@ impl SpectrumAnalyzer {
         // Wait until config shows that the expansion radio module is active
         let _ = self.wait_for_config_while(|config| {
             config
+                .as_ref()
                 .filter(|config| config.is_expansion_radio_module_active)
                 .is_none()
         });
@@ -301,26 +501,23 @@ impl SpectrumAnalyzer {
         start: impl Into<Frequency>,
         stop: impl Into<Frequency>,
     ) -> Result<()> {
-        let config = self.config();
         self.set_config(
             start.into(),
             stop.into(),
-            config.min_amp_dbm,
-            config.max_amp_dbm,
+            self.min_amp_dbm(),
+            self.max_amp_dbm(),
         )
     }
 
     /// Sets the start frequency, stop frequency, and number of points of sweeps measured by the spectrum analyzer.
-    pub fn set_start_stop_sweep_points(
+    pub fn set_start_stop_sweep_len(
         &self,
         start: impl Into<Frequency>,
         stop: impl Into<Frequency>,
-        sweep_points: u16,
+        sweep_len: u16,
     ) -> Result<()> {
-        let (start, stop) = (start.into(), stop.into());
-        let config = self.config();
-        self.set_sweep_points(sweep_points)?;
-        self.set_config(start, stop, config.min_amp_dbm, config.max_amp_dbm)
+        self.set_sweep_len(sweep_len)?;
+        self.set_start_stop(start, stop)
     }
 
     /// Sets the center frequency and span of sweeps measured by the spectrum analyzer.
@@ -334,21 +531,25 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the center frequency, span, and number of points of sweeps measured by the spectrum analyzer.
-    pub fn set_center_span_sweep_points(
+    pub fn set_center_span_sweep_len(
         &self,
         center: impl Into<Frequency>,
         span: impl Into<Frequency>,
-        sweep_points: u16,
+        sweep_len: u16,
     ) -> Result<()> {
         let (center, span) = (center.into(), span.into());
-        self.set_start_stop_sweep_points(center - span / 2, center + span / 2, sweep_points)
+        self.set_start_stop_sweep_len(center - span / 2, center + span / 2, sweep_len)
     }
 
     /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
     #[tracing::instrument(skip(self))]
     pub fn set_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
-        let config = self.config();
-        self.set_config(config.start, config.stop, min_amp_dbm, max_amp_dbm)
+        self.set_config(
+            self.start_freq(),
+            self.stop_freq(),
+            min_amp_dbm,
+            max_amp_dbm,
+        )
     }
 
     /// Sets the spectrum analyzer's configuration.
@@ -373,6 +574,8 @@ impl SpectrumAnalyzer {
         // Check if the current config already contains the requested values
         if self
             .config()
+            .as_ref()
+            .unwrap_or(&Config::default())
             .contains_start_stop_amp_range(start, stop, min_amp_dbm, max_amp_dbm)
         {
             return Ok(());
@@ -395,9 +598,9 @@ impl SpectrumAnalyzer {
         }
     }
 
-    /// Sets the callback that is called when the spectrum analyzer receives a `Sweep`.
-    pub fn set_sweep_callback(&self, cb: impl FnMut(Sweep) + Send + 'static) {
-        *self.message_container().sweep_callback.lock().unwrap() = Some(Box::new(cb));
+    /// Sets the callback that is called when the spectrum analyzer receives a sweep.
+    pub fn set_sweep_callback(&self, cb: impl FnMut(&[f32]) + Send + 'static) {
+        *self.messages().sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is called when the spectrum analyzer receives a `Sweep`.
@@ -406,18 +609,18 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the callback that is called when the spectrum analyzer receives a `Config`.
-    pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
-        *self.message_container().config_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_callback(&self, cb: impl FnMut() + Send + 'static) {
+        *self.messages().config_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
     /// Removes the callback that is called when the spectrum analyzer receives a `Config`.
     pub fn remove_config_callback(&self) {
-        *self.messages().sweep_callback.lock().unwrap() = None;
+        *self.messages().config_callback.lock().unwrap() = None;
     }
 
     /// Sets the number of points in each sweep measured by the spectrum analyzer.
     #[tracing::instrument(skip(self))]
-    pub fn set_sweep_points(&self, sweep_points: u16) -> Result<()> {
+    pub fn set_sweep_len(&self, sweep_len: u16) -> Result<()> {
         // Only 'Plus' models can set the number of points in a sweep
         if !self.active_radio_module().model().is_plus_model() {
             return Err(Error::InvalidOperation(
@@ -426,21 +629,21 @@ impl SpectrumAnalyzer {
             ));
         }
 
-        if sweep_points <= 4096 {
-            self.send_command(Command::SetSweepPointsExt(sweep_points))?;
+        if sweep_len <= 4096 {
+            self.send_command(Command::SetSweepPointsExt(sweep_len))?;
         } else {
-            self.send_command(Command::SetSweepPointsLarge(sweep_points))?;
+            self.send_command(Command::SetSweepPointsLarge(sweep_len))?;
         }
 
         // The requested number of sweep points gets rounded down to a number that's a multiple of 16
-        let expected_sweep_points = if sweep_points < 112 {
-            Self::MIN_SWEEP_POINTS
+        let expected_sweep_len = if sweep_len < 112 {
+            Self::MIN_SWEEP_LEN
         } else {
-            (sweep_points / 16) * 16
+            (sweep_len / 16) * 16
         };
 
         // Check if the current config already contains the requested sweep points
-        if self.config().sweep_points == expected_sweep_points {
+        if self.sweep_len() == expected_sweep_len {
             return Ok(());
         }
 
@@ -448,7 +651,8 @@ impl SpectrumAnalyzer {
         info!("Waiting to receive updated config");
         let (_, wait_result) = self.wait_for_config_while(|config| {
             config
-                .filter(|config| config.sweep_points == expected_sweep_points)
+                .as_ref()
+                .filter(|config| config.sweep_len == expected_sweep_len)
                 .is_none()
         });
 
@@ -588,11 +792,11 @@ impl SpectrumAnalyzer {
 }
 
 #[derive(Default)]
-pub struct MessageContainer {
+struct MessageContainer {
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
-    pub(crate) config_callback: Mutex<Callback<Config>>,
+    pub(crate) config_callback: Mutex<Option<Box<dyn FnMut() + Send>>>,
     pub(crate) sweep: (Mutex<Option<Sweep>>, Condvar),
-    pub(crate) sweep_callback: Mutex<Callback<Sweep>>,
+    pub(crate) sweep_callback: Mutex<Option<Box<dyn FnMut(&[f32]) + Send>>>,
     pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
     pub(crate) dsp_mode: (Mutex<Option<DspMode>>, Condvar),
     pub(crate) tracking_status: (Mutex<Option<TrackingStatus>>, Condvar),
@@ -610,7 +814,7 @@ impl crate::common::MessageContainer for MessageContainer {
                 *self.config.0.lock().unwrap() = Some(config);
                 self.config.1.notify_one();
                 if let Some(ref mut cb) = *self.config_callback.lock().unwrap() {
-                    cb(config);
+                    cb();
                 }
             }
             Self::Message::Sweep(sweep) => {
@@ -618,7 +822,7 @@ impl crate::common::MessageContainer for MessageContainer {
                 self.sweep.1.notify_one();
                 if let Some(ref mut cb) = *self.sweep_callback.lock().unwrap() {
                     if let Some(ref sweep) = *self.sweep.0.lock().unwrap() {
-                        cb(sweep.clone());
+                        cb(sweep.amplitudes_dbm.as_slice());
                     }
                 }
             }

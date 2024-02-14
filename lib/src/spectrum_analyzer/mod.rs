@@ -11,11 +11,12 @@ mod sweep;
 mod tracking_status;
 
 pub(crate) use command::Command;
-pub use config::{CalcMode, Config, Mode};
+pub(crate) use config::Config;
+pub use config::{CalcMode, Mode};
 pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
-pub use message::Message;
+pub(crate) use message::Message;
 pub use model::Model;
 pub use rf_explorer::{SpectrumAnalyzer as RfExplorer, WifiBand};
-pub use sweep::Sweep;
+pub(crate) use sweep::Sweep;
 pub use tracking_status::TrackingStatus;

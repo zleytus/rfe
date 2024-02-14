@@ -1,12 +1,9 @@
-use super::{
-    sweep::{SweepDataExt, SweepDataLarge, SweepDataStandard},
-    Config, DspMode, InputStage, Model, Sweep, TrackingStatus,
-};
+use super::{Config, DspMode, InputStage, Model, Sweep, TrackingStatus};
 use crate::common::MessageParseError;
 use crate::rf_explorer::{ScreenData, SerialNumber, SetupInfo};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Message {
+pub(crate) enum Message {
     Config(Config),
     DspMode(DspMode),
     InputStage(InputStage),
@@ -34,16 +31,11 @@ impl<'a> TryFrom<&'a [u8]> for Message {
             Ok(Message::SerialNumber(SerialNumber::try_from(bytes)?))
         } else if bytes.starts_with(SetupInfo::<Model>::PREFIX) {
             Ok(Message::SetupInfo(SetupInfo::<Model>::try_from(bytes)?))
-        } else if bytes.starts_with(SweepDataStandard::PREFIX) {
-            Ok(Message::Sweep(Sweep::Standard(
-                SweepDataStandard::try_from(bytes)?,
-            )))
-        } else if bytes.starts_with(SweepDataExt::PREFIX) {
-            Ok(Message::Sweep(Sweep::Ext(SweepDataExt::try_from(bytes)?)))
-        } else if bytes.starts_with(SweepDataLarge::PREFIX) {
-            Ok(Message::Sweep(Sweep::Large(SweepDataLarge::try_from(
-                bytes,
-            )?)))
+        } else if bytes.starts_with(Sweep::STANDARD_PREFIX)
+            || bytes.starts_with(Sweep::EXT_PREFIX)
+            || bytes.starts_with(Sweep::LARGE_PREFIX)
+        {
+            Ok(Message::Sweep(Sweep::try_from(bytes)?))
         } else if bytes.starts_with(TrackingStatus::PREFIX) {
             Ok(Message::TrackingStatus(TrackingStatus::try_from(bytes)?))
         } else {

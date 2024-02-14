@@ -77,7 +77,7 @@ impl Display for CalcMode {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct Config {
+pub(crate) struct Config {
     pub start_freq: Frequency,
     pub step_size: Frequency,
     pub stop_freq: Frequency,
