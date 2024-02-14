@@ -276,7 +276,7 @@ pub extern "C" fn rfe_spectrum_analyzer_amp_offset_db(rfe: Option<&SpectrumAnaly
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_spectrum_analyzer_sweep_points(rfe: Option<&SpectrumAnalyzer>) -> u16 {
+pub extern "C" fn rfe_spectrum_analyzer_sweep_len(rfe: Option<&SpectrumAnalyzer>) -> u16 {
     rfe.map(rfe::RfExplorer::sweep_len).unwrap_or_default()
 }
 
@@ -288,36 +288,15 @@ pub extern "C" fn rfe_spectrum_analyzer_mode(rfe: Option<&SpectrumAnalyzer>) -> 
 #[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
     rfe: Option<&SpectrumAnalyzer>,
-    sweep: Option<&mut *const f32>,
-    sweep_len: Option<&mut usize>,
-) -> Result {
-    let (Some(rfe), Some(sweep), Some(sweep_len)) = (rfe, sweep, sweep_len) else {
-        return Result::NullPtrError;
-    };
-
-    if let Some(mut latest_sweep) = rfe.sweep() {
-        latest_sweep.shrink_to_fit();
-        *sweep = latest_sweep.as_ptr();
-        *sweep_len = latest_sweep.len();
-        std::mem::forget(latest_sweep);
-        Result::Success
-    } else {
-        Result::NoData
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_fill_buf_with_sweep(
-    rfe: Option<&SpectrumAnalyzer>,
-    buf_ptr: Option<&mut f32>,
+    sweep_buf: Option<&mut f32>,
     buf_len: usize,
     sweep_len: Option<&mut usize>,
 ) -> Result {
-    let (Some(rfe), Some(buf_ptr), Some(sweep_len)) = (rfe, buf_ptr, sweep_len) else {
+    let (Some(rfe), Some(sweep_buf), Some(sweep_len)) = (rfe, sweep_buf, sweep_len) else {
         return Result::NullPtrError;
     };
 
-    match rfe.fill_buf_with_sweep(std::slice::from_raw_parts_mut(buf_ptr, buf_len)) {
+    match rfe.fill_buf_with_sweep(std::slice::from_raw_parts_mut(sweep_buf, buf_len)) {
         Ok(sweep_length) => {
             *sweep_len = sweep_length;
             Result::Success
@@ -329,19 +308,17 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_fill_buf_with_sweep(
 #[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
     rfe: Option<&SpectrumAnalyzer>,
-    sweep: Option<&mut *const f32>,
+    sweep_buf: Option<&mut f32>,
+    buf_len: usize,
     sweep_len: Option<&mut usize>,
 ) -> Result {
-    let (Some(rfe), Some(sweep), Some(sweep_len)) = (rfe, sweep, sweep_len) else {
+    let (Some(rfe), Some(sweep_buf), Some(sweep_len)) = (rfe, sweep_buf, sweep_len) else {
         return Result::NullPtrError;
     };
 
-    match rfe.wait_for_next_sweep() {
-        Ok(mut next_sweep) => {
-            next_sweep.shrink_to_fit();
-            *sweep = next_sweep.as_ptr();
-            *sweep_len = next_sweep.len();
-            std::mem::forget(next_sweep);
+    match rfe.wait_for_next_sweep_and_fill_buf(std::slice::from_raw_parts_mut(sweep_buf, buf_len)) {
+        Ok(sweep_length) => {
+            *sweep_len = sweep_length;
             Result::Success
         }
         Err(error) => error.into(),
@@ -352,35 +329,23 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
 pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
     rfe: Option<&SpectrumAnalyzer>,
     timeout_secs: u64,
-    sweep: Option<&mut *const f32>,
+    sweep_buf: Option<&mut f32>,
+    buf_len: usize,
     sweep_len: Option<&mut usize>,
 ) -> Result {
-    let (Some(rfe), Some(sweep), Some(sweep_len)) = (rfe, sweep, sweep_len) else {
+    let (Some(rfe), Some(sweep_buf), Some(sweep_len)) = (rfe, sweep_buf, sweep_len) else {
         return Result::NullPtrError;
     };
 
-    match rfe.wait_for_next_sweep_with_timeout(Duration::from_secs(timeout_secs)) {
-        Ok(mut next_sweep) => {
-            next_sweep.shrink_to_fit();
-            *sweep = next_sweep.as_ptr();
-            *sweep_len = next_sweep.len();
-            std::mem::forget(next_sweep);
+    match rfe.wait_for_next_sweep_with_timeout_and_fill_buf(
+        Duration::from_secs(timeout_secs),
+        std::slice::from_raw_parts_mut(sweep_buf, buf_len),
+    ) {
+        Ok(sweep_length) => {
+            *sweep_len = sweep_length;
             Result::Success
         }
         Err(error) => error.into(),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep_free(
-    sweep: Option<&mut f32>,
-    len: usize,
-) -> Result {
-    if let Some(sweep) = sweep {
-        drop(Vec::from_raw_parts(sweep, len, len));
-        Result::Success
-    } else {
-        Result::NullPtrError
     }
 }
 
@@ -615,7 +580,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_start_stop(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_points(
+pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
     start_hz: u64,
     stop_hz: u64,
@@ -643,7 +608,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span_sweep_points(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
     center_hz: u64,
     span_hz: u64,

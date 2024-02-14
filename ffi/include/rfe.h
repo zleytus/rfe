@@ -206,13 +206,11 @@ typedef uint8_t WifiBand;
 
 typedef struct ScreenData ScreenData;
 
-typedef struct SignalGenerator SignalGenerator;
-
 typedef struct SignalGeneratorList SignalGeneratorList;
 
-typedef struct SpectrumAnalyzer SpectrumAnalyzer;
-
 typedef struct SpectrumAnalyzerList SpectrumAnalyzerList;
+
+typedef RfExplorer SignalGenerator;
 
 typedef struct SignalGeneratorConfig {
   uint64_t start_hz;
@@ -265,30 +263,7 @@ typedef struct SignalGeneratorRadioModule {
   bool is_expansion_radio_module;
 } SignalGeneratorRadioModule;
 
-typedef struct SpectrumAnalyzerConfig {
-  uint64_t start_hz;
-  uint64_t step_hz;
-  uint64_t stop_hz;
-  uint64_t center_hz;
-  uint64_t span_hz;
-  int16_t min_amp_dbm;
-  int16_t max_amp_dbm;
-  uint16_t sweep_points;
-  bool is_expansion_radio_module_active;
-  Mode mode;
-  uint64_t min_freq_hz;
-  uint64_t max_freq_hz;
-  uint64_t max_span_hz;
-  uint64_t rbw_hz;
-  int8_t amp_offset_db;
-  CalcMode calc_mode;
-} SpectrumAnalyzerConfig;
-
-typedef struct Sweep {
-  float *amplitudes_dbm;
-  uintptr_t len;
-  int64_t timestamp;
-} Sweep;
+typedef RfExplorer SpectrumAnalyzer;
 
 typedef struct SpectrumAnalyzerRadioModule {
   SpectrumAnalyzerModel model;
@@ -559,17 +534,49 @@ enum Result rfe_spectrum_analyzer_reboot(SpectrumAnalyzer *rfe);
 
 enum Result rfe_spectrum_analyzer_power_off(SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_config(const SpectrumAnalyzer *rfe,
-                                         struct SpectrumAnalyzerConfig *config);
+uint64_t rfe_spectrum_analyzer_start_freq_hz(const SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_sweep(const SpectrumAnalyzer *rfe, struct Sweep *sweep);
+uint64_t rfe_spectrum_analyzer_step_size_hz(const SpectrumAnalyzer *rfe);
+
+uint64_t rfe_spectrum_analyzer_stop_freq_hz(const SpectrumAnalyzer *rfe);
+
+uint64_t rfe_spectrum_analyzer_center_freq_hz(const SpectrumAnalyzer *rfe);
+
+uint64_t rfe_spectrum_analyzer_span_hz(const SpectrumAnalyzer *rfe);
+
+uint64_t rfe_spectrum_analyzer_min_freq_hz(const SpectrumAnalyzer *rfe);
+
+uint64_t rfe_spectrum_analyzer_max_freq_hz(const SpectrumAnalyzer *rfe);
+
+uint64_t rfe_spectrum_analyzer_max_span_hz(const SpectrumAnalyzer *rfe);
+
+uint64_t rfe_spectrum_analyzer_rbw_hz(const SpectrumAnalyzer *rfe);
+
+int16_t rfe_spectrum_analyzer_min_amp_dbm(const SpectrumAnalyzer *rfe);
+
+int16_t rfe_spectrum_analyzer_max_amp_dbm(const SpectrumAnalyzer *rfe);
+
+int8_t rfe_spectrum_analyzer_amp_offset_db(const SpectrumAnalyzer *rfe);
+
+uint16_t rfe_spectrum_analyzer_sweep_len(const SpectrumAnalyzer *rfe);
+
+Mode rfe_spectrum_analyzer_mode(const SpectrumAnalyzer *rfe);
+
+enum Result rfe_spectrum_analyzer_sweep(const SpectrumAnalyzer *rfe,
+                                        float *sweep_buf,
+                                        uintptr_t buf_len,
+                                        uintptr_t *sweep_len);
 
 enum Result rfe_spectrum_analyzer_wait_for_next_sweep(const SpectrumAnalyzer *rfe,
-                                                      struct Sweep *sweep);
+                                                      float *sweep_buf,
+                                                      uintptr_t buf_len,
+                                                      uintptr_t *sweep_len);
 
 enum Result rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(const SpectrumAnalyzer *rfe,
                                                                    uint64_t timeout_secs,
-                                                                   struct Sweep *sweep);
+                                                                   float *sweep_buf,
+                                                                   uintptr_t buf_len,
+                                                                   uintptr_t *sweep_len);
 
 enum Result rfe_spectrum_analyzer_screen_data(const SpectrumAnalyzer *rfe,
                                               const struct ScreenData **screen_data);
@@ -615,34 +622,34 @@ enum Result rfe_spectrum_analyzer_set_start_stop(const SpectrumAnalyzer *rfe,
                                                  uint64_t start_hz,
                                                  uint64_t stop_hz);
 
-enum Result rfe_spectrum_analyzer_set_start_stop_sweep_points(const SpectrumAnalyzer *rfe,
-                                                              uint64_t start_hz,
-                                                              uint64_t stop_hz,
-                                                              uint16_t sweep_points);
+enum Result rfe_spectrum_analyzer_set_start_stop_sweep_len(const SpectrumAnalyzer *rfe,
+                                                           uint64_t start_hz,
+                                                           uint64_t stop_hz,
+                                                           uint16_t sweep_points);
 
 enum Result rfe_spectrum_analyzer_set_center_span(const SpectrumAnalyzer *rfe,
                                                   uint64_t center_hz,
                                                   uint64_t span_hz);
 
-enum Result rfe_spectrum_analyzer_set_center_span_sweep_points(const SpectrumAnalyzer *rfe,
-                                                               uint64_t center_hz,
-                                                               uint64_t span_hz,
-                                                               uint16_t sweep_points);
+enum Result rfe_spectrum_analyzer_set_center_span_sweep_len(const SpectrumAnalyzer *rfe,
+                                                            uint64_t center_hz,
+                                                            uint64_t span_hz,
+                                                            uint16_t sweep_points);
 
 enum Result rfe_spectrum_analyzer_set_min_max_amps(const SpectrumAnalyzer *rfe,
                                                    int16_t min_amp_dbm,
                                                    int16_t max_amp_dbm);
 
 enum Result rfe_spectrum_analyzer_set_sweep_callback(const SpectrumAnalyzer *rfe,
-                                                     void (*callback)(struct Sweep sweep,
+                                                     void (*callback)(const float *sweep,
+                                                                      uintptr_t sweep_len,
                                                                       void *user_data),
                                                      void *user_data);
 
 enum Result rfe_spectrum_analyzer_remove_sweep_callback(const SpectrumAnalyzer *rfe);
 
 enum Result rfe_spectrum_analyzer_set_config_callback(const SpectrumAnalyzer *rfe,
-                                                      void (*callback)(struct SpectrumAnalyzerConfig config,
-                                                                       void *user_data),
+                                                      void (*callback)(void *user_data),
                                                       void *user_data);
 
 enum Result rfe_spectrum_analyzer_remove_config_callback(const SpectrumAnalyzer *rfe);
@@ -662,8 +669,6 @@ enum Result rfe_spectrum_analyzer_set_input_stage(const SpectrumAnalyzer *rfe,
 enum Result rfe_spectrum_analyzer_set_offset_db(const SpectrumAnalyzer *rfe, int8_t offset_db);
 
 enum Result rfe_spectrum_analyzer_set_dsp_mode(const SpectrumAnalyzer *rfe, DspMode dsp_mode);
-
-enum Result rfe_spectrum_analyzer_sweep_free(struct Sweep sweep);
 
 #ifdef __cplusplus
 } // extern "C"
