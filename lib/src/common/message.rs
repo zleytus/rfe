@@ -1,5 +1,15 @@
+use std::fmt::Debug;
+
 use nom::{error::Error, Err};
 use thiserror::Error;
+
+use super::ConnectionResult;
+
+pub trait MessageContainer: Default + Debug + Send + Sync {
+    type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>> + Debug;
+    fn cache_message(&self, message: Self::Message);
+    fn wait_for_device_info(&self) -> ConnectionResult<()>;
+}
 
 #[derive(Error, Debug, Eq, PartialEq)]
 pub enum MessageParseError<'a> {

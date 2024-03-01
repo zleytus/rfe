@@ -12,7 +12,7 @@ use std::{
 
 use tracing::debug;
 
-use super::{serial_port, ConnectionResult, MessageParseError, SerialPort};
+use super::{serial_port, ConnectionResult, MessageContainer, MessageParseError, SerialPort};
 
 #[derive(Debug)]
 pub struct Device<M: MessageContainer + 'static> {
@@ -150,12 +150,6 @@ impl<M: MessageContainer> Drop for Device<M> {
     fn drop(&mut self) {
         self.stop_reading_messages()
     }
-}
-
-pub trait MessageContainer: Default + Debug + Send + Sync {
-    type Message: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>> + Debug;
-    fn cache_message(&self, message: Self::Message);
-    fn wait_for_device_info(&self) -> ConnectionResult<()>;
 }
 
 fn find_message_in_buf<M>(message_buf: &[u8]) -> Result<M, MessageParseError>
