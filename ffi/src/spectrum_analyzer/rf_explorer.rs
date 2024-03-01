@@ -123,7 +123,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
         return Result::NoData;
     };
 
-    let serial_number = CString::new(serial_number.as_str()).unwrap_or_default();
+    let serial_number = CString::new(serial_number).unwrap_or_default();
     let serial_number =
         slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len());
 

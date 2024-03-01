@@ -22,10 +22,10 @@ impl_rf_explorer!(SignalGenerator, MessageContainer);
 
 impl SignalGenerator {
     /// Returns the RF Explorer's serial number, if it exists.
-    pub fn serial_number(&self) -> Option<SerialNumber> {
+    pub fn serial_number(&self) -> Option<String> {
         // Return the serial number if we've already received it
         if let Some(ref serial_number) = *self.messages().serial_number.0.lock().unwrap() {
-            return Some(serial_number.clone());
+            return Some(serial_number.to_string());
         }
 
         // If we haven't already received the serial number, request it from the RF Explorer
@@ -43,7 +43,9 @@ impl SignalGenerator {
             )
             .unwrap();
 
-        (*self.messages().serial_number.0.lock().unwrap()).clone()
+        (*self.messages().serial_number.0.lock().unwrap())
+            .as_ref()
+            .map(|sn| sn.to_string())
     }
 
     pub fn firmware_version(&self) -> String {

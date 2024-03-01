@@ -11,7 +11,7 @@ use super::parsers::*;
 use crate::common::MessageParseError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct SerialNumber {
+pub(crate) struct SerialNumber {
     serial_number: String,
 }
 

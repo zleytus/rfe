@@ -8,8 +8,8 @@ mod setup_info;
 pub(crate) use command::Command;
 pub use radio_module::RadioModule;
 pub use screen_data::ScreenData;
-pub use serial_number::SerialNumber;
 pub use setup_info::SetupInfo;
+pub(crate) use serial_number::SerialNumber;
 
 use std::time::Duration;
 

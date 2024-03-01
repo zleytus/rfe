@@ -30,10 +30,10 @@ impl SpectrumAnalyzer {
     const NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
 
     /// The serial number of the RF Explorer, if it exists.
-    pub fn serial_number(&self) -> Option<SerialNumber> {
+    pub fn serial_number(&self) -> Option<String> {
         // Return the serial number if we've already received it
         if let Some(ref serial_number) = *self.messages().serial_number.0.lock().unwrap() {
-            return Some(serial_number.clone());
+            return Some(serial_number.to_string());
         }
 
         // If we haven't already received the serial number, request it from the RF Explorer
@@ -51,7 +51,9 @@ impl SpectrumAnalyzer {
             )
             .unwrap();
 
-        (*self.messages().serial_number.0.lock().unwrap()).clone()
+        (*self.messages().serial_number.0.lock().unwrap())
+            .as_ref()
+            .map(|sn| sn.to_string())
     }
 
     /// The firmware version of the RF Explorer.
