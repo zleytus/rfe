@@ -255,21 +255,17 @@ typedef struct SignalGeneratorConfigFreqSweep {
   uint64_t sweep_delay_ms;
 } SignalGeneratorConfigFreqSweep;
 
-typedef struct SignalGeneratorRadioModule {
-  SignalGeneratorModel model;
-  bool is_expansion_radio_module;
-} SignalGeneratorRadioModule;
-
-typedef RfExplorer SpectrumAnalyzer;
-
-typedef struct SpectrumAnalyzerRadioModule {
-  SpectrumAnalyzerModel model;
-  bool is_expansion_radio_module;
-} SpectrumAnalyzerRadioModule;
-
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
+
+#if (defined(_WIN32) || defined(__APPLE__) || defined(__linux__))
+bool rfe_is_driver_installed(void);
+#endif
+
+char *const *rfe_port_names(uintptr_t *len);
+
+void rfe_free_port_names(char **port_names_ptr, uintptr_t len);
 
 enum Result rfe_screen_data_get_pixel(const struct ScreenData *screen_data,
                                       uint8_t x,
@@ -284,14 +280,6 @@ enum Result rfe_screen_data_get_pixel_checked(const struct ScreenData *screen_da
 enum Result rfe_screen_data_timestamp(const struct ScreenData *screen_data, int64_t *timestamp);
 
 void rfe_screen_data_free(struct ScreenData *screen_data);
-
-#if (defined(_WIN32) || defined(__APPLE__) || defined(__linux__))
-bool rfe_serial_port_is_driver_installed(void);
-#endif
-
-char *const *rfe_serial_port_port_names(uintptr_t *len);
-
-void rfe_serial_port_free_port_names(char **port_names_ptr, uintptr_t len);
 
 enum Result rfe_signal_generator_model_name(SignalGeneratorModel model,
                                             char *name_buf,

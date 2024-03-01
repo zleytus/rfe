@@ -169,7 +169,7 @@ const fn is_silabs_cp210x(port_info: &SerialPortInfo) -> bool {
 /// # Examples
 ///
 /// ```
-/// for port_name in rfe::serial_port::port_names() {
+/// for port_name in rfe::port_names() {
 ///     println!("Port name: {port_name}");
 /// }
 /// ```
