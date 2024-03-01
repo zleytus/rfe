@@ -6,10 +6,11 @@ use std::{
     time::Duration,
 };
 
-use num_enum::IntoPrimitive;
 use tracing::{error, info, trace, warn};
 
-use super::{CalcMode, Command, Config, DspMode, InputStage, Mode, Sweep, TrackingStatus};
+use super::{
+    CalcMode, Command, Config, DspMode, InputStage, Mode, Model, Sweep, TrackingStatus, WifiBand,
+};
 use crate::rf_explorer::{
     impl_rf_explorer, RadioModule, ScreenData, SerialNumber, SetupInfo, COMMAND_RESPONSE_TIMEOUT,
     NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
@@ -19,11 +20,6 @@ use crate::{
     Device,
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
-#[repr(u8)]
-pub enum WifiBand {
-    TwoPointFourGhz = 1,
-    FiveGhz,
 }
 
 impl_rf_explorer!(SpectrumAnalyzer, MessageContainer);

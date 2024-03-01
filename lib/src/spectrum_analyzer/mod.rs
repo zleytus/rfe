@@ -9,6 +9,7 @@ mod rf_explorer;
 mod setup_info;
 mod sweep;
 mod tracking_status;
+mod wifi_band;
 
 pub(crate) use command::Command;
 pub(crate) use config::Config;
@@ -17,6 +18,7 @@ pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
 pub(crate) use message::Message;
 pub use model::Model;
-pub use rf_explorer::{SpectrumAnalyzer as RfExplorer, WifiBand};
+pub use rf_explorer::SpectrumAnalyzer;
 pub(crate) use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
+pub use wifi_band::WifiBand;
