@@ -6,7 +6,7 @@ use crate::common::MessageParseError;
 use crate::rf_explorer::{ScreenData, SerialNumber, SetupInfo};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Message {
+pub(crate) enum Message {
     Config(Config),
     ConfigAmpSweep(ConfigAmpSweep),
     ConfigCw(ConfigCw),
