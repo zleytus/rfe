@@ -47,12 +47,6 @@ pub unsafe extern "C" fn rfe_signal_generator_connect_with_name_and_baud_rate(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_signal_generator_connect_all() -> *mut SignalGeneratorList {
-    let rfes = SignalGenerator::connect_all().into_boxed_slice();
-    Box::into_raw(Box::new(rfes))
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rfe_signal_generator_free(rfe: Option<&mut SignalGenerator>) {
     if let Some(rfe) = rfe {
         drop(Box::from_raw(rfe));

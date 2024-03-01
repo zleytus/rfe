@@ -90,24 +90,16 @@ void print_signal_generator_info(const SignalGenerator *signal_generator) {
 }
 
 int main() {
-    SpectrumAnalyzerList *spectrum_analyzers = rfe_spectrum_analyzer_connect_all();
-    if (spectrum_analyzers) {
-        for (uintptr_t i = 0; i < rfe_spectrum_analyzer_list_len(spectrum_analyzers); ++i) {
-            const SpectrumAnalyzer *spectrum_analyzer =
-                rfe_spectrum_analyzer_list_get(spectrum_analyzers, i);
-            print_spectrum_analyzer_info(spectrum_analyzer);
-        }
-        rfe_spectrum_analyzer_list_free(spectrum_analyzers);
+    SpectrumAnalyzer *spectrum_analyzer = rfe_spectrum_analyzer_connect();
+    if (spectrum_analyzer) {
+        print_spectrum_analyzer_info(spectrum_analyzer);
+        rfe_spectrum_analyzer_free(spectrum_analyzer);
     }
 
-    SignalGeneratorList *signal_generators = rfe_signal_generator_connect_all();
-    if (signal_generators) {
-        for (uintptr_t i = 0; i < rfe_signal_generator_list_len(signal_generators); ++i) {
-            const SignalGenerator *signal_generator =
-                rfe_signal_generator_list_get(signal_generators, i);
-            print_signal_generator_info(signal_generator);
-        }
-        rfe_signal_generator_list_free(signal_generators);
+    SignalGenerator *signal_generator = rfe_signal_generator_connect();
+    if (signal_generator) {
+        print_signal_generator_info(signal_generator);
+        rfe_signal_generator_free(signal_generator);
     }
 
     return EXIT_SUCCESS;

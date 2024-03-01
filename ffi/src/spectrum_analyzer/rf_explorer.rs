@@ -42,12 +42,6 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name_and_baud_rate(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_spectrum_analyzer_connect_all() -> *mut SpectrumAnalyzerList {
-    let rfes = SpectrumAnalyzer::connect_all().into_boxed_slice();
-    Box::into_raw(Box::new(rfes))
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_free(rfe: Option<&mut SpectrumAnalyzer>) {
     if let Some(rfe) = rfe {
         drop(Box::from_raw(rfe));

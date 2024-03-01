@@ -84,21 +84,6 @@ impl<M: MessageContainer> Device<M> {
         Self::connect_internal(serial_port, device_init_command.as_ref())
     }
 
-    pub fn connect_all(init_command: impl AsRef<[u8]>) -> Vec<Self> {
-        serial_port::silabs_cp210x_ports()
-            .flat_map(|port_info| {
-                [
-                    (port_info.clone(), serial_port::FAST_BAUD_RATE),
-                    (port_info, serial_port::SLOW_BAUD_RATE),
-                ]
-            })
-            .filter_map(|(port_info, baud_rate)| {
-                let serial_port = SerialPort::open(&port_info, baud_rate).ok()?;
-                Self::connect_internal(serial_port, init_command.as_ref()).ok()
-            })
-            .collect()
-    }
-
     fn read_messages(serial_port: Arc<SerialPort>, messages: Arc<M>, is_reading: Arc<AtomicBool>) {
         debug!("Started reading messages from device");
         let mut message_buf = Vec::new();
@@ -111,9 +96,8 @@ impl<M: MessageContainer> Device<M> {
                 if error.kind() == ErrorKind::TimedOut {
                     thread::sleep(Duration::from_millis(100));
                     continue;
-                } else {
-                    break;
                 }
+                break;
             }
 
             match find_message_in_buf(&message_buf) {

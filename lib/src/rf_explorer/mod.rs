@@ -51,14 +51,6 @@ macro_rules! impl_rf_explorer {
                 })
             }
 
-            /// Connects to all available RF Explorers.
-            pub fn connect_all() -> Vec<Self> {
-                Device::connect_all(Cow::from(rf_explorer::Command::RequestConfig))
-                    .into_iter()
-                    .map(|rfe| Self { rfe })
-                    .collect()
-            }
-
             fn messages(&self) -> &$message_container {
                 self.rfe.messages()
             }

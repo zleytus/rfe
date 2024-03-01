@@ -206,9 +206,6 @@ typedef uint8_t WifiBand;
 
 typedef struct ScreenData ScreenData;
 
-typedef struct SignalGeneratorList SignalGeneratorList;
-
-typedef struct SpectrumAnalyzerList SpectrumAnalyzerList;
 
 typedef RfExplorer SignalGenerator;
 
@@ -296,13 +293,6 @@ char *const *rfe_serial_port_port_names(uintptr_t *len);
 
 void rfe_serial_port_free_port_names(char **port_names_ptr, uintptr_t len);
 
-const SignalGenerator *rfe_signal_generator_list_get(const struct SignalGeneratorList *list,
-                                                     uintptr_t index);
-
-uintptr_t rfe_signal_generator_list_len(const struct SignalGeneratorList *list);
-
-void rfe_signal_generator_list_free(struct SignalGeneratorList *list);
-
 enum Result rfe_signal_generator_model_name(SignalGeneratorModel model,
                                             char *name_buf,
                                             uintptr_t len);
@@ -316,7 +306,6 @@ SignalGenerator *rfe_signal_generator_connect(void);
 SignalGenerator *rfe_signal_generator_connect_with_name_and_baud_rate(const char *name,
                                                                       uint32_t baud_rate);
 
-struct SignalGeneratorList *rfe_signal_generator_connect_all(void);
 
 void rfe_signal_generator_free(SignalGenerator *rfe);
 
@@ -472,12 +461,6 @@ enum Result rfe_signal_generator_rf_power_on(const SignalGenerator *rfe);
 
 enum Result rfe_signal_generator_rf_power_off(const SignalGenerator *rfe);
 
-const SpectrumAnalyzer *rfe_spectrum_analyzer_list_get(const struct SpectrumAnalyzerList *list,
-                                                       uintptr_t index);
-
-uintptr_t rfe_spectrum_analyzer_list_len(const struct SpectrumAnalyzerList *list);
-
-void rfe_spectrum_analyzer_list_free(struct SpectrumAnalyzerList *list);
 
 enum Result rfe_spectrum_analyzer_model_name(SpectrumAnalyzerModel model,
                                              char *name_buf,
@@ -500,7 +483,6 @@ SpectrumAnalyzer *rfe_spectrum_analyzer_connect(void);
 SpectrumAnalyzer *rfe_spectrum_analyzer_connect_with_name_and_baud_rate(const char *name,
                                                                         uint32_t baud_rate);
 
-struct SpectrumAnalyzerList *rfe_spectrum_analyzer_connect_all(void);
 
 void rfe_spectrum_analyzer_free(SpectrumAnalyzer *rfe);
 
