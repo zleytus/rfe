@@ -14,7 +14,9 @@ use crate::common::{Result, UserDataWrapper};
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_connect() -> *mut SpectrumAnalyzer {
-    SpectrumAnalyzer::connect().map_or(ptr::null_mut(), |rfe| Box::into_raw(Box::new(rfe)))
+    SpectrumAnalyzer::connect()
+        .map(|rfe| Box::into_raw(Box::new(rfe)))
+        .unwrap_or(ptr::null_mut())
 }
 
 #[no_mangle]
@@ -22,19 +24,13 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
     baud_rate: u32,
 ) -> *mut SpectrumAnalyzer {
-    let Some(name) = name else {
+    let Some(Ok(name)) = name.map(|name| CStr::from_ptr(name).to_str()) else {
         return ptr::null_mut();
     };
 
-    let Ok(name) = CStr::from_ptr(name).to_str() else {
-        return ptr::null_mut();
-    };
-
-    if let Ok(rfe) = SpectrumAnalyzer::connect_with_name_and_baud_rate(name, baud_rate) {
-        Box::into_raw(Box::new(rfe))
-    } else {
-        ptr::null_mut()
-    }
+    SpectrumAnalyzer::connect_with_name_and_baud_rate(name, baud_rate)
+        .map(|rfe| Box::into_raw(Box::new(rfe)))
+        .unwrap_or(ptr::null_mut())
 }
 
 #[no_mangle]
@@ -509,9 +505,8 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_model(
 pub extern "C" fn rfe_spectrum_analyzer_active_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> SpectrumAnalyzerModel {
-    rfe.map_or(SpectrumAnalyzerModel::Unknown, |rfe| {
-        rfe.active_radio_model().into()
-    })
+    rfe.map(|rfe| rfe.active_radio_model().into())
+        .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
 #[no_mangle]

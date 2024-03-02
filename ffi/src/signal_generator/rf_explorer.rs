@@ -20,11 +20,9 @@ use crate::common::{Result, UserDataWrapper};
 
 #[no_mangle]
 pub extern "C" fn rfe_signal_generator_connect() -> *mut SignalGenerator {
-    if let Some(rfe) = SignalGenerator::connect() {
-        Box::into_raw(Box::new(rfe))
-    } else {
-        ptr::null_mut()
-    }
+    SignalGenerator::connect()
+        .map(|rfe| Box::into_raw(Box::new(rfe)))
+        .unwrap_or(ptr::null_mut())
 }
 
 #[no_mangle]
@@ -32,19 +30,13 @@ pub unsafe extern "C" fn rfe_signal_generator_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
     baud_rate: u32,
 ) -> *mut SignalGenerator {
-    let Some(name) = name else {
+    let Some(Ok(name)) = name.map(|name| CStr::from_ptr(name).to_str()) else {
         return ptr::null_mut();
     };
 
-    let Ok(name) = CStr::from_ptr(name).to_str() else {
-        return ptr::null_mut();
-    };
-
-    if let Ok(rfe) = SignalGenerator::connect_with_name_and_baud_rate(name, baud_rate) {
-        Box::into_raw(Box::new(rfe))
-    } else {
-        ptr::null_mut()
-    }
+    SignalGenerator::connect_with_name_and_baud_rate(name, baud_rate)
+        .map(|rfe| Box::into_raw(Box::new(rfe)))
+        .unwrap_or(ptr::null_mut())
 }
 
 #[no_mangle]
