@@ -315,6 +315,12 @@ pub extern "C" fn rfe_spectrum_analyzer_mode(rfe: Option<&SpectrumAnalyzer>) -> 
 }
 
 #[no_mangle]
+pub extern "C" fn rfe_spectrum_analyzer_calc_mode(rfe: Option<&SpectrumAnalyzer>) -> CalcMode {
+    rfe.and_then(SpectrumAnalyzer::calc_mode)
+        .unwrap_or_default()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
     rfe: Option<&SpectrumAnalyzer>,
     sweep_buf: Option<&mut f32>,
