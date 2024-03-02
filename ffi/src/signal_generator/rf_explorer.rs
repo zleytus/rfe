@@ -600,9 +600,9 @@ pub extern "C" fn rfe_signal_generator_set_config_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfig, user_data: *mut c_void)>,
     user_data: *mut c_void,
-) -> Result {
-    let Some(rfe) = rfe else {
-        return Result::NullPtrError;
+) {
+    let (Some(rfe), Some(callback)) = (rfe, callback) else {
+        return;
     };
 
     // Wrap the pointer to user_data in our own struct that implements Send so it can be
@@ -611,24 +611,16 @@ pub extern "C" fn rfe_signal_generator_set_config_callback(
 
     // Convert the C function pointer to a Rust closure
     let cb = move |config: Config| {
-        if let Some(cb) = callback {
-            cb(SignalGeneratorConfig::from(config), user_data.clone().0);
-        }
+        callback(SignalGeneratorConfig::from(config), user_data.clone().0);
     };
 
     rfe.set_config_callback(cb);
-    Result::Success
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_signal_generator_remove_config_callback(
-    rfe: Option<&SignalGenerator>,
-) -> Result {
+pub extern "C" fn rfe_signal_generator_remove_config_callback(rfe: Option<&SignalGenerator>) {
     if let Some(rfe) = rfe {
         rfe.remove_config_callback();
-        Result::Success
-    } else {
-        Result::NullPtrError
     }
 }
 
@@ -637,9 +629,9 @@ pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigAmpSweep, user_data: *mut c_void)>,
     user_data: *mut c_void,
-) -> Result {
-    let Some(rfe) = rfe else {
-        return Result::NullPtrError;
+) {
+    let (Some(rfe), Some(callback)) = (rfe, callback) else {
+        return;
     };
 
     // Wrap the pointer to user_data in our own struct that implements Send so it can be
@@ -648,27 +640,21 @@ pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
 
     // Convert the C function pointer to a Rust closure
     let cb = move |config: ConfigAmpSweep| {
-        if let Some(cb) = callback {
-            cb(
-                SignalGeneratorConfigAmpSweep::from(config),
-                user_data.clone().0,
-            );
-        }
+        callback(
+            SignalGeneratorConfigAmpSweep::from(config),
+            user_data.clone().0,
+        );
     };
 
     rfe.set_config_amp_sweep_callback(cb);
-    Result::Success
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_signal_generator_remove_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
-) -> Result {
+) {
     if let Some(rfe) = rfe {
         rfe.remove_config_amp_sweep_callback();
-        Result::Success
-    } else {
-        Result::NullPtrError
     }
 }
 
@@ -677,9 +663,9 @@ pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigCw, user_data: *mut c_void)>,
     user_data: *mut c_void,
-) -> Result {
-    let Some(rfe) = rfe else {
-        return Result::NullPtrError;
+) {
+    let (Some(rfe), Some(callback)) = (rfe, callback) else {
+        return;
     };
 
     // Wrap the pointer to user_data in our own struct that implements Send so it can be
@@ -688,24 +674,16 @@ pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
 
     // Convert the C function pointer to a Rust closure
     let cb = move |config: ConfigCw| {
-        if let Some(cb) = callback {
-            cb(SignalGeneratorConfigCw::from(config), user_data.clone().0);
-        }
+        callback(SignalGeneratorConfigCw::from(config), user_data.clone().0);
     };
 
     rfe.set_config_cw_callback(cb);
-    Result::Success
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_signal_generator_remove_config_cw_callback(
-    rfe: Option<&SignalGenerator>,
-) -> Result {
+pub extern "C" fn rfe_signal_generator_remove_config_cw_callback(rfe: Option<&SignalGenerator>) {
     if let Some(rfe) = rfe {
         rfe.remove_config_cw_callback();
-        Result::Success
-    } else {
-        Result::NullPtrError
     }
 }
 
@@ -714,9 +692,9 @@ pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigFreqSweep, user_data: *mut c_void)>,
     user_data: *mut c_void,
-) -> Result {
-    let Some(rfe) = rfe else {
-        return Result::NullPtrError;
+) {
+    let (Some(rfe), Some(callback)) = (rfe, callback) else {
+        return;
     };
 
     // Wrap the pointer to user_data in our own struct that implements Send so it can be
@@ -725,27 +703,21 @@ pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
 
     // Convert the C function pointer to a Rust closure
     let cb = move |config: ConfigFreqSweep| {
-        if let Some(cb) = callback {
-            cb(
-                SignalGeneratorConfigFreqSweep::from(config),
-                user_data.clone().0,
-            );
-        }
+        callback(
+            SignalGeneratorConfigFreqSweep::from(config),
+            user_data.clone().0,
+        );
     };
 
     rfe.set_config_freq_sweep_callback(cb);
-    Result::Success
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_signal_generator_remove_config_freq_sweep_callback(
     rfe: Option<&SignalGenerator>,
-) -> Result {
+) {
     if let Some(rfe) = rfe {
         rfe.remove_config_freq_sweep_callback();
-        Result::Success
-    } else {
-        Result::NullPtrError
     }
 }
 

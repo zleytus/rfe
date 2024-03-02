@@ -645,9 +645,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     rfe: Option<&SpectrumAnalyzer>,
     callback: Option<extern "C" fn(sweep: *const f32, sweep_len: usize, user_data: *mut c_void)>,
     user_data: *mut c_void,
-) -> Result {
+) {
     let (Some(rfe), Some(callback)) = (rfe, callback) else {
-        return Result::NullPtrError;
+        return;
     };
 
     // Wrap the pointer to user_data in our own struct that implements Send so it can be
@@ -660,18 +660,14 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     };
 
     rfe.set_sweep_callback(cb);
-    Result::Success
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_sweep_callback(
     rfe: Option<&SpectrumAnalyzer>,
-) -> Result {
+) {
     if let Some(rfe) = rfe {
         rfe.remove_sweep_callback();
-        Result::Success
-    } else {
-        Result::NullPtrError
     }
 }
 
@@ -680,9 +676,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
     callback: Option<extern "C" fn(user_data: *mut c_void)>,
     user_data: *mut c_void,
-) -> Result {
-    let Some(rfe) = rfe else {
-        return Result::NullPtrError;
+) {
+    let (Some(rfe), Some(callback)) = (rfe, callback) else {
+        return;
     };
 
     // Wrap the pointer to user_data in our own struct that implements Send so it can be
