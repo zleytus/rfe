@@ -1,76 +1,67 @@
 #include "rfe.h"
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-void print_spectrum_analyzer_info(const SpectrumAnalyzer *spectrum_analyzer) {
-    char port_name[100];
-    rfe_spectrum_analyzer_port_name(spectrum_analyzer, port_name, 100);
+void print_spectrum_analyzer_info(const SpectrumAnalyzer *rfe) {
+    uintptr_t port_name_len = rfe_spectrum_analyzer_port_name_len(rfe) + 1;
+    char *port_name = malloc(sizeof(char) * port_name_len);
+    rfe_spectrum_analyzer_port_name(rfe, port_name, port_name_len);
     printf("Spectrum Analyzer (%s):\n", port_name);
 
     char firmware_version[50];
-    rfe_spectrum_analyzer_firmware_version(spectrum_analyzer, firmware_version, 50);
+    rfe_spectrum_analyzer_firmware_version(rfe, firmware_version, 50);
     printf("\tFirmware version: %s\n", firmware_version);
 
     char serial_number[50];
-    rfe_spectrum_analyzer_serial_number(spectrum_analyzer, serial_number, 50);
+    rfe_spectrum_analyzer_serial_number(rfe, serial_number, 50);
     printf("\tSerial number: %s\n", serial_number);
 
-    SpectrumAnalyzerConfig config;
-    if (rfe_spectrum_analyzer_config(spectrum_analyzer, &config) == RESULT_SUCCESS) {
-        printf("\tCenter: %" PRIu64 " Hz\n", config.center_hz);
-        printf("\tSpan: %" PRIu64 " Hz\n", config.span_hz);
-        printf("\tStart: %" PRIu64 " Hz\n", config.start_hz);
-        printf("\tStop: %" PRIu64 " Hz\n", config.stop_hz);
-        printf("\tStep: %" PRIu64 " Hz\n", config.step_hz);
-        if (config.rbw_hz > 0) {
-            printf("\tRBW: %" PRIu64 " Hz\n", config.rbw_hz);
-        }
-        printf("\tSweep points: %u\n", config.sweep_points);
-        printf("\tAmp offset: %d dB\n", config.amp_offset_db);
-        printf("\tMode: %d\n", config.mode);
-        printf("\tCalc mode: %d\n", config.calc_mode);
-        printf("\tMin freq: %" PRIu64 " Hz\n", config.min_freq_hz);
-        printf("\tMax freq: %" PRIu64 " Hz\n", config.max_freq_hz);
-        printf("\tMax span: %" PRIu64 " Hz\n", config.max_span_hz);
-        printf("\tMin amp: %d dBm\n", config.min_amp_dbm);
-        printf("\tMax amp: %d dBm\n", config.max_amp_dbm);
-    }
+    printf("\tCenter: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_center_freq_hz(rfe));
+    printf("\tSpan: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_span_hz(rfe));
+    printf("\tStart: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_start_freq_hz(rfe));
+    printf("\tStop: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_stop_freq_hz(rfe));
+    printf("\tStep: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_step_size_hz(rfe));
+    printf("\tRBW: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_rbw_hz(rfe));
+    printf("\tSweep points: %u\n", rfe_spectrum_analyzer_sweep_len(rfe));
+    printf("\tAmp offset: %d dB\n", rfe_spectrum_analyzer_amp_offset_db(rfe));
+    printf("\tMode: %d\n", rfe_spectrum_analyzer_mode(rfe));
+    printf("\tCalc mode: %d\n", rfe_spectrum_analyzer_calc_mode(rfe));
+    printf("\tMin freq: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_min_freq_hz(rfe));
+    printf("\tMax freq: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_max_freq_hz(rfe));
+    printf("\tMax span: %" PRIu64 " Hz\n", rfe_spectrum_analyzer_max_span_hz(rfe));
+    printf("\tMin amp: %d dBm\n", rfe_spectrum_analyzer_min_amp_dbm(rfe));
+    printf("\tMax amp: %d dBm\n", rfe_spectrum_analyzer_max_amp_dbm(rfe));
 
-    SpectrumAnalyzerRadioModule active_radio_module;
-    if (rfe_spectrum_analyzer_active_radio_module(spectrum_analyzer, &active_radio_module) ==
-        RESULT_SUCCESS) {
-        char model_name[100];
-        rfe_spectrum_analyzer_model_name(active_radio_module.model, model_name, 100);
-        printf("\tActive radio module model: %s\n", model_name);
-    }
+    SpectrumAnalyzerModel active_radio_model = rfe_spectrum_analyzer_active_radio_model(rfe);
+    char active_model_name[100];
+    rfe_spectrum_analyzer_model_name(active_radio_model, active_model_name, 100);
+    printf("\tActive radio module model: %s\n", active_model_name);
 
-    SpectrumAnalyzerRadioModule inactive_radio_module;
-    if (rfe_spectrum_analyzer_inactive_radio_module(spectrum_analyzer, &inactive_radio_module) ==
-        RESULT_SUCCESS) {
-        char model_name[100];
-        rfe_spectrum_analyzer_model_name(inactive_radio_module.model, model_name, 100);
-        printf("\tInactive radio module model: %s\n", model_name);
-    }
+    SpectrumAnalyzerModel inactive_radio_model = rfe_spectrum_analyzer_inactive_radio_model(rfe);
+    char inactive_model_name[100];
+    rfe_spectrum_analyzer_model_name(inactive_radio_model, inactive_model_name, 100);
+    printf("\tInactive radio module model: %s\n", inactive_model_name);
 
     printf("\n");
 }
 
-void print_signal_generator_info(const SignalGenerator *signal_generator) {
+void print_signal_generator_info(const SignalGenerator *rfe) {
     char port_name[100];
-    rfe_signal_generator_port_name(signal_generator, port_name, 100);
+    rfe_signal_generator_port_name(rfe, port_name, 100);
     printf("Signal Generator (%s):\n", port_name);
 
     char firmware_version[50];
-    rfe_signal_generator_firmware_version(signal_generator, firmware_version, 50);
+    rfe_signal_generator_firmware_version(rfe, firmware_version, 50);
     printf("\tFirmware version: %s\n", firmware_version);
 
     char serial_number[50];
-    rfe_signal_generator_serial_number(signal_generator, serial_number, 50);
+    rfe_signal_generator_serial_number(rfe, serial_number, 50);
     printf("\tSerial number: %s\n", serial_number);
 
     SignalGeneratorConfig config;
-    if (rfe_signal_generator_config(signal_generator, &config) != RESULT_SUCCESS) {
+    if (rfe_signal_generator_config(rfe, &config) != RESULT_SUCCESS) {
         printf("\tStart: %" PRIu64 " Hz\n", config.start_hz);
         printf("\tCW: %" PRIu64 " Hz\n", config.cw_hz);
         printf("\tTotal steps: %" PRIu32 " Hz\n", config.total_steps);
