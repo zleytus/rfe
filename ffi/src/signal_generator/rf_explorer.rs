@@ -207,7 +207,6 @@ pub extern "C" fn rfe_signal_generator_hold(rfe: Option<&SignalGenerator>) -> Re
 #[no_mangle]
 pub unsafe extern "C" fn rfe_signal_generator_reboot(rfe: Option<&mut SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
-        let rfe = Box::from_raw(rfe);
         rfe.reboot().into()
     } else {
         Result::NullPtrError
@@ -219,7 +218,6 @@ pub unsafe extern "C" fn rfe_signal_generator_power_off(
     rfe: Option<&mut SignalGenerator>,
 ) -> Result {
     if let Some(rfe) = rfe {
-        let rfe = Box::from_raw(rfe);
         rfe.power_off().into()
     } else {
         Result::NullPtrError

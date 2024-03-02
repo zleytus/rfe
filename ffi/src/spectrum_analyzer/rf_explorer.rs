@@ -208,7 +208,6 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_reboot(
     rfe: Option<&mut SpectrumAnalyzer>,
 ) -> Result {
     if let Some(rfe) = rfe {
-        let rfe = Box::from_raw(rfe);
         rfe.reboot().into()
     } else {
         Result::NullPtrError
@@ -220,7 +219,6 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_power_off(
     rfe: Option<&mut SpectrumAnalyzer>,
 ) -> Result {
     if let Some(rfe) = rfe {
-        let rfe = Box::from_raw(rfe);
         rfe.power_off().into()
     } else {
         Result::NullPtrError
