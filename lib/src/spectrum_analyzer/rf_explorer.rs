@@ -213,19 +213,20 @@ impl SpectrumAnalyzer {
 
     /// Fills the buffer with the amplitudes of the most recent sweep and returns the length of the sweep.
     pub fn fill_buf_with_sweep(&self, buf: &mut [f32]) -> Result<usize> {
-        if let Some(sweep) = self.messages().sweep.0.lock().unwrap().as_ref() {
-            let sweep_len = sweep.amplitudes_dbm.len();
-            if buf.len() >= sweep_len {
-                buf[0..sweep_len].copy_from_slice(sweep.amplitudes_dbm.as_slice());
-                Ok(sweep_len)
-            } else {
-                Err(Error::InvalidInput(
-                    "The buffer is too small to fit the sweep".to_string(),
-                ))
-            }
-        } else {
-            Err(Error::InvalidOperation(
+        let sweep = self.messages().sweep.0.lock().unwrap();
+        let Some(sweep) = sweep.as_ref() else {
+            return Err(Error::InvalidOperation(
                 "No sweeps have been measured by the RF Explorer".to_string(),
+            ));
+        };
+
+        let sweep_len = sweep.amplitudes_dbm.len();
+        if buf.len() >= sweep_len {
+            buf[0..sweep_len].copy_from_slice(sweep.amplitudes_dbm.as_slice());
+            Ok(sweep_len)
+        } else {
+            Err(Error::InvalidInput(
+                "The buffer is too small to fit the sweep".to_string(),
             ))
         }
     }
