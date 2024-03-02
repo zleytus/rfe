@@ -4,14 +4,13 @@
 
 ## Usage
 
-``` rust
-use rfe::RfExplorer;
+```rust
+use rfe::SpectrumAnalyzer;
 
 fn main() {
-    let rfe = RfExplorer::connect().unwrap();
-    loop {
-        println!("{:?}\n", rfe.wait_for_next_sweep());
-    }
+    let rfe = SpectrumAnalyzer::connect().expect("RF Explorer should be connected");
+    println!("{rfe:#?}");
+    println!("{:?}", rfe.wait_for_next_sweep());
 }
 ```
 
@@ -26,7 +25,7 @@ Download and install the appropriate [Silicon Labs CP210x USB driver](https://ww
 Install `pkg-config` and `udev` header files
 
 | Distro             | Command                                           |
-|--------------------|---------------------------------------------------|
+| ------------------ | ------------------------------------------------- |
 | Debian/Ubuntu      | `apt install pkg-config libudev-dev`              |
 | Fedora/CentOS/RHEL | `dnf install pkgconf-pkg-config systemd-devel`    |
 | openSUSE           | `zypper install pkgconf-pkg-config systemd-devel` |
@@ -35,7 +34,7 @@ Install `pkg-config` and `udev` header files
 Add yourself to the `dialout` or `uucp` group to get permission to access the RF Explorer
 
 | Distro             | Command                         |
-|--------------------|---------------------------------|
+| ------------------ | ------------------------------- |
 | Debian/Ubuntu      | `gpasswd -a <username> dialout` |
 | Fedora/CentOS/RHEL | `gpasswd -a <username> dialout` |
 | openSUSE           | `gpasswd -a <username> dialout` |
