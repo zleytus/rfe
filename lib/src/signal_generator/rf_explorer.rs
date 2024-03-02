@@ -98,14 +98,11 @@ impl SignalGenerator {
         self.messages().screen_data.0.lock().unwrap().clone()
     }
 
-    pub fn wait_for_next_screen_data(&self) -> crate::Result<ScreenData> {
+    pub fn wait_for_next_screen_data(&self) -> Result<ScreenData> {
         self.wait_for_next_screen_data_with_timeout(NEXT_SCREEN_DATA_TIMEOUT)
     }
 
-    pub fn wait_for_next_screen_data_with_timeout(
-        &self,
-        timeout: Duration,
-    ) -> crate::Result<ScreenData> {
+    pub fn wait_for_next_screen_data_with_timeout(&self, timeout: Duration) -> Result<ScreenData> {
         let previous_screen_data = self.screen_data();
         let (screen_data, condvar) = &self.messages().screen_data;
         let (screen_data, wait_result) = condvar
