@@ -9,4 +9,3 @@ use config::{
 };
 use list::SignalGeneratorList;
 use model::SignalGeneratorModel;
-type SignalGenerator = rfe::signal_generator::RfExplorer;

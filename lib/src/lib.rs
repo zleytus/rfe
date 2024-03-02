@@ -3,6 +3,7 @@ mod rf_explorer;
 pub mod signal_generator;
 pub mod spectrum_analyzer;
 
-pub use rf_explorer::{RadioModule, ScreenData, SerialNumber, SetupInfo};
-pub use spectrum_analyzer::RfExplorer;
 pub use common::*;
+pub use rf_explorer::ScreenData;
+pub use signal_generator::SignalGenerator;
+pub use spectrum_analyzer::SpectrumAnalyzer;

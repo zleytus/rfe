@@ -17,5 +17,5 @@ pub use config_cw::{ConfigCw, ConfigCwExp};
 pub use config_freq_sweep::{ConfigFreqSweep, ConfigFreqSweepExp};
 pub(crate) use message::Message;
 pub use model::Model;
-pub use rf_explorer::SignalGenerator as RfExplorer;
+pub use rf_explorer::SignalGenerator;
 pub use temperature::Temperature;

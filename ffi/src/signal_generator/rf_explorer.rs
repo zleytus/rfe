@@ -6,14 +6,15 @@ use std::{
 
 use rfe::{
     signal_generator::{
-        Attenuation, Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, PowerLevel, Temperature,
+        Attenuation, Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, PowerLevel,
+        SignalGenerator, Temperature,
     },
     ScreenData,
 };
 
 use super::{
-    SignalGenerator, SignalGeneratorConfig, SignalGeneratorConfigAmpSweep, SignalGeneratorConfigCw,
-    SignalGeneratorConfigFreqSweep, SignalGeneratorList, SignalGeneratorRadioModule,
+    SignalGeneratorConfig, SignalGeneratorConfigAmpSweep, SignalGeneratorConfigCw,
+    SignalGeneratorConfigFreqSweep, SignalGeneratorModel,
 };
 use crate::common::{Result, UserDataWrapper};
 

@@ -5,8 +5,8 @@ use std::{
 };
 
 use rfe::{
-    spectrum_analyzer::{CalcMode, DspMode, InputStage, Mode, TrackingStatus, WifiBand},
-    RfExplorer, ScreenData,
+    spectrum_analyzer::{CalcMode, DspMode, InputStage, Mode, Model, TrackingStatus, WifiBand},
+    ScreenData, SpectrumAnalyzer,
 };
 
 use super::model::SpectrumAnalyzerModel;
@@ -14,11 +14,7 @@ use crate::common::{Result, UserDataWrapper};
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_connect() -> *mut SpectrumAnalyzer {
-    if let Some(rfe) = rfe::RfExplorer::connect() {
-        Box::into_raw(Box::new(rfe))
-    } else {
-        ptr::null_mut()
-    }
+    SpectrumAnalyzer::connect().map_or(ptr::null_mut(), |rfe| Box::into_raw(Box::new(rfe)))
 }
 
 #[no_mangle]
@@ -211,72 +207,89 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_power_off(
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_start_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::start_freq).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::start_freq)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_step_size_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::step_size).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::step_size)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_stop_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::stop_freq).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::stop_freq)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_center_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::center_freq).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::center_freq)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_span_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::span).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::span).unwrap_or_default().as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_min_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::min_freq).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::min_freq)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_max_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::max_freq).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::max_freq)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_max_span_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.map(RfExplorer::max_span).unwrap_or_default().as_hz()
+    rfe.map(SpectrumAnalyzer::max_span)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_rbw_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
-    rfe.and_then(RfExplorer::rbw).unwrap_or_default().as_hz()
+    rfe.and_then(SpectrumAnalyzer::rbw)
+        .unwrap_or_default()
+        .as_hz()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_min_amp_dbm(rfe: Option<&SpectrumAnalyzer>) -> i16 {
-    rfe.map(RfExplorer::min_amp_dbm).unwrap_or_default()
+    rfe.map(SpectrumAnalyzer::min_amp_dbm).unwrap_or_default()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_max_amp_dbm(rfe: Option<&SpectrumAnalyzer>) -> i16 {
-    rfe.map(RfExplorer::max_amp_dbm).unwrap_or_default()
+    rfe.map(SpectrumAnalyzer::max_amp_dbm).unwrap_or_default()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_amp_offset_db(rfe: Option<&SpectrumAnalyzer>) -> i8 {
-    rfe.and_then(RfExplorer::amp_offset_db).unwrap_or_default()
+    rfe.and_then(SpectrumAnalyzer::amp_offset_db)
+        .unwrap_or_default()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_sweep_len(rfe: Option<&SpectrumAnalyzer>) -> u16 {
-    rfe.map(rfe::RfExplorer::sweep_len).unwrap_or_default()
+    rfe.map(SpectrumAnalyzer::sweep_len).unwrap_or_default()
 }
 
 #[no_mangle]
 pub extern "C" fn rfe_spectrum_analyzer_mode(rfe: Option<&SpectrumAnalyzer>) -> Mode {
-    rfe.map(rfe::RfExplorer::mode).unwrap_or_default()
+    rfe.map(SpectrumAnalyzer::mode).unwrap_or_default()
 }
 
 #[no_mangle]
