@@ -184,19 +184,18 @@ pub fn port_names() -> Vec<String> {
 #[tracing::instrument(ret)]
 pub fn is_driver_installed() -> bool {
     use std::process::{Command, Stdio};
-    let Ok(driver_query) = Command::new("driverquery")
-        .stdout(Stdio::piped())
-        .spawn() else {
-            return false;
-        };
+    let Ok(driver_query) = Command::new("driverquery").stdout(Stdio::piped()).spawn() else {
+        return false;
+    };
 
     let Ok(mut find_silabs_driver) = Command::new("findstr")
         .arg(r#""/c:"Silicon Labs CP210x""#)
         .stdin(Stdio::from(driver_query.stdout.unwrap()))
         .stdout(Stdio::piped())
-        .spawn() else {
-            return false;
-        };
+        .spawn()
+    else {
+        return false;
+    };
 
     let Ok(exit_status) = find_silabs_driver.wait() else {
         return false;
