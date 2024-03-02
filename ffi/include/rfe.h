@@ -206,8 +206,9 @@ typedef uint8_t WifiBand;
 
 typedef struct ScreenData ScreenData;
 
+typedef struct SignalGenerator SignalGenerator;
 
-typedef RfExplorer SignalGenerator;
+typedef struct SpectrumAnalyzer SpectrumAnalyzer;
 
 typedef struct SignalGeneratorConfig {
   uint64_t start_hz;
@@ -289,67 +290,68 @@ uint64_t rfe_signal_generator_model_min_freq_hz(SignalGeneratorModel model);
 
 uint64_t rfe_signal_generator_model_max_freq_hz(SignalGeneratorModel model);
 
-SignalGenerator *rfe_signal_generator_connect(void);
+struct SignalGenerator *rfe_signal_generator_connect(void);
 
-SignalGenerator *rfe_signal_generator_connect_with_name_and_baud_rate(const char *name,
-                                                                      uint32_t baud_rate);
+struct SignalGenerator *rfe_signal_generator_connect_with_name_and_baud_rate(const char *name,
+                                                                             uint32_t baud_rate);
 
+void rfe_signal_generator_free(struct SignalGenerator *rfe);
 
-void rfe_signal_generator_free(SignalGenerator *rfe);
-
-enum Result rfe_signal_generator_send_bytes(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_send_bytes(const struct SignalGenerator *rfe,
                                             const uint8_t *bytes,
                                             uintptr_t len);
 
-enum Result rfe_signal_generator_port_name(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_port_name(const struct SignalGenerator *rfe,
                                            char *port_name_buf,
                                            uintptr_t buf_len);
 
-enum Result rfe_signal_generator_firmware_version(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_firmware_version(const struct SignalGenerator *rfe,
                                                   char *firmware_version_buf,
                                                   uintptr_t buf_len);
 
-enum Result rfe_signal_generator_serial_number(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_serial_number(const struct SignalGenerator *rfe,
                                                char *serial_number_buf,
                                                uintptr_t buf_len);
 
-enum Result rfe_signal_generator_lcd_on(const SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_lcd_off(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_lcd_on(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_enable_dump_screen(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_lcd_off(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_disable_dump_screen(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_enable_dump_screen(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_hold(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_disable_dump_screen(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_reboot(SignalGenerator *rfe);
+enum Result rfe_signal_generator_hold(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_power_off(SignalGenerator *rfe);
+enum Result rfe_signal_generator_reboot(struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_config(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_power_off(struct SignalGenerator *rfe);
+
+enum Result rfe_signal_generator_config(const struct SignalGenerator *rfe,
                                         struct SignalGeneratorConfig *config);
 
-enum Result rfe_signal_generator_config_amp_sweep(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_config_amp_sweep(const struct SignalGenerator *rfe,
                                                   struct SignalGeneratorConfigAmpSweep *config);
 
-enum Result rfe_signal_generator_config_cw(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_config_cw(const struct SignalGenerator *rfe,
                                            struct SignalGeneratorConfigCw *config);
 
-enum Result rfe_signal_generator_config_freq_sweep(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_config_freq_sweep(const struct SignalGenerator *rfe,
                                                    struct SignalGeneratorConfigFreqSweep *config);
 
-enum Result rfe_signal_generator_screen_data(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_screen_data(const struct SignalGenerator *rfe,
                                              const struct ScreenData **screen_data);
 
-enum Result rfe_signal_generator_wait_for_next_screen_data(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_wait_for_next_screen_data(const struct SignalGenerator *rfe,
                                                            const struct ScreenData **screen_data);
 
-enum Result rfe_signal_generator_wait_for_next_screen_data_with_timeout(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_wait_for_next_screen_data_with_timeout(const struct SignalGenerator *rfe,
                                                                         uint64_t timeout_secs,
                                                                         const struct ScreenData **screen_data);
 
-enum Result rfe_signal_generator_temperature(const SignalGenerator *rfe, Temperature *temperature);
+enum Result rfe_signal_generator_temperature(const struct SignalGenerator *rfe,
+                                             Temperature *temperature);
 
 enum Result rfe_signal_generator_main_radio_model(const struct SignalGenerator *rfe,
                                                   SignalGeneratorModel *model);
@@ -363,7 +365,7 @@ enum Result rfe_signal_generator_active_radio_model(const struct SignalGenerator
 enum Result rfe_signal_generator_inactive_radio_model(const struct SignalGenerator *rfe,
                                                       SignalGeneratorModel *model);
 
-enum Result rfe_signal_generator_start_amp_sweep(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_amp_sweep(const struct SignalGenerator *rfe,
                                                  uint64_t cw_hz,
                                                  Attenuation start_attenuation,
                                                  PowerLevel start_power_level,
@@ -371,23 +373,23 @@ enum Result rfe_signal_generator_start_amp_sweep(const SignalGenerator *rfe,
                                                  PowerLevel stop_power_level,
                                                  uint8_t step_delay_sec);
 
-enum Result rfe_signal_generator_start_amp_sweep_exp(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_amp_sweep_exp(const struct SignalGenerator *rfe,
                                                      uint64_t cw_hz,
                                                      double start_power_dbm,
                                                      double step_power_db,
                                                      double stop_power_dbm,
                                                      uint8_t step_delay_sec);
 
-enum Result rfe_signal_generator_start_cw(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_cw(const struct SignalGenerator *rfe,
                                           uint64_t cw_hz,
                                           Attenuation attenuation,
                                           PowerLevel power_level);
 
-enum Result rfe_signal_generator_start_cw_exp(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_cw_exp(const struct SignalGenerator *rfe,
                                               uint64_t cw_hz,
                                               double power_dbm);
 
-enum Result rfe_signal_generator_start_freq_sweep(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_freq_sweep(const struct SignalGenerator *rfe,
                                                   uint64_t start_hz,
                                                   Attenuation attenuation,
                                                   PowerLevel power_level,
@@ -395,60 +397,59 @@ enum Result rfe_signal_generator_start_freq_sweep(const SignalGenerator *rfe,
                                                   uint64_t step_hz,
                                                   uint8_t step_delay_sec);
 
-enum Result rfe_signal_generator_start_freq_sweep_exp(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_freq_sweep_exp(const struct SignalGenerator *rfe,
                                                       uint64_t start_hz,
                                                       double power_dbm,
                                                       uint16_t sweep_steps,
                                                       uint64_t step_hz,
                                                       uint8_t step_delay_sec);
 
-enum Result rfe_signal_generator_start_tracking(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_tracking(const struct SignalGenerator *rfe,
                                                 uint64_t start_hz,
                                                 Attenuation attenuation,
                                                 PowerLevel power_level,
                                                 uint16_t sweep_steps,
                                                 uint64_t step_hz);
 
-enum Result rfe_signal_generator_start_tracking_exp(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_start_tracking_exp(const struct SignalGenerator *rfe,
                                                     uint64_t start_hz,
                                                     double power_dbm,
                                                     uint16_t sweep_steps,
                                                     uint64_t step_hz);
 
-enum Result rfe_signal_generator_tracking_step(const SignalGenerator *rfe, uint16_t steps);
+enum Result rfe_signal_generator_tracking_step(const struct SignalGenerator *rfe, uint16_t steps);
 
-enum Result rfe_signal_generator_set_config_callback(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_set_config_callback(const struct SignalGenerator *rfe,
                                                      void (*callback)(struct SignalGeneratorConfig config,
                                                                       void *user_data),
                                                      void *user_data);
 
-enum Result rfe_signal_generator_remove_config_callback(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_remove_config_callback(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_set_config_amp_sweep_callback(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_set_config_amp_sweep_callback(const struct SignalGenerator *rfe,
                                                                void (*callback)(struct SignalGeneratorConfigAmpSweep config,
                                                                                 void *user_data),
                                                                void *user_data);
 
-enum Result rfe_signal_generator_remove_config_amp_sweep_callback(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_remove_config_amp_sweep_callback(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_set_config_cw_callback(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_set_config_cw_callback(const struct SignalGenerator *rfe,
                                                         void (*callback)(struct SignalGeneratorConfigCw config,
                                                                          void *user_data),
                                                         void *user_data);
 
-enum Result rfe_signal_generator_remove_config_cw_callback(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_remove_config_cw_callback(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_set_config_freq_sweep_callback(const SignalGenerator *rfe,
+enum Result rfe_signal_generator_set_config_freq_sweep_callback(const struct SignalGenerator *rfe,
                                                                 void (*callback)(struct SignalGeneratorConfigFreqSweep config,
                                                                                  void *user_data),
                                                                 void *user_data);
 
-enum Result rfe_signal_generator_remove_config_freq_sweep_callback(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_remove_config_freq_sweep_callback(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_rf_power_on(const SignalGenerator *rfe);
+enum Result rfe_signal_generator_rf_power_on(const struct SignalGenerator *rfe);
 
-enum Result rfe_signal_generator_rf_power_off(const SignalGenerator *rfe);
-
+enum Result rfe_signal_generator_rf_power_off(const struct SignalGenerator *rfe);
 
 enum Result rfe_spectrum_analyzer_model_name(SpectrumAnalyzerModel model,
                                              char *name_buf,
@@ -466,104 +467,109 @@ uint64_t rfe_spectrum_analyzer_model_min_span_hz(SpectrumAnalyzerModel model);
 
 uint64_t rfe_spectrum_analyzer_model_max_span_hz(SpectrumAnalyzerModel model);
 
-SpectrumAnalyzer *rfe_spectrum_analyzer_connect(void);
+struct SpectrumAnalyzer *rfe_spectrum_analyzer_connect(void);
 
-SpectrumAnalyzer *rfe_spectrum_analyzer_connect_with_name_and_baud_rate(const char *name,
-                                                                        uint32_t baud_rate);
+struct SpectrumAnalyzer *rfe_spectrum_analyzer_connect_with_name_and_baud_rate(const char *name,
+                                                                               uint32_t baud_rate);
 
+void rfe_spectrum_analyzer_free(struct SpectrumAnalyzer *rfe);
 
-void rfe_spectrum_analyzer_free(SpectrumAnalyzer *rfe);
-
-enum Result rfe_spectrum_analyzer_send_bytes(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_send_bytes(const struct SpectrumAnalyzer *rfe,
                                              const uint8_t *bytes,
                                              uintptr_t len);
 
-enum Result rfe_spectrum_analyzer_port_name(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_port_name(const struct SpectrumAnalyzer *rfe,
                                             char *port_name_buf,
                                             uintptr_t buf_len);
 
-enum Result rfe_spectrum_analyzer_firmware_version(const SpectrumAnalyzer *rfe,
+
+enum Result rfe_spectrum_analyzer_firmware_version(const struct SpectrumAnalyzer *rfe,
                                                    char *firmware_version_buf,
                                                    uintptr_t buf_len);
 
-enum Result rfe_spectrum_analyzer_serial_number(const SpectrumAnalyzer *rfe,
+
+enum Result rfe_spectrum_analyzer_serial_number(const struct SpectrumAnalyzer *rfe,
                                                 char *serial_number_buf,
                                                 uintptr_t buf_len);
 
-enum Result rfe_spectrum_analyzer_lcd_on(const SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_lcd_off(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_lcd_on(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_enable_dump_screen(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_lcd_off(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_disable_dump_screen(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_enable_dump_screen(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_hold(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_disable_dump_screen(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_reboot(SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_hold(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_power_off(SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_reboot(struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_start_freq_hz(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_power_off(struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_step_size_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_start_freq_hz(const struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_stop_freq_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_step_size_hz(const struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_center_freq_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_stop_freq_hz(const struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_span_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_center_freq_hz(const struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_min_freq_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_span_hz(const struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_max_freq_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_min_freq_hz(const struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_max_span_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_max_freq_hz(const struct SpectrumAnalyzer *rfe);
 
-uint64_t rfe_spectrum_analyzer_rbw_hz(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_max_span_hz(const struct SpectrumAnalyzer *rfe);
 
-int16_t rfe_spectrum_analyzer_min_amp_dbm(const SpectrumAnalyzer *rfe);
+uint64_t rfe_spectrum_analyzer_rbw_hz(const struct SpectrumAnalyzer *rfe);
 
-int16_t rfe_spectrum_analyzer_max_amp_dbm(const SpectrumAnalyzer *rfe);
+int16_t rfe_spectrum_analyzer_min_amp_dbm(const struct SpectrumAnalyzer *rfe);
 
-int8_t rfe_spectrum_analyzer_amp_offset_db(const SpectrumAnalyzer *rfe);
+int16_t rfe_spectrum_analyzer_max_amp_dbm(const struct SpectrumAnalyzer *rfe);
 
-uint16_t rfe_spectrum_analyzer_sweep_len(const SpectrumAnalyzer *rfe);
+int8_t rfe_spectrum_analyzer_amp_offset_db(const struct SpectrumAnalyzer *rfe);
 
-Mode rfe_spectrum_analyzer_mode(const SpectrumAnalyzer *rfe);
+uint16_t rfe_spectrum_analyzer_sweep_len(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_sweep(const SpectrumAnalyzer *rfe,
+Mode rfe_spectrum_analyzer_mode(const struct SpectrumAnalyzer *rfe);
+
+CalcMode rfe_spectrum_analyzer_calc_mode(const struct SpectrumAnalyzer *rfe);
+
+enum Result rfe_spectrum_analyzer_sweep(const struct SpectrumAnalyzer *rfe,
                                         float *sweep_buf,
                                         uintptr_t buf_len,
                                         uintptr_t *sweep_len);
 
-enum Result rfe_spectrum_analyzer_wait_for_next_sweep(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_wait_for_next_sweep(const struct SpectrumAnalyzer *rfe,
                                                       float *sweep_buf,
                                                       uintptr_t buf_len,
                                                       uintptr_t *sweep_len);
 
-enum Result rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(const struct SpectrumAnalyzer *rfe,
                                                                    uint64_t timeout_secs,
                                                                    float *sweep_buf,
                                                                    uintptr_t buf_len,
                                                                    uintptr_t *sweep_len);
 
-enum Result rfe_spectrum_analyzer_screen_data(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_screen_data(const struct SpectrumAnalyzer *rfe,
                                               const struct ScreenData **screen_data);
 
-enum Result rfe_spectrum_analyzer_wait_for_next_screen_data(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_wait_for_next_screen_data(const struct SpectrumAnalyzer *rfe,
                                                             const struct ScreenData **screen_data);
 
-enum Result rfe_spectrum_analyzer_wait_for_next_screen_data_with_timeout(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_wait_for_next_screen_data_with_timeout(const struct SpectrumAnalyzer *rfe,
                                                                          uint64_t timeout_secs,
                                                                          const struct ScreenData **screen_data);
 
-enum Result rfe_spectrum_analyzer_dsp_mode(const SpectrumAnalyzer *rfe, DspMode *dsp_mode);
+enum Result rfe_spectrum_analyzer_dsp_mode(const struct SpectrumAnalyzer *rfe, DspMode *dsp_mode);
 
-enum Result rfe_spectrum_analyzer_tracking_status(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_tracking_status(const struct SpectrumAnalyzer *rfe,
                                                   TrackingStatus *tracking_status);
 
-enum Result rfe_spectrum_analyzer_input_stage(const SpectrumAnalyzer *rfe, InputStage *input_stage);
+enum Result rfe_spectrum_analyzer_input_stage(const struct SpectrumAnalyzer *rfe,
+                                              InputStage *input_stage);
 
 SpectrumAnalyzerModel rfe_spectrum_analyzer_main_radio_model(const struct SpectrumAnalyzer *rfe);
 
@@ -573,68 +579,71 @@ SpectrumAnalyzerModel rfe_spectrum_analyzer_active_radio_model(const struct Spec
 
 SpectrumAnalyzerModel rfe_spectrum_analyzer_inactive_radio_model(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_start_wifi_analyzer(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_start_wifi_analyzer(const struct SpectrumAnalyzer *rfe,
                                                       WifiBand wifi_band);
 
-enum Result rfe_spectrum_analyzer_stop_wifi_analyzer(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_stop_wifi_analyzer(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_request_tracking(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_request_tracking(const struct SpectrumAnalyzer *rfe,
                                                    uint64_t start_hz,
                                                    uint64_t step_hz);
 
-enum Result rfe_spectrum_analyzer_tracking_step(const SpectrumAnalyzer *rfe, uint16_t step);
+enum Result rfe_spectrum_analyzer_tracking_step(const struct SpectrumAnalyzer *rfe, uint16_t step);
 
-enum Result rfe_spectrum_analyzer_set_start_stop(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_set_start_stop(const struct SpectrumAnalyzer *rfe,
                                                  uint64_t start_hz,
                                                  uint64_t stop_hz);
 
-enum Result rfe_spectrum_analyzer_set_start_stop_sweep_len(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_set_start_stop_sweep_len(const struct SpectrumAnalyzer *rfe,
                                                            uint64_t start_hz,
                                                            uint64_t stop_hz,
-                                                           uint16_t sweep_points);
+                                                           uint16_t sweep_len);
 
-enum Result rfe_spectrum_analyzer_set_center_span(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_set_center_span(const struct SpectrumAnalyzer *rfe,
                                                   uint64_t center_hz,
                                                   uint64_t span_hz);
 
-enum Result rfe_spectrum_analyzer_set_center_span_sweep_len(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_set_center_span_sweep_len(const struct SpectrumAnalyzer *rfe,
                                                             uint64_t center_hz,
                                                             uint64_t span_hz,
                                                             uint16_t sweep_points);
 
-enum Result rfe_spectrum_analyzer_set_min_max_amps(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_set_min_max_amps(const struct SpectrumAnalyzer *rfe,
                                                    int16_t min_amp_dbm,
                                                    int16_t max_amp_dbm);
 
-enum Result rfe_spectrum_analyzer_set_sweep_callback(const SpectrumAnalyzer *rfe,
-                                                     void (*callback)(const float *sweep,
-                                                                      uintptr_t sweep_len,
-                                                                      void *user_data),
-                                                     void *user_data);
+void rfe_spectrum_analyzer_set_sweep_callback(const struct SpectrumAnalyzer *rfe,
+                                              void (*callback)(const float *sweep,
+                                                               uintptr_t sweep_len,
+                                                               void *user_data),
+                                              void *user_data);
 
-enum Result rfe_spectrum_analyzer_remove_sweep_callback(const SpectrumAnalyzer *rfe);
+void rfe_spectrum_analyzer_remove_sweep_callback(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_set_config_callback(const SpectrumAnalyzer *rfe,
-                                                      void (*callback)(void *user_data),
-                                                      void *user_data);
+void rfe_spectrum_analyzer_set_config_callback(const struct SpectrumAnalyzer *rfe,
+                                               void (*callback)(void *user_data),
+                                               void *user_data);
 
-enum Result rfe_spectrum_analyzer_remove_config_callback(const SpectrumAnalyzer *rfe);
+void rfe_spectrum_analyzer_remove_config_callback(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_set_sweep_points(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_set_sweep_points(const struct SpectrumAnalyzer *rfe,
                                                    uint16_t sweep_points);
 
-enum Result rfe_spectrum_analyzer_set_calc_mode(const SpectrumAnalyzer *rfe, CalcMode calc_mode);
+enum Result rfe_spectrum_analyzer_set_calc_mode(const struct SpectrumAnalyzer *rfe,
+                                                CalcMode calc_mode);
 
-enum Result rfe_spectrum_analyzer_activate_main_radio_module(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_activate_main_radio(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_activate_expansion_radio_module(const SpectrumAnalyzer *rfe);
+enum Result rfe_spectrum_analyzer_activate_expansion_radio(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_set_input_stage(const SpectrumAnalyzer *rfe,
+enum Result rfe_spectrum_analyzer_set_input_stage(const struct SpectrumAnalyzer *rfe,
                                                   InputStage input_stage);
 
-enum Result rfe_spectrum_analyzer_set_offset_db(const SpectrumAnalyzer *rfe, int8_t offset_db);
+enum Result rfe_spectrum_analyzer_set_offset_db(const struct SpectrumAnalyzer *rfe,
+                                                int8_t offset_db);
 
-enum Result rfe_spectrum_analyzer_set_dsp_mode(const SpectrumAnalyzer *rfe, DspMode dsp_mode);
+enum Result rfe_spectrum_analyzer_set_dsp_mode(const struct SpectrumAnalyzer *rfe,
+                                               DspMode dsp_mode);
 
 #ifdef __cplusplus
 } // extern "C"

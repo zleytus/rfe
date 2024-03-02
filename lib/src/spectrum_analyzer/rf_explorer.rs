@@ -15,11 +15,11 @@ use crate::rf_explorer::{
     impl_rf_explorer, ScreenData, SerialNumber, SetupInfo, COMMAND_RESPONSE_TIMEOUT,
     NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
 };
-use crate::{
-    common::{ConnectionError, ConnectionResult, Error, Frequency, Result},
-    Device,
-};
+use crate::{ConnectionError, ConnectionResult, Device, Error, Frequency, Result};
 
+#[derive(Debug)]
+pub struct SpectrumAnalyzer {
+    rfe: Device<MessageContainer>,
 }
 
 impl_rf_explorer!(SpectrumAnalyzer, MessageContainer);

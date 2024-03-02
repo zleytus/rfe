@@ -13,10 +13,12 @@ use crate::rf_explorer::{
     impl_rf_explorer, Callback, ScreenData, SerialNumber, SetupInfo, NEXT_SCREEN_DATA_TIMEOUT,
     RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
 };
-use crate::{
-    common::{ConnectionError, ConnectionResult, Device, Frequency},
-    rf_explorer::impl_rf_explorer,
-};
+use crate::{ConnectionError, ConnectionResult, Device, Frequency, Result};
+
+#[derive(Debug)]
+pub struct SignalGenerator {
+    rfe: Device<MessageContainer>,
+}
 
 impl_rf_explorer!(SignalGenerator, MessageContainer);
 

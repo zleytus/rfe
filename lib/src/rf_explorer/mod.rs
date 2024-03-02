@@ -22,11 +22,6 @@ macro_rules! impl_rf_explorer {
         use crate::rf_explorer;
         use std::borrow::Cow;
 
-        #[derive(Debug)]
-        pub struct $rf_explorer {
-            rfe: Device<$message_container>,
-        }
-
         impl $rf_explorer {
             /// Connects to the first available RF Explorer.
             pub fn connect() -> Option<Self> {
