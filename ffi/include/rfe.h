@@ -351,17 +351,17 @@ enum Result rfe_signal_generator_wait_for_next_screen_data_with_timeout(const Si
 
 enum Result rfe_signal_generator_temperature(const SignalGenerator *rfe, Temperature *temperature);
 
-enum Result rfe_signal_generator_main_radio_module(const SignalGenerator *rfe,
-                                                   struct SignalGeneratorRadioModule *radio_module);
+enum Result rfe_signal_generator_main_radio_model(const struct SignalGenerator *rfe,
+                                                  SignalGeneratorModel *model);
 
-enum Result rfe_signal_generator_expansion_radio_module(const SignalGenerator *rfe,
-                                                        struct SignalGeneratorRadioModule *radio_module);
+enum Result rfe_signal_generator_expansion_radio_model(const struct SignalGenerator *rfe,
+                                                       SignalGeneratorModel *model);
 
-enum Result rfe_signal_generator_active_radio_module(const SignalGenerator *rfe,
-                                                     struct SignalGeneratorRadioModule *radio_module);
+enum Result rfe_signal_generator_active_radio_model(const struct SignalGenerator *rfe,
+                                                    SignalGeneratorModel *model);
 
-enum Result rfe_signal_generator_inactive_radio_module(const SignalGenerator *rfe,
-                                                       struct SignalGeneratorRadioModule *radio_module);
+enum Result rfe_signal_generator_inactive_radio_model(const struct SignalGenerator *rfe,
+                                                      SignalGeneratorModel *model);
 
 enum Result rfe_signal_generator_start_amp_sweep(const SignalGenerator *rfe,
                                                  uint64_t cw_hz,
@@ -565,17 +565,13 @@ enum Result rfe_spectrum_analyzer_tracking_status(const SpectrumAnalyzer *rfe,
 
 enum Result rfe_spectrum_analyzer_input_stage(const SpectrumAnalyzer *rfe, InputStage *input_stage);
 
-enum Result rfe_spectrum_analyzer_main_radio_module(const SpectrumAnalyzer *rfe,
-                                                    struct SpectrumAnalyzerRadioModule *radio_module);
+SpectrumAnalyzerModel rfe_spectrum_analyzer_main_radio_model(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_expansion_radio_module(const SpectrumAnalyzer *rfe,
-                                                         struct SpectrumAnalyzerRadioModule *radio_module);
+SpectrumAnalyzerModel rfe_spectrum_analyzer_expansion_radio_model(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_active_radio_module(const SpectrumAnalyzer *rfe,
-                                                      struct SpectrumAnalyzerRadioModule *radio_module);
+SpectrumAnalyzerModel rfe_spectrum_analyzer_active_radio_model(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_inactive_radio_module(const SpectrumAnalyzer *rfe,
-                                                        struct SpectrumAnalyzerRadioModule *radio_module);
+SpectrumAnalyzerModel rfe_spectrum_analyzer_inactive_radio_model(const struct SpectrumAnalyzer *rfe);
 
 enum Result rfe_spectrum_analyzer_start_wifi_analyzer(const SpectrumAnalyzer *rfe,
                                                       WifiBand wifi_band);

@@ -12,7 +12,7 @@ use super::{
     CalcMode, Command, Config, DspMode, InputStage, Mode, Model, Sweep, TrackingStatus, WifiBand,
 };
 use crate::rf_explorer::{
-    impl_rf_explorer, RadioModule, ScreenData, SerialNumber, SetupInfo, COMMAND_RESPONSE_TIMEOUT,
+    impl_rf_explorer, ScreenData, SerialNumber, SetupInfo, COMMAND_RESPONSE_TIMEOUT,
     NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
 };
 use crate::{
@@ -341,8 +341,8 @@ impl SpectrumAnalyzer {
         *self.messages().input_stage.0.lock().unwrap()
     }
 
-    /// Returns the main radio module.
-    pub fn main_radio_module(&self) -> Option<RadioModule> {
+    /// Returns the main radio's model.
+    pub fn main_radio_model(&self) -> Option<Model> {
         self.messages()
             .setup_info
             .0
@@ -350,11 +350,11 @@ impl SpectrumAnalyzer {
             .unwrap()
             .as_ref()
             .unwrap()
-            .main_radio_module
+            .main_radio_model
     }
 
-    /// Returns the expansion radio module (if one exists).
-    pub fn expansion_radio_module(&self) -> Option<RadioModule> {
+    /// Returns the expansion radio's model (if one exists).
+    pub fn expansion_radio_model(&self) -> Option<Model> {
         self.rfe
             .messages()
             .setup_info
@@ -363,26 +363,26 @@ impl SpectrumAnalyzer {
             .unwrap()
             .as_ref()
             .unwrap()
-            .expansion_radio_module
+            .expansion_radio_model
     }
 
     /// Returns the active radio module.
-    pub fn active_radio_module(&self) -> RadioModule {
+    pub fn active_radio_model(&self) -> Model {
         if self.is_expansion_radio_module_active() {
-            self.expansion_radio_module().unwrap_or_default()
+            self.expansion_radio_model().unwrap_or_default()
         } else {
-            self.main_radio_module().unwrap_or_default()
+            self.main_radio_model().unwrap_or_default()
         }
     }
 
     /// Returns the inactive radio module (if one exists).
-    pub fn inactive_radio_module(&self) -> Option<RadioModule> {
-        let expansion_radio_module = self.expansion_radio_module();
-        if expansion_radio_module.is_some() {
+    pub fn inactive_radio_model(&self) -> Option<Model> {
+        let expansion_radio_model = self.expansion_radio_model();
+        if expansion_radio_model.is_some() {
             if self.is_expansion_radio_module_active() {
-                self.main_radio_module()
+                self.main_radio_model()
             } else {
-                expansion_radio_module
+                expansion_radio_model
             }
         } else {
             None
@@ -437,9 +437,9 @@ impl SpectrumAnalyzer {
         self.send_command(Command::TrackingStep(step))
     }
 
-    /// Activates the RF Explorer's main radio module.
-    pub fn activate_main_radio_module(&self) -> Result<()> {
-        if self.active_radio_module().is_main() {
+    /// Activates the RF Explorer's main radio.
+    pub fn activate_main_radio(&self) -> Result<()> {
+        if !self.is_expansion_radio_module_active() {
             return Err(Error::InvalidOperation(
                 "Main radio module is already active.".to_string(),
             ));
@@ -455,22 +455,22 @@ impl SpectrumAnalyzer {
                 .is_none()
         });
 
-        if self.active_radio_module().is_main() {
+        if !self.is_expansion_radio_module_active() {
             Ok(())
         } else {
             Err(Error::TimedOut(COMMAND_RESPONSE_TIMEOUT))
         }
     }
 
-    /// Activates the RF Explorer's expansion radio module (if one exists).
-    pub fn activate_expansion_radio_module(&self) -> Result<()> {
-        if self.expansion_radio_module().is_none() {
+    /// Activates the RF Explorer's expansion radio (if one exists).
+    pub fn activate_expansion_radio(&self) -> Result<()> {
+        if self.expansion_radio_model().is_none() {
             return Err(Error::InvalidOperation(
                 "This RF Explorer does not contain an expansion radio module.".to_string(),
             ));
         }
 
-        if self.active_radio_module().is_expansion() {
+        if self.is_expansion_radio_module_active() {
             return Err(Error::InvalidOperation(
                 "Expansion radio module is already active.".to_string(),
             ));
@@ -486,7 +486,7 @@ impl SpectrumAnalyzer {
                 .is_none()
         });
 
-        if self.active_radio_module().is_expansion() {
+        if self.is_expansion_radio_module_active() {
             Ok(())
         } else {
             Err(Error::TimedOut(COMMAND_RESPONSE_TIMEOUT))
@@ -620,7 +620,7 @@ impl SpectrumAnalyzer {
     #[tracing::instrument(skip(self))]
     pub fn set_sweep_len(&self, sweep_len: u16) -> Result<()> {
         // Only 'Plus' models can set the number of points in a sweep
-        if !self.active_radio_module().model().is_plus_model() {
+        if !self.active_radio_model().is_plus_model() {
             return Err(Error::InvalidOperation(
                 "Only RF Explorer 'Plus' models support setting the number of sweep points"
                     .to_string(),
@@ -726,7 +726,7 @@ impl SpectrumAnalyzer {
             ));
         }
 
-        let active_model = self.active_radio_module().model();
+        let active_model = self.active_radio_model();
 
         let min_max_freq = active_model.min_freq()..=active_model.max_freq();
         if !min_max_freq.contains(&start) {

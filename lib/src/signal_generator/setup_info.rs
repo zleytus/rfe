@@ -16,37 +16,22 @@ impl<'a> TryFrom<&'a [u8]> for SetupInfo<Model> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rf_explorer::{RadioModule, SetupInfo};
+    use crate::rf_explorer::SetupInfo;
     use crate::signal_generator::Model;
 
     #[test]
     fn accept_rfe_gen_setup() {
         let setup = SetupInfo::<Model>::try_from(b"#C3-M:060,255,01.15\r\n".as_ref()).unwrap();
-        assert_eq!(
-            setup.main_radio_module,
-            Some(RadioModule::Main {
-                model: Model::Rfe6Gen
-            })
-        );
-        assert_eq!(setup.expansion_radio_module, None);
+        assert_eq!(setup.main_radio_model, Some(Model::Rfe6Gen));
+        assert_eq!(setup.expansion_radio_model, None);
         assert_eq!(setup.firmware_version, "01.15");
     }
 
     #[test]
     fn accept_rfe_gen_combo_setup() {
         let setup = SetupInfo::<Model>::try_from(b"#C3-M:060,061,01.15\r\n".as_ref()).unwrap();
-        assert_eq!(
-            setup.main_radio_module,
-            Some(RadioModule::Main {
-                model: Model::Rfe6Gen
-            })
-        );
-        assert_eq!(
-            setup.expansion_radio_module,
-            Some(RadioModule::Expansion {
-                model: Model::Rfe6GenExpansion
-            })
-        );
+        assert_eq!(setup.main_radio_model, Some(Model::Rfe6Gen));
+        assert_eq!(setup.expansion_radio_model, Some(Model::Rfe6GenExpansion));
         assert_eq!(setup.firmware_version, "01.15");
     }
 }

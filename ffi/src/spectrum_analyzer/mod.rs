@@ -1,6 +1,5 @@
 mod list;
 mod model;
-mod radio_module;
 mod rf_explorer;
 
 use list::SpectrumAnalyzerList;

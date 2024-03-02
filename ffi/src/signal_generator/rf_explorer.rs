@@ -350,16 +350,16 @@ pub extern "C" fn rfe_signal_generator_temperature(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_signal_generator_main_radio_module(
+pub extern "C" fn rfe_signal_generator_main_radio_model(
     rfe: Option<&SignalGenerator>,
-    radio_module: Option<&mut SignalGeneratorRadioModule>,
+    model: Option<&mut SignalGeneratorModel>,
 ) -> Result {
-    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
+    let (Some(rfe), Some(model)) = (rfe, model) else {
         return Result::NullPtrError;
     };
 
-    if let Some(module) = rfe.main_radio_module() {
-        *radio_module = module.into();
+    if let Some(main_model) = rfe.main_radio_model() {
+        *model = main_model.into();
         Result::Success
     } else {
         Result::NoData
@@ -367,16 +367,16 @@ pub extern "C" fn rfe_signal_generator_main_radio_module(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_signal_generator_expansion_radio_module(
+pub extern "C" fn rfe_signal_generator_expansion_radio_model(
     rfe: Option<&SignalGenerator>,
-    radio_module: Option<&mut SignalGeneratorRadioModule>,
+    model: Option<&mut SignalGeneratorModel>,
 ) -> Result {
-    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
+    let (Some(rfe), Some(model)) = (rfe, model) else {
         return Result::NullPtrError;
     };
 
-    if let Some(module) = rfe.expansion_radio_module() {
-        *radio_module = module.into();
+    if let Some(expansion_model) = rfe.expansion_radio_model() {
+        *model = expansion_model.into();
         Result::Success
     } else {
         Result::NoData
@@ -384,12 +384,12 @@ pub extern "C" fn rfe_signal_generator_expansion_radio_module(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_signal_generator_active_radio_module(
+pub extern "C" fn rfe_signal_generator_active_radio_model(
     rfe: Option<&SignalGenerator>,
-    radio_module: Option<&mut SignalGeneratorRadioModule>,
+    model: Option<&mut SignalGeneratorModel>,
 ) -> Result {
-    if let (Some(rfe), Some(radio_module)) = (rfe, radio_module) {
-        *radio_module = rfe.active_radio_module().into();
+    if let (Some(rfe), Some(model)) = (rfe, model) {
+        *model = rfe.active_radio_model().into();
         Result::Success
     } else {
         Result::NullPtrError
@@ -397,16 +397,16 @@ pub extern "C" fn rfe_signal_generator_active_radio_module(
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_signal_generator_inactive_radio_module(
+pub extern "C" fn rfe_signal_generator_inactive_radio_model(
     rfe: Option<&SignalGenerator>,
-    radio_module: Option<&mut SignalGeneratorRadioModule>,
+    model: Option<&mut SignalGeneratorModel>,
 ) -> Result {
-    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
+    let (Some(rfe), Some(model)) = (rfe, model) else {
         return Result::NullPtrError;
     };
 
-    if let Some(module) = rfe.inactive_radio_module() {
-        *radio_module = module.into();
+    if let Some(inactive_model) = rfe.inactive_radio_model() {
+        *model = inactive_model.into();
         Result::Success
     } else {
         Result::NoData

@@ -6,14 +6,16 @@ use nom::{
     combinator::{map, map_res},
 };
 
-use super::{parsers::*, RadioModule};
+use super::parsers::*;
 use crate::common::MessageParseError;
 use crate::spectrum_analyzer::Model;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SetupInfo<M: Debug + Clone + Copy + TryFrom<u8> + PartialEq + Eq + Default = Model> {
-    pub main_radio_module: Option<RadioModule<M>>,
-    pub expansion_radio_module: Option<RadioModule<M>>,
+pub(crate) struct SetupInfo<
+    M: Debug + Clone + Copy + TryFrom<u8> + PartialEq + Eq + Default = Model,
+> {
+    pub main_radio_model: Option<M>,
+    pub expansion_radio_model: Option<M>,
     pub firmware_version: String,
 }
 
@@ -25,8 +27,8 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
         // Parse the prefix of the message
         let (bytes, _) = tag(prefix)(bytes)?;
 
-        // Parse the main model
-        let (bytes, main_model) = map_res(parse_num(3), |num| {
+        // Parse the main radio's model
+        let (bytes, main_radio_model) = map_res(parse_num(3), |num| {
             if let Ok(model) = M::try_from(num) {
                 Ok(Some(model))
             } else if num == 255 {
@@ -38,8 +40,8 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
 
         let (bytes, _) = tag(",")(bytes)?;
 
-        // Parse the expansion model
-        let (bytes, exp_model) = map_res(parse_num(3), |num| {
+        // Parse the expansion radio's model
+        let (bytes, expansion_radio_model) = map_res(parse_num(3), |num| {
             if let Ok(model) = M::try_from(num) {
                 Ok(Some(model))
             } else if num == 255 {
@@ -59,8 +61,8 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
         let _ = parse_opt_line_ending(bytes)?;
 
         Ok(SetupInfo {
-            main_radio_module: main_model.map(|model| RadioModule::Main { model }),
-            expansion_radio_module: exp_model.map(|model| RadioModule::Expansion { model }),
+            main_radio_model,
+            expansion_radio_model,
             firmware_version,
         })
     }

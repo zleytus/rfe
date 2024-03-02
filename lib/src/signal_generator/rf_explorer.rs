@@ -10,7 +10,7 @@ use super::{
     ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, Temperature,
 };
 use crate::rf_explorer::{
-    Callback, RadioModule, ScreenData, SerialNumber, SetupInfo, NEXT_SCREEN_DATA_TIMEOUT,
+    impl_rf_explorer, Callback, ScreenData, SerialNumber, SetupInfo, NEXT_SCREEN_DATA_TIMEOUT,
     RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
 };
 use crate::{
@@ -122,8 +122,8 @@ impl SignalGenerator {
         *self.messages().temperature.0.lock().unwrap()
     }
 
-    /// Returns the main radio module.
-    pub fn main_radio_module(&self) -> Option<RadioModule<Model>> {
+    /// Returns the main radio's model.
+    pub fn main_radio_model(&self) -> Option<Model> {
         self.messages()
             .setup_info
             .0
@@ -131,11 +131,11 @@ impl SignalGenerator {
             .unwrap()
             .as_ref()
             .unwrap()
-            .main_radio_module
+            .main_radio_model
     }
 
-    /// Returns the expansion radio module (if one exists).
-    pub fn expansion_radio_module(&self) -> Option<RadioModule<Model>> {
+    /// Returns the expansion radio's model (if one exists).
+    pub fn expansion_radio_model(&self) -> Option<Model> {
         self.messages()
             .setup_info
             .0
@@ -143,30 +143,32 @@ impl SignalGenerator {
             .unwrap()
             .as_ref()
             .unwrap()
-            .expansion_radio_module
+            .expansion_radio_model
     }
 
-    pub fn active_radio_module(&self) -> RadioModule<Model> {
-        let Some(exp_module) = self.expansion_radio_module() else {
-            return self.main_radio_module().unwrap_or_default();
+    /// The active radio's model.
+    pub fn active_radio_model(&self) -> Model {
+        let Some(exp_model) = self.expansion_radio_model() else {
+            return self.main_radio_model().unwrap_or_default();
         };
 
         if self.config_expansion().is_some() {
-            exp_module
+            exp_model
         } else {
-            self.main_radio_module().unwrap_or_default()
+            self.main_radio_model().unwrap_or_default()
         }
     }
 
-    pub fn inactive_radio_module(&self) -> Option<RadioModule<Model>> {
-        let Some(exp_module) = self.expansion_radio_module() else {
+    /// The inactive radio's model.
+    pub fn inactive_radio_model(&self) -> Option<Model> {
+        let Some(exp_model) = self.expansion_radio_model() else {
             return None;
         };
 
         if self.config_expansion().is_some() {
-            self.main_radio_module()
+            self.main_radio_model()
         } else {
-            Some(exp_module)
+            Some(exp_model)
         }
     }
 

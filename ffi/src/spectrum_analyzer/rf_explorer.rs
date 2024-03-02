@@ -9,7 +9,7 @@ use rfe::{
     RfExplorer, ScreenData,
 };
 
-use super::{SpectrumAnalyzer, SpectrumAnalyzerList, SpectrumAnalyzerRadioModule};
+use super::model::SpectrumAnalyzerModel;
 use crate::common::{Result, UserDataWrapper};
 
 #[no_mangle]
@@ -449,67 +449,39 @@ pub extern "C" fn rfe_spectrum_analyzer_input_stage(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_module(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
-    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
-) -> Result {
-    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
-        return Result::NullPtrError;
-    };
-
-    if let Some(module) = rfe.main_radio_module() {
-        *radio_module = module.into();
-        Result::Success
-    } else {
-        Result::NoData
-    }
+) -> SpectrumAnalyzerModel {
+    rfe.and_then(|rfe| rfe.main_radio_model())
+        .map(Model::into)
+        .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_module(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
-    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
-) -> Result {
-    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
-        return Result::NullPtrError;
-    };
-
-    if let Some(module) = rfe.expansion_radio_module() {
-        *radio_module = module.into();
-        Result::Success
-    } else {
-        Result::NoData
-    }
+) -> SpectrumAnalyzerModel {
+    rfe.and_then(|rfe| rfe.expansion_radio_model())
+        .map(Model::into)
+        .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_spectrum_analyzer_active_radio_module(
+pub extern "C" fn rfe_spectrum_analyzer_active_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
-    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
-) -> Result {
-    if let (Some(rfe), Some(radio_module)) = (rfe, radio_module) {
-        *radio_module = rfe.active_radio_module().into();
-        Result::Success
-    } else {
-        Result::NullPtrError
-    }
+) -> SpectrumAnalyzerModel {
+    rfe.map_or(SpectrumAnalyzerModel::Unknown, |rfe| {
+        rfe.active_radio_model().into()
+    })
 }
 
 #[no_mangle]
-pub extern "C" fn rfe_spectrum_analyzer_inactive_radio_module(
+pub extern "C" fn rfe_spectrum_analyzer_inactive_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
-    radio_module: Option<&mut SpectrumAnalyzerRadioModule>,
-) -> Result {
-    let (Some(rfe), Some(radio_module)) = (rfe, radio_module) else {
-        return Result::NullPtrError;
-    };
-
-    if let Some(module) = rfe.inactive_radio_module() {
-        *radio_module = module.into();
-        Result::Success
-    } else {
-        Result::NoData
-    }
+) -> SpectrumAnalyzerModel {
+    rfe.and_then(|rfe| rfe.inactive_radio_model())
+        .map(Model::into)
+        .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
 #[no_mangle]
@@ -726,22 +698,22 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_calc_mode(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_main_radio_module(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_main_radio(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> Result {
     if let Some(rfe) = rfe {
-        rfe.activate_main_radio_module().into()
+        rfe.activate_main_radio().into()
     } else {
         Result::NullPtrError
     }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_expansion_radio_module(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_expansion_radio(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> Result {
     if let Some(rfe) = rfe {
-        rfe.activate_expansion_radio_module().into()
+        rfe.activate_expansion_radio().into()
     } else {
         Result::NullPtrError
     }

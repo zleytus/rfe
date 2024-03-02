@@ -1,12 +1,10 @@
 mod command;
 pub(crate) mod parsers;
-mod radio_module;
 mod screen_data;
 mod serial_number;
 mod setup_info;
 
 pub(crate) use command::Command;
-pub use radio_module::RadioModule;
 pub use screen_data::ScreenData;
 pub(crate) use serial_number::SerialNumber;
 pub(crate) use setup_info::SetupInfo;
