@@ -612,7 +612,7 @@ enum Result rfe_spectrum_analyzer_set_center_span(const struct SpectrumAnalyzer 
 enum Result rfe_spectrum_analyzer_set_center_span_sweep_len(const struct SpectrumAnalyzer *rfe,
                                                             uint64_t center_hz,
                                                             uint64_t span_hz,
-                                                            uint16_t sweep_points);
+                                                            uint16_t sweep_len);
 
 enum Result rfe_spectrum_analyzer_set_min_max_amps(const struct SpectrumAnalyzer *rfe,
                                                    int16_t min_amp_dbm,
@@ -632,8 +632,8 @@ void rfe_spectrum_analyzer_set_config_callback(const struct SpectrumAnalyzer *rf
 
 void rfe_spectrum_analyzer_remove_config_callback(const struct SpectrumAnalyzer *rfe);
 
-enum Result rfe_spectrum_analyzer_set_sweep_points(const struct SpectrumAnalyzer *rfe,
-                                                   uint16_t sweep_points);
+enum Result rfe_spectrum_analyzer_set_sweep_len(const struct SpectrumAnalyzer *rfe,
+                                                uint16_t sweep_len);
 
 enum Result rfe_spectrum_analyzer_set_calc_mode(const struct SpectrumAnalyzer *rfe,
                                                 CalcMode calc_mode);

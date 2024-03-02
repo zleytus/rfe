@@ -591,10 +591,10 @@ pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
     start_hz: u64,
     stop_hz: u64,
-    sweep_points: u16,
+    sweep_len: u16,
 ) -> Result {
     if let Some(rfe) = rfe {
-        rfe.set_start_stop_sweep_len(start_hz, stop_hz, sweep_points)
+        rfe.set_start_stop_sweep_len(start_hz, stop_hz, sweep_len)
             .into()
     } else {
         Result::NullPtrError
@@ -619,10 +619,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
     center_hz: u64,
     span_hz: u64,
-    sweep_points: u16,
+    sweep_len: u16,
 ) -> Result {
     if let Some(rfe) = rfe {
-        rfe.set_center_span_sweep_len(center_hz, span_hz, sweep_points)
+        rfe.set_center_span_sweep_len(center_hz, span_hz, sweep_len)
             .into()
     } else {
         Result::NullPtrError
@@ -693,34 +693,28 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
 
     // Convert the C function pointer to a Rust closure
     let cb = move || {
-        if let Some(cb) = callback {
-            cb(user_data.clone().0);
-        }
+        callback(user_data.clone().0);
     };
 
     rfe.set_config_callback(cb);
-    Result::Success
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
-) -> Result {
+) {
     if let Some(rfe) = rfe {
         rfe.remove_config_callback();
-        Result::Success
-    } else {
-        Result::NullPtrError
     }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_points(
+pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
-    sweep_points: u16,
+    sweep_len: u16,
 ) -> Result {
     if let Some(rfe) = rfe {
-        rfe.set_sweep_len(sweep_points).into()
+        rfe.set_sweep_len(sweep_len).into()
     } else {
         Result::NullPtrError
     }
