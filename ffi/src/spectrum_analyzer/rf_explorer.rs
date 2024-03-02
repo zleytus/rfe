@@ -9,7 +9,7 @@ use rfe::{
     ScreenData, SpectrumAnalyzer,
 };
 
-use super::model::SpectrumAnalyzerModel;
+use super::SpectrumAnalyzerModel;
 use crate::common::{Result, UserDataWrapper};
 
 #[no_mangle]
@@ -82,6 +82,13 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name_len(
+    rfe: Option<&SpectrumAnalyzer>,
+) -> usize {
+    rfe.map(|rfe| rfe.port_name().len()).unwrap_or_default()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
     rfe: Option<&SpectrumAnalyzer>,
     firmware_version_buf: Option<&mut c_char>,
@@ -103,6 +110,14 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
     firmware_version_buf[..firmware_version.len()].copy_from_slice(firmware_version);
 
     Result::Success
+}
+
+#[no_mangle]
+pub extern "C" fn rfe_spectrum_analyzer_firmware_version_len(
+    rfe: Option<&SpectrumAnalyzer>,
+) -> usize {
+    rfe.map(|rfe| rfe.firmware_version().len())
+        .unwrap_or_default()
 }
 
 #[no_mangle]
@@ -130,6 +145,13 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
     let serial_number_buf = slice::from_raw_parts_mut(serial_number_buf, buf_len);
     serial_number_buf[..serial_number.len()].copy_from_slice(serial_number);
     Result::Success
+}
+
+#[no_mangle]
+pub extern "C" fn rfe_spectrum_analyzer_serial_number_len(rfe: Option<&SpectrumAnalyzer>) -> usize {
+    rfe.and_then(SpectrumAnalyzer::serial_number)
+        .map(|sn| sn.len())
+        .unwrap_or_default()
 }
 
 #[no_mangle]

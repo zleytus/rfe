@@ -309,10 +309,13 @@ enum Result rfe_signal_generator_firmware_version(const struct SignalGenerator *
                                                   char *firmware_version_buf,
                                                   uintptr_t buf_len);
 
+uintptr_t rfe_signal_generator_firmware_version_len(const struct SignalGenerator *rfe);
+
 enum Result rfe_signal_generator_serial_number(const struct SignalGenerator *rfe,
                                                char *serial_number_buf,
                                                uintptr_t buf_len);
 
+uintptr_t rfe_signal_generator_serial_number_len(const struct SignalGenerator *rfe);
 
 enum Result rfe_signal_generator_lcd_on(const struct SignalGenerator *rfe);
 
@@ -482,16 +485,19 @@ enum Result rfe_spectrum_analyzer_port_name(const struct SpectrumAnalyzer *rfe,
                                             char *port_name_buf,
                                             uintptr_t buf_len);
 
+uintptr_t rfe_spectrum_analyzer_port_name_len(const struct SpectrumAnalyzer *rfe);
 
 enum Result rfe_spectrum_analyzer_firmware_version(const struct SpectrumAnalyzer *rfe,
                                                    char *firmware_version_buf,
                                                    uintptr_t buf_len);
 
+uintptr_t rfe_spectrum_analyzer_firmware_version_len(const struct SpectrumAnalyzer *rfe);
 
 enum Result rfe_spectrum_analyzer_serial_number(const struct SpectrumAnalyzer *rfe,
                                                 char *serial_number_buf,
                                                 uintptr_t buf_len);
 
+uintptr_t rfe_spectrum_analyzer_serial_number_len(const struct SpectrumAnalyzer *rfe);
 
 enum Result rfe_spectrum_analyzer_lcd_on(const struct SpectrumAnalyzer *rfe);
 

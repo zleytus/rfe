@@ -116,6 +116,14 @@ pub unsafe extern "C" fn rfe_signal_generator_firmware_version(
 }
 
 #[no_mangle]
+pub extern "C" fn rfe_signal_generator_firmware_version_len(
+    rfe: Option<&SignalGenerator>,
+) -> usize {
+    rfe.map(|rfe| rfe.firmware_version().len())
+        .unwrap_or_default()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rfe_signal_generator_serial_number(
     rfe: Option<&SignalGenerator>,
     serial_number_buf: Option<&mut c_char>,
@@ -140,6 +148,13 @@ pub unsafe extern "C" fn rfe_signal_generator_serial_number(
     let serial_number_buf = slice::from_raw_parts_mut(serial_number_buf, buf_len);
     serial_number_buf[..serial_number.len()].copy_from_slice(serial_number);
     Result::Success
+}
+
+#[no_mangle]
+pub extern "C" fn rfe_signal_generator_serial_number_len(rfe: Option<&SignalGenerator>) -> usize {
+    rfe.and_then(SignalGenerator::serial_number)
+        .map(|sn| sn.len())
+        .unwrap_or_default()
 }
 
 #[no_mangle]
