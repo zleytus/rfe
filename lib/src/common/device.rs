@@ -75,6 +75,16 @@ impl<M: MessageContainer> Device<M> {
             })
     }
 
+    pub fn connect_with_baud_rate(
+        baud_rate: u32,
+        device_init_command: impl AsRef<[u8]>,
+    ) -> Option<Self> {
+        serial_port::silabs_cp210x_ports().find_map(|port_info| {
+            let serial_port = SerialPort::open(&port_info, baud_rate).ok()?;
+            Self::connect_internal(serial_port, device_init_command.as_ref()).ok()
+        })
+    }
+
     pub fn connect_with_name_and_baud_rate(
         name: &str,
         baud_rate: u32,
