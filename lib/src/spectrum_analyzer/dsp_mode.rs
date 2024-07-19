@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::{convert::TryFrom, fmt::Display};
 
 use nom::{bytes::complete::tag, combinator::map_res};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -34,6 +34,18 @@ impl<'a> TryFrom<&'a [u8]> for DspMode {
         let _ = parse_opt_line_ending(bytes)?;
 
         Ok(dsp_mode)
+    }
+}
+
+impl Display for DspMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let dsp_mode = match self {
+            Self::Auto => "Auto",
+            Self::Filter => "Filter",
+            Self::Fast => "Fast",
+            Self::NoImg => "NoImg",
+        };
+        write!(f, "{dsp_mode}")
     }
 }
 
