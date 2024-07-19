@@ -1,4 +1,5 @@
 use std::{io, time::Duration};
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
