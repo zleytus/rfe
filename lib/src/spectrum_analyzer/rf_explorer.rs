@@ -287,12 +287,13 @@ impl SpectrumAnalyzer {
 
         let (sweep, cond_var) = &self.messages().sweep;
         // Wait until the timestamp of the previous sweep and the next sweep are different
-        let (_, wait_result) = cond_var
+        let (sweep, wait_result) = cond_var
             .wait_timeout_while(sweep.lock().unwrap(), timeout, |sweep| {
                 sweep.as_ref().map(|sweep| sweep.timestamp) == previous_sweep_timestamp
                     || sweep.is_none()
             })
             .unwrap();
+        drop(sweep);
 
         if !wait_result.timed_out() {
             self.fill_buf_with_sweep(buf)
@@ -582,13 +583,14 @@ impl SpectrumAnalyzer {
 
         // Wait until the current config contains the requested values
         trace!("Waiting to receive updated 'Config'");
-        let (_, wait_result) = self.wait_for_config_while(|config| {
+        let (config, wait_result) = self.wait_for_config_while(|config| {
             let Some(config) = config else {
                 return true;
             };
 
             !config.contains_start_stop_amp_range(start, stop, min_amp_dbm, max_amp_dbm)
         });
+        drop(config);
 
         if !wait_result.timed_out() {
             Ok(())
@@ -648,12 +650,13 @@ impl SpectrumAnalyzer {
 
         // Wait until the current config contains the requested sweep points
         info!("Waiting to receive updated config");
-        let (_, wait_result) = self.wait_for_config_while(|config| {
+        let (config, wait_result) = self.wait_for_config_while(|config| {
             config
                 .as_ref()
                 .filter(|config| config.sweep_len == expected_sweep_len)
                 .is_none()
         });
+        drop(config);
 
         if !wait_result.timed_out() {
             Ok(())
@@ -694,13 +697,14 @@ impl SpectrumAnalyzer {
 
         // Wait to see if we receive a DSP mode message in response
         let (lock, condvar) = &self.messages().dsp_mode;
-        let (_, wait_result) = condvar
+        let (dsp_mode, wait_result) = condvar
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 COMMAND_RESPONSE_TIMEOUT,
                 |new_dsp_mode| *new_dsp_mode != Some(dsp_mode),
             )
             .unwrap();
+        drop(dsp_mode);
 
         if !wait_result.timed_out() {
             Ok(())
