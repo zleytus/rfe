@@ -1,4 +1,4 @@
 [workspace]
 
-members = ["lib", "ffi"]
+members = ["lib", "ffi", "gui"]
 resolver = "2"
