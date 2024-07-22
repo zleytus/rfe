@@ -1,0 +1,31 @@
+use egui::{CentralPanel, Context, InnerResponse};
+
+use crate::{
+    settings::{PlotSettings, Units},
+    widgets::Plot,
+    Sweeps,
+};
+
+pub struct PlotCentralPanel {
+    panel: CentralPanel,
+}
+
+impl PlotCentralPanel {
+    pub fn new() -> Self {
+        Self {
+            panel: CentralPanel::default(),
+        }
+    }
+
+    pub fn show(
+        self,
+        ctx: &Context,
+        sweeps: Option<&Sweeps>,
+        plot_settings: &PlotSettings,
+        units: Units,
+    ) -> InnerResponse<()> {
+        self.panel.show(ctx, |ui| {
+            Plot::show(ui, sweeps, plot_settings, units);
+        })
+    }
+}
