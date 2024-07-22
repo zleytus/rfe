@@ -23,9 +23,9 @@ jobs:
       - name: Install serialport-rs dependencies
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt install pkg-config libudev-dev
-      - name: Build rfe and rfe-ffi (debug)
+      - name: Build rfe, rfe-ffi, and rfe-gui (debug)
         run: cargo build --verbose
-      - name: Build rfe and rfe-ffi (release)
+      - name: Build rfe, rfe-ffi, and rfe-gui (release)
         run: cargo build --verbose --release
       - name: Build C examples (shared library)
         working-directory: ./ffi/bindings/rfe-c

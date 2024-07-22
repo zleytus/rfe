@@ -112,6 +112,14 @@ impl Frequency {
         self.freq.get::<hertz>()
     }
 
+    pub fn as_hz_f32(&self) -> f32 {
+        self.freq.get::<hertz>() as f32
+    }
+
+    pub fn as_hz_f64(&self) -> f64 {
+        self.freq.get::<hertz>() as f64
+    }
+
     pub fn as_khz(&self) -> u64 {
         self.freq.get::<kilohertz>()
     }
