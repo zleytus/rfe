@@ -17,7 +17,9 @@ int main() {
     Result rc =
         rfe_spectrum_analyzer_wait_for_next_sweep(rfe, sweep_buf, sweep_buf_len, &sweep_len);
     if (rc == RESULT_SUCCESS) {
-        print_sweep(sweep_buf, sweep_len);
+        uint64_t start_hz = rfe_spectrum_analyzer_start_freq_hz(rfe);
+        uint64_t stop_hz = rfe_spectrum_analyzer_stop_freq_hz(rfe);
+        print_sweep(sweep_buf, sweep_len, start_hz, stop_hz);
     } else {
         fprintf(stderr, "Failed to wait for next RF Explorer sweep\n");
     }

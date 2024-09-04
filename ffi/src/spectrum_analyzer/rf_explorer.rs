@@ -6,7 +6,7 @@ use std::{
 
 use rfe::{
     spectrum_analyzer::{CalcMode, DspMode, InputStage, Mode, Model, TrackingStatus, WifiBand},
-    ScreenData, SpectrumAnalyzer,
+    Frequency, ScreenData, SpectrumAnalyzer,
 };
 
 use super::SpectrumAnalyzerModel;
@@ -638,7 +638,15 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_min_max_amps(
 #[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     rfe: Option<&SpectrumAnalyzer>,
-    callback: Option<extern "C" fn(sweep: *const f32, sweep_len: usize, user_data: *mut c_void)>,
+    callback: Option<
+        extern "C" fn(
+            sweep: *const f32,
+            sweep_len: usize,
+            start_hz: u64,
+            stop_hz: u64,
+            user_data: *mut c_void,
+        ),
+    >,
     user_data: *mut c_void,
 ) {
     let (Some(rfe), Some(callback)) = (rfe, callback) else {
@@ -650,8 +658,14 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     let user_data = UserDataWrapper(user_data);
 
     // Convert the C function pointer to a Rust closure
-    let cb = move |sweep: &[f32]| {
-        callback(sweep.as_ptr(), sweep.len(), user_data.clone().0);
+    let cb = move |sweep: &[f32], start_freq: Frequency, stop_freq: Frequency| {
+        callback(
+            sweep.as_ptr(),
+            sweep.len(),
+            start_freq.as_hz(),
+            stop_freq.as_hz(),
+            user_data.clone().0,
+        );
     };
 
     rfe.set_sweep_callback(cb);

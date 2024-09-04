@@ -600,7 +600,10 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the callback that is called when the spectrum analyzer receives a sweep.
-    pub fn set_sweep_callback(&self, cb: impl FnMut(&[f32]) + Send + 'static) {
+    pub fn set_sweep_callback(
+        &self,
+        cb: impl FnMut(&[f32], Frequency, Frequency) + Send + 'static,
+    ) {
         *self.messages().sweep_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
@@ -799,7 +802,7 @@ struct MessageContainer {
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
     pub(crate) config_callback: Mutex<Option<Box<dyn FnMut() + Send>>>,
     pub(crate) sweep: (Mutex<Option<Sweep>>, Condvar),
-    pub(crate) sweep_callback: Mutex<Option<Box<dyn FnMut(&[f32]) + Send>>>,
+    pub(crate) sweep_callback: Mutex<Option<Box<dyn FnMut(&[f32], Frequency, Frequency) + Send>>>,
     pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
     pub(crate) dsp_mode: (Mutex<Option<DspMode>>, Condvar),
     pub(crate) tracking_status: (Mutex<Option<TrackingStatus>>, Condvar),
@@ -824,8 +827,21 @@ impl crate::common::MessageContainer for MessageContainer {
                 *self.sweep.0.lock().unwrap() = Some(sweep);
                 self.sweep.1.notify_one();
                 if let Some(ref mut cb) = *self.sweep_callback.lock().unwrap() {
-                    if let Some(ref sweep) = *self.sweep.0.lock().unwrap() {
-                        cb(sweep.amplitudes_dbm.as_slice());
+                    let (start_freq, stop_freq) = {
+                        let config = self.config.0.lock().unwrap();
+                        (
+                            config
+                                .as_ref()
+                                .map(|config| config.start_freq)
+                                .unwrap_or_default(),
+                            config
+                                .as_ref()
+                                .map(|config| config.stop_freq)
+                                .unwrap_or_default(),
+                        )
+                    };
+                    if let Some(ref sweep) = self.sweep.0.lock().unwrap().as_ref() {
+                        cb(sweep.amplitudes_dbm.as_slice(), start_freq, stop_freq);
                     }
                 }
             }

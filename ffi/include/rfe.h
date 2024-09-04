@@ -621,6 +621,8 @@ enum Result rfe_spectrum_analyzer_set_min_max_amps(const struct SpectrumAnalyzer
 void rfe_spectrum_analyzer_set_sweep_callback(const struct SpectrumAnalyzer *rfe,
                                               void (*callback)(const float *sweep,
                                                                uintptr_t sweep_len,
+                                                               uint64_t start_hz,
+                                                               uint64_t stop_hz,
                                                                void *user_data),
                                               void *user_data);
 
