@@ -613,7 +613,7 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the callback that is called when the spectrum analyzer receives a `Config`.
-    pub fn set_config_callback(&self, cb: impl FnMut() + Send + 'static) {
+    pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
         *self.messages().config_callback.lock().unwrap() = Some(Box::new(cb));
     }
 
@@ -800,7 +800,7 @@ impl SpectrumAnalyzer {
 #[derive(Default)]
 struct MessageContainer {
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
-    pub(crate) config_callback: Mutex<Option<Box<dyn FnMut() + Send>>>,
+    pub(crate) config_callback: Mutex<Option<Box<dyn FnMut(Config) + Send>>>,
     pub(crate) sweep: (Mutex<Option<Sweep>>, Condvar),
     pub(crate) sweep_callback: Mutex<Option<Box<dyn FnMut(&[f32], Frequency, Frequency) + Send>>>,
     pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
@@ -820,7 +820,9 @@ impl crate::common::MessageContainer for MessageContainer {
                 *self.config.0.lock().unwrap() = Some(config);
                 self.config.1.notify_one();
                 if let Some(ref mut cb) = *self.config_callback.lock().unwrap() {
-                    cb();
+                    if let Some(config) = self.config.0.lock().unwrap().clone() {
+                        cb(config);
+                    }
                 }
             }
             Self::Message::Sweep(sweep) => {

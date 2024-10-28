@@ -12,8 +12,7 @@ mod tracking_status;
 mod wifi_band;
 
 pub(crate) use command::Command;
-pub(crate) use config::Config;
-pub use config::{CalcMode, Mode};
+pub use config::{CalcMode, Config, Mode};
 pub use dsp_mode::DspMode;
 pub use input_stage::InputStage;
 pub(crate) use message::Message;

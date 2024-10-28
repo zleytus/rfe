@@ -77,7 +77,7 @@ impl Display for CalcMode {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub(crate) struct Config {
+pub struct Config {
     pub start_freq: Frequency,
     pub step_size: Frequency,
     pub stop_freq: Frequency,
@@ -94,7 +94,7 @@ pub(crate) struct Config {
     pub rbw: Option<Frequency>,
     pub amp_offset_db: Option<i8>,
     pub calc_mode: Option<CalcMode>,
-    pub timestamp: DateTime<Utc>,
+    pub(crate) timestamp: DateTime<Utc>,
 }
 
 impl Config {

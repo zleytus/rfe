@@ -256,6 +256,25 @@ typedef struct SignalGeneratorConfigFreqSweep {
   uint64_t sweep_delay_ms;
 } SignalGeneratorConfigFreqSweep;
 
+typedef struct SpectrumAnalyzerConfig {
+  uint64_t start_freq_hz;
+  uint64_t step_size_hz;
+  uint64_t stop_freq_hz;
+  uint64_t center_freq_hz;
+  uint64_t span_hz;
+  int16_t max_amp_dbm;
+  int16_t min_amp_dbm;
+  uint16_t sweep_len;
+  bool is_expansion_radio_module_active;
+  Mode mode;
+  uint64_t min_freq_hz;
+  uint64_t max_freq_hz;
+  uint64_t max_span_hz;
+  uint64_t rbw_hz;
+  int8_t amp_offset_db;
+  CalcMode calc_mode;
+} SpectrumAnalyzerConfig;
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -629,7 +648,8 @@ void rfe_spectrum_analyzer_set_sweep_callback(const struct SpectrumAnalyzer *rfe
 void rfe_spectrum_analyzer_remove_sweep_callback(const struct SpectrumAnalyzer *rfe);
 
 void rfe_spectrum_analyzer_set_config_callback(const struct SpectrumAnalyzer *rfe,
-                                               void (*callback)(void *user_data),
+                                               void (*callback)(struct SpectrumAnalyzerConfig config,
+                                                                void *user_data),
                                                void *user_data);
 
 void rfe_spectrum_analyzer_remove_config_callback(const struct SpectrumAnalyzer *rfe);

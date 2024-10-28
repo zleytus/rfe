@@ -5,11 +5,13 @@ use std::{
 };
 
 use rfe::{
-    spectrum_analyzer::{CalcMode, DspMode, InputStage, Mode, Model, TrackingStatus, WifiBand},
+    spectrum_analyzer::{
+        CalcMode, Config, DspMode, InputStage, Mode, Model, TrackingStatus, WifiBand,
+    },
     Frequency, ScreenData, SpectrumAnalyzer,
 };
 
-use super::SpectrumAnalyzerModel;
+use super::{SpectrumAnalyzerConfig, SpectrumAnalyzerModel};
 use crate::common::{Result, UserDataWrapper};
 
 #[no_mangle]
@@ -683,7 +685,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_sweep_callback(
 #[no_mangle]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
-    callback: Option<extern "C" fn(user_data: *mut c_void)>,
+    callback: Option<extern "C" fn(config: SpectrumAnalyzerConfig, user_data: *mut c_void)>,
     user_data: *mut c_void,
 ) {
     let (Some(rfe), Some(callback)) = (rfe, callback) else {
@@ -695,8 +697,8 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     let user_data = UserDataWrapper(user_data);
 
     // Convert the C function pointer to a Rust closure
-    let cb = move || {
-        callback(user_data.clone().0);
+    let cb = move |config: Config| {
+        callback(SpectrumAnalyzerConfig::from(config), user_data.clone().0);
     };
 
     rfe.set_config_callback(cb);
