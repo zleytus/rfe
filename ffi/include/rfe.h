@@ -674,7 +674,7 @@ enum Result rfe_spectrum_analyzer_set_dsp_mode(const struct SpectrumAnalyzer *rf
                                                DspMode dsp_mode);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
-#endif /* rfe_h */
+#endif  /* rfe_h */
