@@ -1,7 +1,11 @@
 use std::convert::TryInto;
 
 use chrono::{DateTime, Utc};
-use nom::{bytes::complete::tag, bytes::streaming::take, combinator::map_res};
+use nom::{
+    bytes::{complete::tag, streaming::take},
+    combinator::map_res,
+    Parser,
+};
 
 use super::parsers::*;
 use crate::common::MessageParseError;
@@ -61,7 +65,7 @@ impl<'a> TryFrom<&'a [u8]> for ScreenData {
 
         // Parse the screen data
         let (bytes, screen_data): (&[u8], &[u8; Self::ROWS * Self::COLUMNS]) =
-            map_res(take(Self::ROWS * Self::COLUMNS), TryInto::try_into)(bytes)?;
+            map_res(take(Self::ROWS * Self::COLUMNS), TryInto::try_into).parse(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
         let _ = parse_opt_line_ending(bytes)?;

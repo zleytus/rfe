@@ -2,9 +2,9 @@ use std::{fmt::Display, str};
 
 use nom::{
     bytes::complete::{tag, take_while_m_n},
-    character::is_alphanumeric,
     combinator::{map, map_res},
     sequence::preceded,
+    AsChar, Parser,
 };
 
 use super::parsers::*;
@@ -30,10 +30,11 @@ impl<'a> TryFrom<&'a [u8]> for SerialNumber {
         let (bytes, serial_number) = preceded(
             tag(SerialNumber::PREFIX),
             map(
-                map_res(take_while_m_n(16, 16, is_alphanumeric), str::from_utf8),
+                map_res(take_while_m_n(16, 16, AsChar::is_alphanum), str::from_utf8),
                 str::to_string,
             ),
-        )(bytes)?;
+        )
+        .parse(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
         let _ = parse_opt_line_ending(bytes)?;

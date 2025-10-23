@@ -3,6 +3,7 @@ use std::fmt::Display;
 use nom::{
     bytes::complete::{tag, take},
     combinator::map_res,
+    Parser,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -32,7 +33,7 @@ impl<'a> TryFrom<&'a [u8]> for InputStage {
 
         // Parse the input stage
         let (bytes, input_stage) =
-            map_res(take(1usize), |byte: &[u8]| InputStage::try_from(byte[0]))(bytes)?;
+            map_res(take(1usize), |byte: &[u8]| InputStage::try_from(byte[0])).parse(bytes)?;
 
         // Consume \r or \r\n line ending and make sure there aren't any bytes left
         let _ = parse_opt_line_ending(bytes)?;

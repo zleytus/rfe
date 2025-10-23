@@ -8,7 +8,7 @@ readme = "README.md"
 
 [dependencies]
 chrono = "0.4"
-nom = "7"
+nom = "8"
 num_enum = { version = "0.7", features = ["complex-expressions"] }
 serialport = "4.6.0"
 thiserror = "1"

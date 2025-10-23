@@ -4,6 +4,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::not_line_ending,
     combinator::{map, map_res},
+    Parser,
 };
 
 use super::parsers::*;
@@ -36,7 +37,8 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
             } else {
                 Err(())
             }
-        })(bytes)?;
+        })
+        .parse(bytes)?;
 
         let (bytes, _) = tag(",")(bytes)?;
 
@@ -49,13 +51,14 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
             } else {
                 Err(())
             }
-        })(bytes)?;
+        })
+        .parse(bytes)?;
 
         let (bytes, _) = tag(",")(bytes)?;
 
         // Parse the firmware version
         let (bytes, firmware_version) =
-            map(map_res(not_line_ending, str::from_utf8), str::to_string)(bytes)?;
+            map(map_res(not_line_ending, str::from_utf8), str::to_string).parse(bytes)?;
 
         // Consume \r or \r\n line ending and make sure there aren't any bytes left
         let _ = parse_opt_line_ending(bytes)?;

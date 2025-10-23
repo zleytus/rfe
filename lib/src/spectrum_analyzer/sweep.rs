@@ -7,6 +7,7 @@ use nom::{
     combinator::map,
     multi::length_data,
     number::complete::{be_u16, u8 as nom_u8},
+    Parser,
 };
 
 use super::{Config, Model};
@@ -35,7 +36,8 @@ impl<'a> TryFrom<&'a [u8]> for Sweep {
             tag(Self::STANDARD_PREFIX),
             tag(Self::EXT_PREFIX),
             tag(Self::LARGE_PREFIX),
-        ))(bytes)?;
+        ))
+        .parse(bytes)?;
 
         // Determine whether or not the Sweep is 'truncated' by looking for the EEOT byte
         // sequence as well as Config and SetupInfo messages
@@ -57,10 +59,12 @@ impl<'a> TryFrom<&'a [u8]> for Sweep {
 
         // Get the slice containing the amplitudes in the sweep data
         let (bytes, amps) = match prefix {
-            Self::STANDARD_PREFIX => length_data(nom_u8)(bytes)?,
-            Self::EXT_PREFIX => length_data(map(nom_u8, |len| (usize::from(len) + 1) * 16))(bytes)?,
-            Self::LARGE_PREFIX => length_data(be_u16)(bytes)?,
-            _ => length_data(nom_u8)(bytes)?,
+            Self::STANDARD_PREFIX => length_data(nom_u8).parse(bytes)?,
+            Self::EXT_PREFIX => {
+                length_data(map(nom_u8, |len| (usize::from(len) + 1) * 16)).parse(bytes)?
+            }
+            Self::LARGE_PREFIX => length_data(be_u16).parse(bytes)?,
+            _ => length_data(nom_u8).parse(bytes)?,
         };
 
         // Convert the amplitude bytes into dBm by dividing them by -2

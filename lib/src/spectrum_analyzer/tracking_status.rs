@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 
+use nom::Parser;
 use nom::{bytes::complete::tag, combinator::map_res, number::complete::u8 as nom_u8};
 use num_enum::TryFromPrimitive;
 
@@ -26,7 +27,7 @@ impl<'a> TryFrom<&'a [u8]> for TrackingStatus {
         let (bytes, _) = tag(TrackingStatus::PREFIX)(bytes)?;
 
         // Parse the tracking status
-        let (bytes, tracking_status) = map_res(nom_u8, TrackingStatus::try_from)(bytes)?;
+        let (bytes, tracking_status) = map_res(nom_u8, TrackingStatus::try_from).parse(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
         let _ = parse_opt_line_ending(bytes)?;

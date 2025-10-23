@@ -1,5 +1,6 @@
 use std::{convert::TryFrom, ops::RangeInclusive};
 
+use nom::Parser;
 use nom::{bytes::complete::tag, combinator::map_res, number::complete::u8 as nom_u8};
 use num_enum::TryFromPrimitive;
 
@@ -42,7 +43,7 @@ impl<'a> TryFrom<&'a [u8]> for Temperature {
         let (bytes, _) = tag(Temperature::PREFIX)(bytes)?;
 
         // Parse the temperature
-        let (bytes, temperature) = map_res(nom_u8, Temperature::try_from)(bytes)?;
+        let (bytes, temperature) = map_res(nom_u8, Temperature::try_from).parse(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
         let _ = parse_opt_line_ending(bytes)?;

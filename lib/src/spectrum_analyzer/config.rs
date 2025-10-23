@@ -5,6 +5,7 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     combinator::{map, map_res, opt},
+    Parser,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -123,12 +124,12 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_freq) = map(parse_frequency(7u8), Frequency::from_khz)(bytes)?;
+        let (bytes, start_freq) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step size
-        let (bytes, step_size) = map(parse_frequency(7u8), Frequency::from_hz)(bytes)?;
+        let (bytes, step_size) = map(parse_frequency(7u8), Frequency::from_hz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -145,7 +146,7 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         // Parse the number of points in a sweep
         // 0-9999 uses 4 bytes and 10000+ uses 5 bytes
         // Try to parse using 5 bytes first and if that doesn't work fall back to 4 bytes
-        let (bytes, sweep_len) = alt((parse_num(5u8), parse_num(4u8)))(bytes)?;
+        let (bytes, sweep_len) = alt((parse_num(5u8), parse_num(4u8))).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -154,7 +155,8 @@ impl<'a> TryFrom<&'a [u8]> for Config {
             0 => Ok(false),
             1 => Ok(true),
             _ => Err(()),
-        })(bytes)?;
+        })
+        .parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -164,35 +166,35 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the minimum frequency
-        let (bytes, min_freq) = map(parse_frequency(7u8), Frequency::from_khz)(bytes)?;
+        let (bytes, min_freq) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the maximum frequency
-        let (bytes, max_freq) = map(parse_frequency(7u8), Frequency::from_khz)(bytes)?;
+        let (bytes, max_freq) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the maximum span
-        let (bytes, max_span) = map(parse_frequency(7u8), Frequency::from_khz)(bytes)?;
+        let (bytes, max_span) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
 
-        let (bytes, _) = opt(parse_comma)(bytes)?;
+        let (bytes, _) = opt(parse_comma).parse(bytes)?;
 
         // Parse the RBW
         // This field is optional because it's not sent by older RF Explorers
-        let (bytes, rbw) = opt(map(parse_frequency(5u8), Frequency::from_khz))(bytes)?;
+        let (bytes, rbw) = opt(map(parse_frequency(5u8), Frequency::from_khz)).parse(bytes)?;
 
-        let (bytes, _) = opt(parse_comma)(bytes)?;
+        let (bytes, _) = opt(parse_comma).parse(bytes)?;
 
         // Parse the amplitude offset
         // This field is optional because it's not sent by older RF Explorers
-        let (bytes, amp_offset_db) = opt(parse_amplitude)(bytes)?;
+        let (bytes, amp_offset_db) = opt(parse_amplitude).parse(bytes)?;
 
-        let (bytes, _) = opt(parse_comma)(bytes)?;
+        let (bytes, _) = opt(parse_comma).parse(bytes)?;
 
         // Parse the calculator mode
         // This field is optional because it's not sent by older RF Explorers
-        let (bytes, calc_mode) = opt(parse_calc_mode)(bytes)?;
+        let (bytes, calc_mode) = opt(parse_calc_mode).parse(bytes)?;
 
         // Consume \n or \r\n line endings and make sure there aren't any bytes left afterwards
         let _ = parse_opt_line_ending(bytes)?;
