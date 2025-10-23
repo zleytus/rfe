@@ -10,6 +10,29 @@
 
 #define ScreenData_HEIGHT_PX 64
 
+typedef enum Result {
+  RESULT_SUCCESS = 0,
+  RESULT_INCOMPATIBLE_FIRMWARE_ERROR,
+  RESULT_INVALID_INPUT_ERROR,
+  RESULT_INVALID_OPERATION_ERROR,
+  RESULT_IO_ERROR,
+  RESULT_NO_DATA,
+  RESULT_NULL_PTR_ERROR,
+  RESULT_TIMEOUT_ERROR,
+} Result;
+
+enum SignalGeneratorModel
+#ifdef __cplusplus
+  : uint8_t
+#endif // __cplusplus
+ {
+  SIGNAL_GENERATOR_MODEL_RFE6_GEN = 60,
+  SIGNAL_GENERATOR_MODEL_RFE6_GEN_EXPANSION = 61,
+};
+#ifndef __cplusplus
+typedef uint8_t SignalGeneratorModel;
+#endif // __cplusplus
+
 enum Attenuation
 #ifdef __cplusplus
   : uint8_t
@@ -20,6 +43,95 @@ enum Attenuation
 };
 #ifndef __cplusplus
 typedef uint8_t Attenuation;
+#endif // __cplusplus
+
+enum PowerLevel
+#ifdef __cplusplus
+  : uint8_t
+#endif // __cplusplus
+ {
+  POWER_LEVEL_LOWEST = 0,
+  POWER_LEVEL_LOW,
+  POWER_LEVEL_HIGH,
+  POWER_LEVEL_HIGHEST,
+};
+#ifndef __cplusplus
+typedef uint8_t PowerLevel;
+#endif // __cplusplus
+
+enum RfPower
+#ifdef __cplusplus
+  : uint8_t
+#endif // __cplusplus
+ {
+  RF_POWER_ON = 0,
+  RF_POWER_OFF,
+};
+#ifndef __cplusplus
+typedef uint8_t RfPower;
+#endif // __cplusplus
+
+enum Temperature
+#ifdef __cplusplus
+  : uint8_t
+#endif // __cplusplus
+ {
+  TEMPERATURE_MINUS_TEN_TO_ZERO = 48,
+  TEMPERATURE_ZERO_TO_TEN = 49,
+  TEMPERATURE_TEN_TO_TWENTY = 50,
+  TEMPERATURE_TWENTY_TO_THIRTY = 51,
+  TEMPERATURE_THIRTY_TO_FORTY = 52,
+  TEMPERATURE_FORTY_TO_FIFTY = 53,
+  TEMPERATURE_FIFTY_TO_SIXTY = 54,
+};
+#ifndef __cplusplus
+typedef uint8_t Temperature;
+#endif // __cplusplus
+
+enum SpectrumAnalyzerModel
+#ifdef __cplusplus
+  : uint8_t
+#endif // __cplusplus
+ {
+  SPECTRUM_ANALYZER_MODEL_RFE433_M = 0,
+  SPECTRUM_ANALYZER_MODEL_RFE868_M = 1,
+  SPECTRUM_ANALYZER_MODEL_RFE915_M = 2,
+  SPECTRUM_ANALYZER_MODEL_RFE_W_SUB1_G = 3,
+  SPECTRUM_ANALYZER_MODEL_RFE24_G = 4,
+  SPECTRUM_ANALYZER_MODEL_RFE_W_SUB3_G = 5,
+  SPECTRUM_ANALYZER_MODEL_RFE6_G = 6,
+  SPECTRUM_ANALYZER_MODEL_RFE_W_SUB1_G_PLUS = 10,
+  SPECTRUM_ANALYZER_MODEL_RFE_PRO_AUDIO = 11,
+  SPECTRUM_ANALYZER_MODEL_RFE24_G_PLUS = 12,
+  SPECTRUM_ANALYZER_MODEL_RFE4_G_PLUS = 13,
+  SPECTRUM_ANALYZER_MODEL_RFE6_G_PLUS = 14,
+  SPECTRUM_ANALYZER_MODEL_RFE_MW5G3G = 16,
+  SPECTRUM_ANALYZER_MODEL_RFE_MW5G4G = 17,
+  SPECTRUM_ANALYZER_MODEL_RFE_MW5G5G = 18,
+  SPECTRUM_ANALYZER_MODEL_UNKNOWN = 19,
+};
+#ifndef __cplusplus
+typedef uint8_t SpectrumAnalyzerModel;
+#endif // __cplusplus
+
+enum Mode
+#ifdef __cplusplus
+  : uint8_t
+#endif // __cplusplus
+ {
+  MODE_SPECTRUM_ANALYZER = 0,
+  MODE_RF_GENERATOR = 1,
+  MODE_WIFI_ANALYZER = 2,
+  MODE_ANALYZER_TRACKING = 5,
+  MODE_RF_SNIFFER = 6,
+  MODE_CW_TRANSMITTER = 60,
+  MODE_SWEEP_FREQUENCY = 61,
+  MODE_SWEEP_AMPLITUDE = 62,
+  MODE_GENERATOR_TRACKING = 63,
+  MODE_UNKNOWN = 255,
+};
+#ifndef __cplusplus
+typedef uint8_t Mode;
 #endif // __cplusplus
 
 enum CalcMode
@@ -53,6 +165,18 @@ enum DspMode
 typedef uint8_t DspMode;
 #endif // __cplusplus
 
+enum TrackingStatus
+#ifdef __cplusplus
+  : uint8_t
+#endif // __cplusplus
+ {
+  TRACKING_STATUS_DISABLED = 0,
+  TRACKING_STATUS_ENABLED,
+};
+#ifndef __cplusplus
+typedef uint8_t TrackingStatus;
+#endif // __cplusplus
+
 enum InputStage
 #ifdef __cplusplus
   : uint8_t
@@ -66,130 +190,6 @@ enum InputStage
 };
 #ifndef __cplusplus
 typedef uint8_t InputStage;
-#endif // __cplusplus
-
-enum Mode
-#ifdef __cplusplus
-  : uint8_t
-#endif // __cplusplus
- {
-  MODE_SPECTRUM_ANALYZER = 0,
-  MODE_RF_GENERATOR = 1,
-  MODE_WIFI_ANALYZER = 2,
-  MODE_ANALYZER_TRACKING = 5,
-  MODE_RF_SNIFFER = 6,
-  MODE_CW_TRANSMITTER = 60,
-  MODE_SWEEP_FREQUENCY = 61,
-  MODE_SWEEP_AMPLITUDE = 62,
-  MODE_GENERATOR_TRACKING = 63,
-  MODE_UNKNOWN = 255,
-};
-#ifndef __cplusplus
-typedef uint8_t Mode;
-#endif // __cplusplus
-
-enum PowerLevel
-#ifdef __cplusplus
-  : uint8_t
-#endif // __cplusplus
- {
-  POWER_LEVEL_LOWEST = 0,
-  POWER_LEVEL_LOW,
-  POWER_LEVEL_HIGH,
-  POWER_LEVEL_HIGHEST,
-};
-#ifndef __cplusplus
-typedef uint8_t PowerLevel;
-#endif // __cplusplus
-
-typedef enum Result {
-  RESULT_SUCCESS = 0,
-  RESULT_INCOMPATIBLE_FIRMWARE_ERROR,
-  RESULT_INVALID_INPUT_ERROR,
-  RESULT_INVALID_OPERATION_ERROR,
-  RESULT_IO_ERROR,
-  RESULT_NO_DATA,
-  RESULT_NULL_PTR_ERROR,
-  RESULT_TIMEOUT_ERROR,
-} Result;
-
-enum RfPower
-#ifdef __cplusplus
-  : uint8_t
-#endif // __cplusplus
- {
-  RF_POWER_ON = 0,
-  RF_POWER_OFF,
-};
-#ifndef __cplusplus
-typedef uint8_t RfPower;
-#endif // __cplusplus
-
-enum SignalGeneratorModel
-#ifdef __cplusplus
-  : uint8_t
-#endif // __cplusplus
- {
-  SIGNAL_GENERATOR_MODEL_RFE6_GEN = 60,
-  SIGNAL_GENERATOR_MODEL_RFE6_GEN_EXPANSION = 61,
-};
-#ifndef __cplusplus
-typedef uint8_t SignalGeneratorModel;
-#endif // __cplusplus
-
-enum SpectrumAnalyzerModel
-#ifdef __cplusplus
-  : uint8_t
-#endif // __cplusplus
- {
-  SPECTRUM_ANALYZER_MODEL_RFE433_M = 0,
-  SPECTRUM_ANALYZER_MODEL_RFE868_M = 1,
-  SPECTRUM_ANALYZER_MODEL_RFE915_M = 2,
-  SPECTRUM_ANALYZER_MODEL_RFE_W_SUB1_G = 3,
-  SPECTRUM_ANALYZER_MODEL_RFE24_G = 4,
-  SPECTRUM_ANALYZER_MODEL_RFE_W_SUB3_G = 5,
-  SPECTRUM_ANALYZER_MODEL_RFE6_G = 6,
-  SPECTRUM_ANALYZER_MODEL_RFE_W_SUB1_G_PLUS = 10,
-  SPECTRUM_ANALYZER_MODEL_RFE_PRO_AUDIO = 11,
-  SPECTRUM_ANALYZER_MODEL_RFE24_G_PLUS = 12,
-  SPECTRUM_ANALYZER_MODEL_RFE4_G_PLUS = 13,
-  SPECTRUM_ANALYZER_MODEL_RFE6_G_PLUS = 14,
-  SPECTRUM_ANALYZER_MODEL_RFE_MW5G3G = 16,
-  SPECTRUM_ANALYZER_MODEL_RFE_MW5G4G = 17,
-  SPECTRUM_ANALYZER_MODEL_RFE_MW5G5G = 18,
-  SPECTRUM_ANALYZER_MODEL_UNKNOWN = 19,
-};
-#ifndef __cplusplus
-typedef uint8_t SpectrumAnalyzerModel;
-#endif // __cplusplus
-
-enum Temperature
-#ifdef __cplusplus
-  : uint8_t
-#endif // __cplusplus
- {
-  TEMPERATURE_MINUS_TEN_TO_ZERO = 48,
-  TEMPERATURE_ZERO_TO_TEN = 49,
-  TEMPERATURE_TEN_TO_TWENTY = 50,
-  TEMPERATURE_TWENTY_TO_THIRTY = 51,
-  TEMPERATURE_THIRTY_TO_FORTY = 52,
-  TEMPERATURE_FORTY_TO_FIFTY = 53,
-  TEMPERATURE_FIFTY_TO_SIXTY = 54,
-};
-#ifndef __cplusplus
-typedef uint8_t Temperature;
-#endif // __cplusplus
-
-enum TrackingStatus
-#ifdef __cplusplus
-  : uint8_t
-#endif // __cplusplus
- {
-  TRACKING_STATUS_DISABLED = 0,
-  TRACKING_STATUS_ENABLED,
-};
-#ifndef __cplusplus
-typedef uint8_t TrackingStatus;
 #endif // __cplusplus
 
 enum WifiBand
