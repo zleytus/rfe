@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use egui::{
-    include_image, Button, CentralPanel, Color32, Context, Image, RichText, Rounding, Vec2,
+    include_image, Button, CentralPanel, Color32, Context, CornerRadius, Image, RichText, Vec2,
 };
 use rfe::SpectrumAnalyzer;
 
@@ -37,7 +37,7 @@ impl RfeNotConnectedCentralPanel {
                 if ui
                     .add(
                         Button::new(RichText::new("Try to Connect Again").size(24.0))
-                            .rounding(Rounding::default().at_least(5.0)),
+                            .corner_radius(CornerRadius::default().at_least(5)),
                     )
                     .clicked()
                 {

@@ -1,4 +1,4 @@
-use egui::{Button, Color32, Response, RichText, SelectableLabel, Ui, Vec2, Widget};
+use egui::{Button, Color32, Response, RichText, Ui, Vec2, Widget};
 
 #[derive(Debug, Default)]
 pub struct ResumeScanningButton;
@@ -43,7 +43,7 @@ impl RfeSettingsToggleButton {
 
 impl Widget for RfeSettingsToggleButton {
     fn ui(self, ui: &mut Ui) -> Response {
-        SelectableLabel::new(self.selected, "⛭")
+        Button::selectable(self.selected, "⛭")
             .ui(ui)
             .on_hover_text("RF Explorer Settings")
     }
@@ -62,7 +62,7 @@ impl PlotSettingsToggleButton {
 
 impl Widget for PlotSettingsToggleButton {
     fn ui(self, ui: &mut Ui) -> Response {
-        SelectableLabel::new(self.selected, "🗠")
+        Button::selectable(self.selected, "🗠")
             .ui(ui)
             .on_hover_text("Plot Settings")
     }

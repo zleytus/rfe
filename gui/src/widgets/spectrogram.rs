@@ -17,7 +17,12 @@ impl Spectrogram {
         let center_position =
             PlotPoint::new((start + stop) / 2.0, SpectrogramData::HEIGHT as f64 / 2.0);
         let size = Vec2::new((stop - start) as f32, SpectrogramData::HEIGHT as f32);
-        let image = PlotImage::new(spectrogram_data.texture(), center_position, size);
+        let image = PlotImage::new(
+            "spectrogram-image",
+            spectrogram_data.texture(),
+            center_position,
+            size,
+        );
 
         Plot::new("spectrogram")
             .allow_drag(false)

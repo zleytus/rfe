@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use egui::{Align, Context, Layout, TopBottomPanel, Ui};
+use egui::{Align, Context, Layout, TopBottomPanel, Ui, UiKind};
 
 use crate::{
     settings::AppSettings,
@@ -90,15 +90,15 @@ fn show_bottom_right(
     ui.menu_button("Export Trace as CSV...", |ui| {
         if ui.button("Average").clicked() {
             response = Some(AppSettingsPanelResponse::ExportAverageTraceClicked);
-            ui.close_menu();
+            ui.close_kind(UiKind::Menu);
         }
         if ui.button("Current").clicked() {
             response = Some(AppSettingsPanelResponse::ExportCurrentTraceClicked);
-            ui.close_menu();
+            ui.close_kind(UiKind::Menu);
         }
         if ui.button("Max").clicked() {
             response = Some(AppSettingsPanelResponse::ExportMaxTraceClicked);
-            ui.close_menu();
+            ui.close_kind(UiKind::Menu);
         }
     });
     response

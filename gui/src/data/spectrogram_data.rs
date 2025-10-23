@@ -19,7 +19,7 @@ impl SpectrogramData {
     pub const HEIGHT: usize = 100;
 
     pub fn new(ctx: &Context) -> Self {
-        let image = ColorImage::new([0, 0], Color32::TRANSPARENT);
+        let image = ColorImage::new([1, 1], vec![Color32::TRANSPARENT; 1]);
         Self {
             texture: ctx.load_texture("spectrogram", image.clone(), TextureOptions::default()),
             image,
@@ -70,7 +70,10 @@ impl SpectrogramData {
     }
 
     fn reset_data(&mut self, start_freq: Frequency, stop_freq: Frequency, sweep_len: usize) {
-        self.image = ColorImage::new([sweep_len, Self::HEIGHT], Color32::TRANSPARENT);
+        self.image = ColorImage::new(
+            [sweep_len, Self::HEIGHT],
+            vec![Color32::TRANSPARENT; sweep_len * Self::HEIGHT],
+        );
         self.sweep_history.clear();
         self.start_freq = start_freq;
         self.stop_freq = stop_freq;

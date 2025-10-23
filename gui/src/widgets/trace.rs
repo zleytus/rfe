@@ -36,30 +36,32 @@ impl Trace {
                     y: trace_settings.autoscale_y_axis,
                 });
                 plot_ui.line(
-                    Line::new(sweep_to_plot_points(
-                        trace_data.max(),
-                        trace_settings.amp_offset,
-                        units,
-                    ))
-                    .name("Max")
+                    Line::new(
+                        "Max",
+                        sweep_to_plot_points(trace_data.max(), trace_settings.amp_offset, units),
+                    )
                     .color(trace_settings.max_trace_color),
                 );
                 plot_ui.line(
-                    Line::new(sweep_to_plot_points(
-                        trace_data.average(),
-                        trace_settings.amp_offset,
-                        units,
-                    ))
-                    .name("Average")
+                    Line::new(
+                        "Average",
+                        sweep_to_plot_points(
+                            trace_data.average(),
+                            trace_settings.amp_offset,
+                            units,
+                        ),
+                    )
                     .color(trace_settings.average_trace_color),
                 );
                 plot_ui.line(
-                    Line::new(sweep_to_plot_points(
-                        trace_data.current(),
-                        trace_settings.amp_offset,
-                        units,
-                    ))
-                    .name("Current")
+                    Line::new(
+                        "Current",
+                        sweep_to_plot_points(
+                            trace_data.current(),
+                            trace_settings.amp_offset,
+                            units,
+                        ),
+                    )
                     .color(trace_settings.current_trace_color),
                 );
             })
@@ -70,7 +72,7 @@ fn sweep_to_plot_points(
     sweep: &[(Frequency, f64)],
     offset: i32,
     units: FrequencyUnits,
-) -> PlotPoints {
+) -> PlotPoints<'_> {
     PlotPoints::Owned(
         sweep
             .iter()
