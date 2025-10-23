@@ -1,32 +1,32 @@
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_void},
     ptr, slice,
     time::Duration,
 };
 
 use rfe::{
+    Frequency, ScreenData, SpectrumAnalyzer,
     spectrum_analyzer::{
         CalcMode, Config, DspMode, InputStage, Mode, Model, TrackingStatus, WifiBand,
     },
-    Frequency, ScreenData, SpectrumAnalyzer,
 };
 
 use super::{SpectrumAnalyzerConfig, SpectrumAnalyzerModel};
 use crate::common::{Result, UserDataWrapper};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_connect() -> *mut SpectrumAnalyzer {
     SpectrumAnalyzer::connect()
         .map(|rfe| Box::into_raw(Box::new(rfe)))
         .unwrap_or(ptr::null_mut())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
     baud_rate: u32,
 ) -> *mut SpectrumAnalyzer {
-    let Some(Ok(name)) = name.map(|name| CStr::from_ptr(name).to_str()) else {
+    let Some(Ok(name)) = name.map(|name| unsafe { CStr::from_ptr(name).to_str() }) else {
         return ptr::null_mut();
     };
 
@@ -35,28 +35,28 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name_and_baud_rate(
         .unwrap_or(ptr::null_mut())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_free(rfe: Option<&mut SpectrumAnalyzer>) {
     if let Some(rfe) = rfe {
-        drop(Box::from_raw(rfe));
+        drop(unsafe { Box::from_raw(rfe) });
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_send_bytes(
     rfe: Option<&SpectrumAnalyzer>,
     bytes: Option<&u8>,
     len: usize,
 ) -> Result {
     if let (Some(rfe), Some(bytes)) = (rfe, bytes) {
-        let bytes = slice::from_raw_parts(bytes, len);
+        let bytes = unsafe { slice::from_raw_parts(bytes, len) };
         rfe.send_bytes(bytes).into()
     } else {
         Result::NullPtrError
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name(
     rfe: Option<&SpectrumAnalyzer>,
     port_name_buf: Option<&mut c_char>,
@@ -67,26 +67,26 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name(
     };
 
     let name = CString::new(rfe.port_name()).unwrap_or_default();
-    let name = slice::from_raw_parts(name.as_ptr(), name.as_bytes().len());
+    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes().len()) };
 
     if buf_len < name.len() {
         return Result::InvalidInputError;
     }
 
-    let name_buf = slice::from_raw_parts_mut(port_name_buf, buf_len);
+    let name_buf = unsafe { slice::from_raw_parts_mut(port_name_buf, buf_len) };
     name_buf[..name.len()].copy_from_slice(name);
 
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name_len(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> usize {
     rfe.map(|rfe| rfe.port_name().len()).unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
     rfe: Option<&SpectrumAnalyzer>,
     firmware_version_buf: Option<&mut c_char>,
@@ -97,20 +97,21 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
     };
 
     let firmware_version = CString::new(rfe.firmware_version()).unwrap_or_default();
-    let firmware_version =
-        slice::from_raw_parts(firmware_version.as_ptr(), firmware_version.as_bytes().len());
+    let firmware_version = unsafe {
+        slice::from_raw_parts(firmware_version.as_ptr(), firmware_version.as_bytes().len())
+    };
 
     if buf_len < firmware_version.len() {
         return Result::InvalidInputError;
     }
 
-    let firmware_version_buf = slice::from_raw_parts_mut(firmware_version_buf, buf_len);
+    let firmware_version_buf = unsafe { slice::from_raw_parts_mut(firmware_version_buf, buf_len) };
     firmware_version_buf[..firmware_version.len()].copy_from_slice(firmware_version);
 
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_firmware_version_len(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> usize {
@@ -118,7 +119,7 @@ pub extern "C" fn rfe_spectrum_analyzer_firmware_version_len(
         .unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
     rfe: Option<&SpectrumAnalyzer>,
     serial_number_buf: Option<&mut c_char>,
@@ -134,25 +135,25 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
 
     let serial_number = CString::new(serial_number).unwrap_or_default();
     let serial_number =
-        slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len());
+        unsafe { slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len()) };
 
     if buf_len < serial_number.len() {
         return Result::InvalidInputError;
     }
 
-    let serial_number_buf = slice::from_raw_parts_mut(serial_number_buf, buf_len);
+    let serial_number_buf = unsafe { slice::from_raw_parts_mut(serial_number_buf, buf_len) };
     serial_number_buf[..serial_number.len()].copy_from_slice(serial_number);
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_serial_number_len(rfe: Option<&SpectrumAnalyzer>) -> usize {
     rfe.and_then(SpectrumAnalyzer::serial_number)
         .map(|sn| sn.len())
         .unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_on(rfe: Option<&SpectrumAnalyzer>) -> Result {
     if let Some(rfe) = rfe {
         rfe.lcd_on().into()
@@ -161,7 +162,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_on(rfe: Option<&SpectrumAnaly
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_off(rfe: Option<&SpectrumAnalyzer>) -> Result {
     if let Some(rfe) = rfe {
         rfe.lcd_off().into()
@@ -170,7 +171,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_off(rfe: Option<&SpectrumAnal
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_enable_dump_screen(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> Result {
@@ -181,7 +182,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_enable_dump_screen(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_disable_dump_screen(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> Result {
@@ -192,7 +193,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_disable_dump_screen(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_hold(rfe: Option<&SpectrumAnalyzer>) -> Result {
     if let Some(rfe) = rfe {
         rfe.hold().into()
@@ -201,7 +202,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_hold(rfe: Option<&SpectrumAnalyze
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_reboot(
     rfe: Option<&mut SpectrumAnalyzer>,
 ) -> Result {
@@ -212,7 +213,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_reboot(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_power_off(
     rfe: Option<&mut SpectrumAnalyzer>,
 ) -> Result {
@@ -223,100 +224,100 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_power_off(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_start_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::start_freq)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_step_size_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::step_size)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_stop_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::stop_freq)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_center_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::center_freq)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_span_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::span).unwrap_or_default().as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_min_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::min_freq)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_max_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::max_freq)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_max_span_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::max_span)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_rbw_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.and_then(SpectrumAnalyzer::rbw)
         .unwrap_or_default()
         .as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_min_amp_dbm(rfe: Option<&SpectrumAnalyzer>) -> i16 {
     rfe.map(SpectrumAnalyzer::min_amp_dbm).unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_max_amp_dbm(rfe: Option<&SpectrumAnalyzer>) -> i16 {
     rfe.map(SpectrumAnalyzer::max_amp_dbm).unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_amp_offset_db(rfe: Option<&SpectrumAnalyzer>) -> i8 {
     rfe.and_then(SpectrumAnalyzer::amp_offset_db)
         .unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_sweep_len(rfe: Option<&SpectrumAnalyzer>) -> u16 {
     rfe.map(SpectrumAnalyzer::sweep_len).unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_mode(rfe: Option<&SpectrumAnalyzer>) -> Mode {
     rfe.map(SpectrumAnalyzer::mode).unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_calc_mode(rfe: Option<&SpectrumAnalyzer>) -> CalcMode {
     rfe.and_then(SpectrumAnalyzer::calc_mode)
         .unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
     rfe: Option<&SpectrumAnalyzer>,
     sweep_buf: Option<&mut f32>,
@@ -327,7 +328,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
         return Result::NullPtrError;
     };
 
-    match rfe.fill_buf_with_sweep(std::slice::from_raw_parts_mut(sweep_buf, buf_len)) {
+    match rfe.fill_buf_with_sweep(unsafe { std::slice::from_raw_parts_mut(sweep_buf, buf_len) }) {
         Ok(sweep_length) => {
             *sweep_len = sweep_length;
             Result::Success
@@ -336,7 +337,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
     rfe: Option<&SpectrumAnalyzer>,
     sweep_buf: Option<&mut f32>,
@@ -347,7 +348,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
         return Result::NullPtrError;
     };
 
-    match rfe.wait_for_next_sweep_and_fill_buf(std::slice::from_raw_parts_mut(sweep_buf, buf_len)) {
+    match rfe.wait_for_next_sweep_and_fill_buf(unsafe {
+        std::slice::from_raw_parts_mut(sweep_buf, buf_len)
+    }) {
         Ok(sweep_length) => {
             *sweep_len = sweep_length;
             Result::Success
@@ -356,7 +359,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
     rfe: Option<&SpectrumAnalyzer>,
     timeout_secs: u64,
@@ -368,10 +371,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
         return Result::NullPtrError;
     };
 
-    match rfe.wait_for_next_sweep_with_timeout_and_fill_buf(
-        Duration::from_secs(timeout_secs),
-        std::slice::from_raw_parts_mut(sweep_buf, buf_len),
-    ) {
+    match rfe
+        .wait_for_next_sweep_with_timeout_and_fill_buf(Duration::from_secs(timeout_secs), unsafe {
+            std::slice::from_raw_parts_mut(sweep_buf, buf_len)
+        }) {
         Ok(sweep_length) => {
             *sweep_len = sweep_length;
             Result::Success
@@ -380,7 +383,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_screen_data(
     rfe: Option<&SpectrumAnalyzer>,
     screen_data: Option<&mut *const ScreenData>,
@@ -397,7 +400,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_screen_data(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data(
     rfe: Option<&SpectrumAnalyzer>,
     screen_data: Option<&mut *const ScreenData>,
@@ -415,7 +418,7 @@ pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data_with_timeout(
     rfe: Option<&SpectrumAnalyzer>,
     timeout_secs: u64,
@@ -434,7 +437,7 @@ pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data_with_timeout(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_dsp_mode(
     rfe: Option<&SpectrumAnalyzer>,
     dsp_mode: Option<&mut DspMode>,
@@ -451,7 +454,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_dsp_mode(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_tracking_status(
     rfe: Option<&SpectrumAnalyzer>,
     tracking_status: Option<&mut TrackingStatus>,
@@ -468,7 +471,7 @@ pub extern "C" fn rfe_spectrum_analyzer_tracking_status(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_input_stage(
     rfe: Option<&SpectrumAnalyzer>,
     input_stage: Option<&mut InputStage>,
@@ -485,7 +488,7 @@ pub extern "C" fn rfe_spectrum_analyzer_input_stage(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> SpectrumAnalyzerModel {
@@ -494,7 +497,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> SpectrumAnalyzerModel {
@@ -503,7 +506,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_active_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> SpectrumAnalyzerModel {
@@ -511,7 +514,7 @@ pub extern "C" fn rfe_spectrum_analyzer_active_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_inactive_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> SpectrumAnalyzerModel {
@@ -520,7 +523,7 @@ pub extern "C" fn rfe_spectrum_analyzer_inactive_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_start_wifi_analyzer(
     rfe: Option<&SpectrumAnalyzer>,
     wifi_band: WifiBand,
@@ -532,7 +535,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_start_wifi_analyzer(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_stop_wifi_analyzer(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> Result {
@@ -543,7 +546,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_stop_wifi_analyzer(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_request_tracking(
     rfe: Option<&SpectrumAnalyzer>,
     start_hz: u64,
@@ -556,7 +559,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_request_tracking(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_tracking_step(
     rfe: Option<&SpectrumAnalyzer>,
     step: u16,
@@ -568,7 +571,7 @@ pub extern "C" fn rfe_spectrum_analyzer_tracking_step(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_start_stop(
     rfe: Option<&SpectrumAnalyzer>,
     start_hz: u64,
@@ -581,7 +584,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_start_stop(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
     start_hz: u64,
@@ -596,7 +599,7 @@ pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_len(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span(
     rfe: Option<&SpectrumAnalyzer>,
     center_hz: u64,
@@ -609,7 +612,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
     center_hz: u64,
@@ -624,7 +627,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span_sweep_len(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_min_max_amps(
     rfe: Option<&SpectrumAnalyzer>,
     min_amp_dbm: i16,
@@ -637,7 +640,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_min_max_amps(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     rfe: Option<&SpectrumAnalyzer>,
     callback: Option<
@@ -673,7 +676,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     rfe.set_sweep_callback(cb);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_sweep_callback(
     rfe: Option<&SpectrumAnalyzer>,
 ) {
@@ -682,7 +685,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_sweep_callback(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
     callback: Option<extern "C" fn(config: SpectrumAnalyzerConfig, user_data: *mut c_void)>,
@@ -704,7 +707,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     rfe.set_config_callback(cb);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
 ) {
@@ -713,7 +716,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_config_callback(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
     sweep_len: u16,
@@ -725,7 +728,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_len(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_calc_mode(
     rfe: Option<&SpectrumAnalyzer>,
     calc_mode: CalcMode,
@@ -737,7 +740,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_calc_mode(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_main_radio(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> Result {
@@ -748,7 +751,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_main_radio(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_expansion_radio(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> Result {
@@ -759,7 +762,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_expansion_radio(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_input_stage(
     rfe: Option<&SpectrumAnalyzer>,
     input_stage: InputStage,
@@ -771,7 +774,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_input_stage(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_offset_db(
     rfe: Option<&SpectrumAnalyzer>,
     offset_db: i8,
@@ -783,7 +786,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_offset_db(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_dsp_mode(
     rfe: Option<&SpectrumAnalyzer>,
     dsp_mode: DspMode,

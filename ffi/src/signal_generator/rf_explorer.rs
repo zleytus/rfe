@@ -1,15 +1,15 @@
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_void},
     ptr, slice,
     time::Duration,
 };
 
 use rfe::{
+    ScreenData,
     signal_generator::{
         Attenuation, Config, ConfigAmpSweep, ConfigCw, ConfigFreqSweep, PowerLevel,
         SignalGenerator, Temperature,
     },
-    ScreenData,
 };
 
 use super::{
@@ -18,19 +18,19 @@ use super::{
 };
 use crate::common::{Result, UserDataWrapper};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_connect() -> *mut SignalGenerator {
     SignalGenerator::connect()
         .map(|rfe| Box::into_raw(Box::new(rfe)))
         .unwrap_or(ptr::null_mut())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
     baud_rate: u32,
 ) -> *mut SignalGenerator {
-    let Some(Ok(name)) = name.map(|name| CStr::from_ptr(name).to_str()) else {
+    let Some(Ok(name)) = name.map(|name| unsafe { CStr::from_ptr(name).to_str() }) else {
         return ptr::null_mut();
     };
 
@@ -39,28 +39,28 @@ pub unsafe extern "C" fn rfe_signal_generator_connect_with_name_and_baud_rate(
         .unwrap_or(ptr::null_mut())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_free(rfe: Option<&mut SignalGenerator>) {
     if let Some(rfe) = rfe {
-        drop(Box::from_raw(rfe));
+        drop(unsafe { Box::from_raw(rfe) });
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_send_bytes(
     rfe: Option<&SignalGenerator>,
     bytes: Option<&u8>,
     len: usize,
 ) -> Result {
     if let (Some(rfe), Some(bytes)) = (rfe, bytes) {
-        let bytes = slice::from_raw_parts(bytes, len);
+        let bytes = unsafe { slice::from_raw_parts(bytes, len) };
         rfe.send_bytes(bytes).into()
     } else {
         Result::NullPtrError
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_port_name(
     rfe: Option<&SignalGenerator>,
     port_name_buf: Option<&mut c_char>,
@@ -71,19 +71,19 @@ pub unsafe extern "C" fn rfe_signal_generator_port_name(
     };
 
     let name = CString::new(rfe.port_name()).unwrap_or_default();
-    let name = slice::from_raw_parts(name.as_ptr(), name.as_bytes().len());
+    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes().len()) };
 
     if buf_len < name.len() {
         return Result::InvalidInputError;
     }
 
-    let name_buf = slice::from_raw_parts_mut(port_name_buf, buf_len);
+    let name_buf = unsafe { slice::from_raw_parts_mut(port_name_buf, buf_len) };
     name_buf[..name.len()].copy_from_slice(name);
 
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_firmware_version(
     rfe: Option<&SignalGenerator>,
     firmware_version_buf: Option<&mut c_char>,
@@ -94,20 +94,21 @@ pub unsafe extern "C" fn rfe_signal_generator_firmware_version(
     };
 
     let firmware_version = CString::new(rfe.firmware_version()).unwrap_or_default();
-    let firmware_version =
-        slice::from_raw_parts(firmware_version.as_ptr(), firmware_version.as_bytes().len());
+    let firmware_version = unsafe {
+        slice::from_raw_parts(firmware_version.as_ptr(), firmware_version.as_bytes().len())
+    };
 
     if buf_len < firmware_version.len() {
         return Result::InvalidInputError;
     }
 
-    let firmware_version_buf = slice::from_raw_parts_mut(firmware_version_buf, buf_len);
+    let firmware_version_buf = unsafe { slice::from_raw_parts_mut(firmware_version_buf, buf_len) };
     firmware_version_buf[..firmware_version.len()].copy_from_slice(firmware_version);
 
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_firmware_version_len(
     rfe: Option<&SignalGenerator>,
 ) -> usize {
@@ -115,7 +116,7 @@ pub extern "C" fn rfe_signal_generator_firmware_version_len(
         .unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_serial_number(
     rfe: Option<&SignalGenerator>,
     serial_number_buf: Option<&mut c_char>,
@@ -131,25 +132,25 @@ pub unsafe extern "C" fn rfe_signal_generator_serial_number(
 
     let serial_number = CString::new(serial_number).unwrap_or_default();
     let serial_number =
-        slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len());
+        unsafe { slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len()) };
 
     if buf_len < serial_number.len() {
         return Result::InvalidInputError;
     }
 
-    let serial_number_buf = slice::from_raw_parts_mut(serial_number_buf, buf_len);
+    let serial_number_buf = unsafe { slice::from_raw_parts_mut(serial_number_buf, buf_len) };
     serial_number_buf[..serial_number.len()].copy_from_slice(serial_number);
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_serial_number_len(rfe: Option<&SignalGenerator>) -> usize {
     rfe.and_then(SignalGenerator::serial_number)
         .map(|sn| sn.len())
         .unwrap_or_default()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_lcd_on(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
         rfe.lcd_on().into()
@@ -158,7 +159,7 @@ pub extern "C" fn rfe_signal_generator_lcd_on(rfe: Option<&SignalGenerator>) -> 
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_lcd_off(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
         rfe.lcd_off().into()
@@ -167,7 +168,7 @@ pub extern "C" fn rfe_signal_generator_lcd_off(rfe: Option<&SignalGenerator>) ->
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_enable_dump_screen(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
         rfe.enable_dump_screen().into()
@@ -176,7 +177,7 @@ pub extern "C" fn rfe_signal_generator_enable_dump_screen(rfe: Option<&SignalGen
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_disable_dump_screen(
     rfe: Option<&SignalGenerator>,
 ) -> Result {
@@ -187,7 +188,7 @@ pub extern "C" fn rfe_signal_generator_disable_dump_screen(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_hold(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
         rfe.hold().into()
@@ -196,7 +197,7 @@ pub extern "C" fn rfe_signal_generator_hold(rfe: Option<&SignalGenerator>) -> Re
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_reboot(rfe: Option<&mut SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
         rfe.reboot().into()
@@ -205,7 +206,7 @@ pub unsafe extern "C" fn rfe_signal_generator_reboot(rfe: Option<&mut SignalGene
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_power_off(
     rfe: Option<&mut SignalGenerator>,
 ) -> Result {
@@ -216,7 +217,7 @@ pub unsafe extern "C" fn rfe_signal_generator_power_off(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config(
     rfe: Option<&SignalGenerator>,
     config: Option<&mut SignalGeneratorConfig>,
@@ -233,7 +234,7 @@ pub extern "C" fn rfe_signal_generator_config(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config_amp_sweep(
     rfe: Option<&SignalGenerator>,
     config: Option<&mut SignalGeneratorConfigAmpSweep>,
@@ -250,7 +251,7 @@ pub extern "C" fn rfe_signal_generator_config_amp_sweep(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config_cw(
     rfe: Option<&SignalGenerator>,
     config: Option<&mut SignalGeneratorConfigCw>,
@@ -267,7 +268,7 @@ pub extern "C" fn rfe_signal_generator_config_cw(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config_freq_sweep(
     rfe: Option<&SignalGenerator>,
     config: Option<&mut SignalGeneratorConfigFreqSweep>,
@@ -284,7 +285,7 @@ pub extern "C" fn rfe_signal_generator_config_freq_sweep(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_screen_data(
     rfe: Option<&SignalGenerator>,
     screen_data: Option<&mut *const ScreenData>,
@@ -301,7 +302,7 @@ pub unsafe extern "C" fn rfe_signal_generator_screen_data(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data(
     rfe: Option<&SignalGenerator>,
     screen_data: Option<&mut *const ScreenData>,
@@ -319,7 +320,7 @@ pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data_with_timeout(
     rfe: Option<&SignalGenerator>,
     timeout_secs: u64,
@@ -338,7 +339,7 @@ pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data_with_timeout(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_temperature(
     rfe: Option<&SignalGenerator>,
     temperature: Option<&mut Temperature>,
@@ -355,7 +356,7 @@ pub extern "C" fn rfe_signal_generator_temperature(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_main_radio_model(
     rfe: Option<&SignalGenerator>,
     model: Option<&mut SignalGeneratorModel>,
@@ -372,7 +373,7 @@ pub extern "C" fn rfe_signal_generator_main_radio_model(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_expansion_radio_model(
     rfe: Option<&SignalGenerator>,
     model: Option<&mut SignalGeneratorModel>,
@@ -389,7 +390,7 @@ pub extern "C" fn rfe_signal_generator_expansion_radio_model(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_active_radio_model(
     rfe: Option<&SignalGenerator>,
     model: Option<&mut SignalGeneratorModel>,
@@ -402,7 +403,7 @@ pub extern "C" fn rfe_signal_generator_active_radio_model(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_inactive_radio_model(
     rfe: Option<&SignalGenerator>,
     model: Option<&mut SignalGeneratorModel>,
@@ -419,7 +420,7 @@ pub extern "C" fn rfe_signal_generator_inactive_radio_model(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_amp_sweep(
     rfe: Option<&SignalGenerator>,
     cw_hz: u64,
@@ -444,7 +445,7 @@ pub extern "C" fn rfe_signal_generator_start_amp_sweep(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_amp_sweep_exp(
     rfe: Option<&SignalGenerator>,
     cw_hz: u64,
@@ -467,7 +468,7 @@ pub extern "C" fn rfe_signal_generator_start_amp_sweep_exp(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_cw(
     rfe: Option<&SignalGenerator>,
     cw_hz: u64,
@@ -481,7 +482,7 @@ pub extern "C" fn rfe_signal_generator_start_cw(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_cw_exp(
     rfe: Option<&SignalGenerator>,
     cw_hz: u64,
@@ -494,7 +495,7 @@ pub extern "C" fn rfe_signal_generator_start_cw_exp(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_freq_sweep(
     rfe: Option<&SignalGenerator>,
     start_hz: u64,
@@ -519,7 +520,7 @@ pub extern "C" fn rfe_signal_generator_start_freq_sweep(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_freq_sweep_exp(
     rfe: Option<&SignalGenerator>,
     start_hz: u64,
@@ -542,7 +543,7 @@ pub extern "C" fn rfe_signal_generator_start_freq_sweep_exp(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_tracking(
     rfe: Option<&SignalGenerator>,
     start_hz: u64,
@@ -559,7 +560,7 @@ pub extern "C" fn rfe_signal_generator_start_tracking(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_tracking_exp(
     rfe: Option<&SignalGenerator>,
     start_hz: u64,
@@ -575,7 +576,7 @@ pub extern "C" fn rfe_signal_generator_start_tracking_exp(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_tracking_step(
     rfe: Option<&SignalGenerator>,
     steps: u16,
@@ -587,7 +588,7 @@ pub extern "C" fn rfe_signal_generator_tracking_step(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfig, user_data: *mut c_void)>,
@@ -609,14 +610,14 @@ pub extern "C" fn rfe_signal_generator_set_config_callback(
     rfe.set_config_callback(cb);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_callback(rfe: Option<&SignalGenerator>) {
     if let Some(rfe) = rfe {
         rfe.remove_config_callback();
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigAmpSweep, user_data: *mut c_void)>,
@@ -641,7 +642,7 @@ pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
     rfe.set_config_amp_sweep_callback(cb);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
 ) {
@@ -650,7 +651,7 @@ pub extern "C" fn rfe_signal_generator_remove_config_amp_sweep_callback(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigCw, user_data: *mut c_void)>,
@@ -672,14 +673,14 @@ pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
     rfe.set_config_cw_callback(cb);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_cw_callback(rfe: Option<&SignalGenerator>) {
     if let Some(rfe) = rfe {
         rfe.remove_config_cw_callback();
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
     rfe: Option<&SignalGenerator>,
     callback: Option<extern "C" fn(config: SignalGeneratorConfigFreqSweep, user_data: *mut c_void)>,
@@ -704,7 +705,7 @@ pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
     rfe.set_config_freq_sweep_callback(cb);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_freq_sweep_callback(
     rfe: Option<&SignalGenerator>,
 ) {
@@ -713,7 +714,7 @@ pub extern "C" fn rfe_signal_generator_remove_config_freq_sweep_callback(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_rf_power_on(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
         rfe.rf_power_on().into()
@@ -722,7 +723,7 @@ pub extern "C" fn rfe_signal_generator_rf_power_on(rfe: Option<&SignalGenerator>
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_rf_power_off(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
         rfe.rf_power_off().into()

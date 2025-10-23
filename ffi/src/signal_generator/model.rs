@@ -1,5 +1,5 @@
 use core::slice;
-use std::ffi::{c_char, CString};
+use std::ffi::{CString, c_char};
 
 use rfe::signal_generator::Model;
 
@@ -30,7 +30,7 @@ impl From<SignalGeneratorModel> for Model {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_model_name(
     model: SignalGeneratorModel,
     name_buf: Option<&mut c_char>,
@@ -41,26 +41,26 @@ pub unsafe extern "C" fn rfe_signal_generator_model_name(
     };
 
     let name = CString::new(Model::from(model).to_string()).unwrap_or_default();
-    let name = slice::from_raw_parts(name.as_ptr(), name.as_bytes().len());
+    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes().len()) };
 
     if len < name.len() {
         return Result::InvalidInputError;
     }
 
-    let name_buf = slice::from_raw_parts_mut(name_buf, len);
+    let name_buf = unsafe { slice::from_raw_parts_mut(name_buf, len) };
     name_buf[..name.len()].copy_from_slice(name);
 
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_model_min_freq_hz(
     model: SignalGeneratorModel,
 ) -> u64 {
     Model::from(model).min_freq().as_hz()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_model_max_freq_hz(
     model: SignalGeneratorModel,
 ) -> u64 {

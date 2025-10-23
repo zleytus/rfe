@@ -2,7 +2,7 @@ use rfe::ScreenData;
 
 use super::Result;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_screen_data_get_pixel(
     screen_data: Option<&ScreenData>,
     x: u8,
@@ -17,7 +17,7 @@ pub extern "C" fn rfe_screen_data_get_pixel(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_screen_data_get_pixel_checked(
     screen_data: Option<&ScreenData>,
     x: u8,
@@ -36,7 +36,7 @@ pub extern "C" fn rfe_screen_data_get_pixel_checked(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_screen_data_timestamp(
     screen_data: Option<&ScreenData>,
     timestamp: Option<&mut i64>,
@@ -49,9 +49,9 @@ pub extern "C" fn rfe_screen_data_timestamp(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_screen_data_free(screen_data: Option<&mut ScreenData>) {
     if let Some(screen_data) = screen_data {
-        drop(Box::from_raw(screen_data));
+        drop(unsafe { Box::from_raw(screen_data) });
     }
 }

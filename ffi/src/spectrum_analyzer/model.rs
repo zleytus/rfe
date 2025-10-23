@@ -1,5 +1,5 @@
 use core::slice;
-use std::ffi::{c_char, CString};
+use std::ffi::{CString, c_char};
 
 use rfe::spectrum_analyzer::Model;
 
@@ -72,7 +72,7 @@ impl From<SpectrumAnalyzerModel> for Model {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_model_name(
     model: SpectrumAnalyzerModel,
     name_buf: Option<&mut c_char>,
@@ -86,19 +86,19 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_model_name(
         return Result::InvalidInputError;
     };
     let name = CString::new(model.to_string()).unwrap_or_default();
-    let name = slice::from_raw_parts(name.as_ptr(), name.as_bytes().len());
+    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes().len()) };
 
     if len < name.len() {
         return Result::InvalidInputError;
     }
 
-    let name_buf = slice::from_raw_parts_mut(name_buf, len);
+    let name_buf = unsafe { slice::from_raw_parts_mut(name_buf, len) };
     name_buf[..name.len()].copy_from_slice(name);
 
     Result::Success
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_is_plus_model(model: SpectrumAnalyzerModel) -> bool {
     if let Ok(model) = Model::try_from(model as u8) {
         model.is_plus_model()
@@ -107,7 +107,7 @@ pub extern "C" fn rfe_spectrum_analyzer_model_is_plus_model(model: SpectrumAnaly
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_has_wifi_analyzer(
     model: SpectrumAnalyzerModel,
 ) -> bool {
@@ -118,7 +118,7 @@ pub extern "C" fn rfe_spectrum_analyzer_model_has_wifi_analyzer(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_min_freq_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {
         model.min_freq().as_hz()
@@ -127,7 +127,7 @@ pub extern "C" fn rfe_spectrum_analyzer_model_min_freq_hz(model: SpectrumAnalyze
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_max_freq_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {
         model.max_freq().as_hz()
@@ -136,7 +136,7 @@ pub extern "C" fn rfe_spectrum_analyzer_model_max_freq_hz(model: SpectrumAnalyze
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_min_span_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {
         model.min_span().as_hz()
@@ -145,7 +145,7 @@ pub extern "C" fn rfe_spectrum_analyzer_model_min_span_hz(model: SpectrumAnalyze
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_max_span_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {
         model.max_span().as_hz()

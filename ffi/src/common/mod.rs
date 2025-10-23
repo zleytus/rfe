@@ -5,15 +5,15 @@ mod screen_data;
 pub(crate) use callback::UserDataWrapper;
 pub use result::Result;
 
-use std::ffi::{c_char, CString};
+use std::ffi::{CString, c_char};
 
 #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_is_driver_installed() -> bool {
     rfe::is_driver_installed()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rfe_port_names(len: Option<&mut usize>) -> *const *mut c_char {
     let mut port_names = rfe::port_names()
         .iter()
@@ -30,11 +30,11 @@ pub extern "C" fn rfe_port_names(len: Option<&mut usize>) -> *const *mut c_char 
     port_names_ptr
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_free_port_names(port_names_ptr: *mut *mut c_char, len: usize) {
-    let port_names = Vec::from_raw_parts(port_names_ptr, len, len);
+    let port_names = unsafe { Vec::from_raw_parts(port_names_ptr, len, len) };
     for port_name_ptr in port_names {
-        let port_name = CString::from_raw(port_name_ptr);
+        let port_name = unsafe { CString::from_raw(port_name_ptr) };
         drop(port_name);
     }
 }
