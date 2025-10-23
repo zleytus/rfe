@@ -162,7 +162,7 @@ impl<M: MessageContainer> Drop for Device<M> {
     }
 }
 
-fn find_message_in_buf<M>(message_buf: &[u8]) -> Result<M, MessageParseError>
+fn find_message_in_buf<M>(message_buf: &'_ [u8]) -> Result<M, MessageParseError<'_>>
 where
     M: for<'a> TryFrom<&'a [u8], Error = MessageParseError<'a>>,
 {

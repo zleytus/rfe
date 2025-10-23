@@ -68,7 +68,7 @@ impl SpectrumAnalyzer {
             .unwrap_or_default()
     }
 
-    fn config(&self) -> MutexGuard<Option<Config>> {
+    fn config(&'_ self) -> MutexGuard<'_, Option<Config>> {
         self.messages().config.0.lock().unwrap()
     }
 
@@ -717,9 +717,9 @@ impl SpectrumAnalyzer {
     }
 
     fn wait_for_config_while(
-        &self,
+        &'_ self,
         condition: impl FnMut(&mut Option<Config>) -> bool,
-    ) -> (MutexGuard<Option<Config>>, WaitTimeoutResult) {
+    ) -> (MutexGuard<'_, Option<Config>>, WaitTimeoutResult) {
         let (lock, condvar) = &self.messages().config;
         condvar
             .wait_timeout_while(lock.lock().unwrap(), COMMAND_RESPONSE_TIMEOUT, condition)
