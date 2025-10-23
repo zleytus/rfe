@@ -69,22 +69,22 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_khz) = parse_frequency(7u8).parse(bytes)?;
+        let (bytes, start_khz) = freq_parser(7u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the cw frequency
-        let (bytes, cw_khz) = parse_frequency(7u8).parse(bytes)?;
+        let (bytes, cw_khz) = freq_parser(7u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the total steps
-        let (bytes, total_steps) = parse_num(4u8).parse(bytes)?;
+        let (bytes, total_steps) = num_parser(4u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, step_khz) = parse_frequency(7u8).parse(bytes)?;
+        let (bytes, step_khz) = freq_parser(7u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -99,7 +99,7 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the sweep power steps
-        let (bytes, sweep_power_steps) = parse_num(4u8).parse(bytes)?;
+        let (bytes, sweep_power_steps) = num_parser(4u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -180,42 +180,42 @@ impl<'a> TryFrom<&'a [u8]> for ConfigExp {
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_khz) = parse_frequency(7u8).parse(bytes)?;
+        let (bytes, start_khz) = freq_parser(7u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the CW frequency
-        let (bytes, cw_khz) = parse_frequency(7u8).parse(bytes)?;
+        let (bytes, cw_khz) = freq_parser(7u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the total steps
-        let (bytes, total_steps) = parse_num(4u8).parse(bytes)?;
+        let (bytes, total_steps) = num_parser(4u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, step_khz) = parse_frequency(7u8).parse(bytes)?;
+        let (bytes, step_khz) = freq_parser(7u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the power
-        let (bytes, power_dbm) = parse_num(5u8).parse(bytes)?;
+        let (bytes, power_dbm) = num_parser(5u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step power
-        let (bytes, step_power_dbm) = parse_num(5u8).parse(bytes)?;
+        let (bytes, step_power_dbm) = num_parser(5u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the start power
-        let (bytes, start_power_dbm) = parse_num(5u8).parse(bytes)?;
+        let (bytes, start_power_dbm) = num_parser(5u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the stop power
-        let (bytes, stop_power_dbm) = parse_num(5u8).parse(bytes)?;
+        let (bytes, stop_power_dbm) = num_parser(5u8).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 

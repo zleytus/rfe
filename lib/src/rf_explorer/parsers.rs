@@ -15,7 +15,7 @@ pub(crate) fn parse_opt_line_ending(bytes: &[u8]) -> IResult<&[u8], Option<&[u8]
     all_consuming(opt(line_ending)).parse(bytes)
 }
 
-pub(crate) fn parse_num<'a, T>(
+pub(crate) fn num_parser<'a, T>(
     digits: u8,
 ) -> impl Parser<&'a [u8], Output = T, Error = Error<&'a [u8]>>
 where
@@ -24,8 +24,8 @@ where
     map_res(map_res(take(digits), str::from_utf8), T::from_str)
 }
 
-pub(crate) fn parse_frequency<'a>(
+pub(crate) fn freq_parser<'a>(
     digits: u8,
 ) -> impl Parser<&'a [u8], Output = u64, Error = Error<&'a [u8]>> {
-    parse_num(digits)
+    num_parser(digits)
 }

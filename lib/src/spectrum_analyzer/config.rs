@@ -124,12 +124,12 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_freq) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
+        let (bytes, start_freq) = map(freq_parser(7u8), Frequency::from_khz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step size
-        let (bytes, step_size) = map(parse_frequency(7u8), Frequency::from_hz).parse(bytes)?;
+        let (bytes, step_size) = map(freq_parser(7u8), Frequency::from_hz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
@@ -146,12 +146,12 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         // Parse the number of points in a sweep
         // 0-9999 uses 4 bytes and 10000+ uses 5 bytes
         // Try to parse using 5 bytes first and if that doesn't work fall back to 4 bytes
-        let (bytes, sweep_len) = alt((parse_num(5u8), parse_num(4u8))).parse(bytes)?;
+        let (bytes, sweep_len) = alt((num_parser(5u8), num_parser(4u8))).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse whether or not the expansion module is active
-        let (bytes, is_expansion_radio_module_active) = map_res(parse_num(1), |num| match num {
+        let (bytes, is_expansion_radio_module_active) = map_res(num_parser(1), |num| match num {
             0 => Ok(false),
             1 => Ok(true),
             _ => Err(()),
@@ -166,23 +166,23 @@ impl<'a> TryFrom<&'a [u8]> for Config {
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the minimum frequency
-        let (bytes, min_freq) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
+        let (bytes, min_freq) = map(freq_parser(7u8), Frequency::from_khz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the maximum frequency
-        let (bytes, max_freq) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
+        let (bytes, max_freq) = map(freq_parser(7u8), Frequency::from_khz).parse(bytes)?;
 
         let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the maximum span
-        let (bytes, max_span) = map(parse_frequency(7u8), Frequency::from_khz).parse(bytes)?;
+        let (bytes, max_span) = map(freq_parser(7u8), Frequency::from_khz).parse(bytes)?;
 
         let (bytes, _) = opt(parse_comma).parse(bytes)?;
 
         // Parse the RBW
         // This field is optional because it's not sent by older RF Explorers
-        let (bytes, rbw) = opt(map(parse_frequency(5u8), Frequency::from_khz)).parse(bytes)?;
+        let (bytes, rbw) = opt(map(freq_parser(5u8), Frequency::from_khz)).parse(bytes)?;
 
         let (bytes, _) = opt(parse_comma).parse(bytes)?;
 

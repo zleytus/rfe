@@ -29,7 +29,7 @@ impl<'a> TryFrom<&'a [u8]> for DspMode {
         let (bytes, _) = tag(DspMode::PREFIX)(bytes)?;
 
         // Parse the DSP mode
-        let (bytes, dsp_mode) = map_res(parse_num::<u8>(1u8), DspMode::try_from).parse(bytes)?;
+        let (bytes, dsp_mode) = map_res(num_parser::<u8>(1u8), DspMode::try_from).parse(bytes)?;
 
         // Consume \r or \r\n line ending and make sure there aren't any bytes left
         let _ = parse_opt_line_ending(bytes)?;

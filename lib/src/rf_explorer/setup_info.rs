@@ -29,7 +29,7 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
         let (bytes, _) = tag(prefix)(bytes)?;
 
         // Parse the main radio's model
-        let (bytes, main_radio_model) = map_res(parse_num(3), |num| {
+        let (bytes, main_radio_model) = map_res(num_parser(3), |num| {
             if let Ok(model) = M::try_from(num) {
                 Ok(Some(model))
             } else if num == 255 {
@@ -43,7 +43,7 @@ impl<M: Debug + Copy + TryFrom<u8> + Eq + PartialEq + Default> SetupInfo<M> {
         let (bytes, _) = tag(",")(bytes)?;
 
         // Parse the expansion radio's model
-        let (bytes, expansion_radio_model) = map_res(parse_num(3), |num| {
+        let (bytes, expansion_radio_model) = map_res(num_parser(3), |num| {
             if let Ok(model) = M::try_from(num) {
                 Ok(Some(model))
             } else if num == 255 {
