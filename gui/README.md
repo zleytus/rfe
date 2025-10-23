@@ -1,6 +1,6 @@
 # rfe-gui
 
-`rfe-gui` is a graphical user interface for visualizing data from [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers
+`rfe-gui` is a graphical user interface for visualizing signals measured by [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers.
 
 ![rfe-gui](./assets/rfe-gui.jpg)
 
@@ -35,3 +35,7 @@ The sweep's frequency bounds and, on RF Explorer PLUS models, resolution can be 
 ### Export Trace
 
 `rfe-gui` can export the current, average, or max trace as a CSV file by clicking on the "Export Trace as CSV" button in the bottom right corner.
+
+## License
+
+This project is dual-licensed under the [MIT License](../LICENSE-MIT) or [Apache 2.0 License](../LICENSE-APACHE).
