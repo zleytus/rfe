@@ -10,7 +10,7 @@ readme = "README.md"
 chrono = "0.4"
 nom = "8"
 num_enum = { version = "0.7", features = ["complex-expressions"] }
-serialport = "4.6.0"
+serialport = "4.8.1"
 thiserror = "1"
 tracing = "0.1"
 uom = { version = "0.36.0", features = ["u64"] }
