@@ -2,7 +2,8 @@ use std::{
     fmt::Debug,
     io,
     ops::RangeInclusive,
-    sync::{Condvar, Mutex, MutexGuard, WaitTimeoutResult},
+    sync::{Arc, Condvar, Mutex, MutexGuard, WaitTimeoutResult},
+    thread,
     time::Duration,
 };
 
@@ -12,8 +13,8 @@ use super::{
     CalcMode, Command, Config, DspMode, InputStage, Mode, Model, Sweep, TrackingStatus, WifiBand,
 };
 use crate::rf_explorer::{
-    impl_rf_explorer, ScreenData, SerialNumber, SetupInfo, COMMAND_RESPONSE_TIMEOUT,
-    NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+    COMMAND_RESPONSE_TIMEOUT, ConfigCallback, NEXT_SCREEN_DATA_TIMEOUT,
+    RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT, ScreenData, SerialNumber, SetupInfo, impl_rf_explorer,
 };
 use crate::{ConnectionError, ConnectionResult, Device, Error, Frequency, Result};
 
@@ -602,9 +603,9 @@ impl SpectrumAnalyzer {
     /// Sets the callback that is called when the spectrum analyzer receives a sweep.
     pub fn set_sweep_callback(
         &self,
-        cb: impl FnMut(&[f32], Frequency, Frequency) + Send + 'static,
+        cb: impl Fn(&[f32], Frequency, Frequency) + Send + Sync + 'static,
     ) {
-        *self.messages().sweep_callback.lock().unwrap() = Some(Box::new(cb));
+        *self.messages().sweep_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is called when the spectrum analyzer receives a `Sweep`.
@@ -613,8 +614,8 @@ impl SpectrumAnalyzer {
     }
 
     /// Sets the callback that is called when the spectrum analyzer receives a `Config`.
-    pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
-        *self.messages().config_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_callback(&self, cb: impl Fn(Config) + Send + Sync + 'static) {
+        *self.messages().config_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is called when the spectrum analyzer receives a `Config`.
@@ -739,18 +740,18 @@ impl SpectrumAnalyzer {
         let min_max_freq = active_model.min_freq()..=active_model.max_freq();
         if !min_max_freq.contains(&start) {
             return Err(Error::InvalidInput(format!(
-                    "The start frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
-                    start.as_mhz_f64(),
-                    min_max_freq.start().as_mhz_f64(),
-                    min_max_freq.end().as_mhz_f64()
-                )));
+                "The start frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
+                start.as_mhz_f64(),
+                min_max_freq.start().as_mhz_f64(),
+                min_max_freq.end().as_mhz_f64()
+            )));
         } else if !min_max_freq.contains(&stop) {
             return Err(Error::InvalidInput(format!(
-                    "The stop frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
-                    stop.as_mhz(),
-                    min_max_freq.start().as_mhz_f64(),
-                    min_max_freq.end().as_mhz_f64()
-                )));
+                "The stop frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
+                stop.as_mhz(),
+                min_max_freq.start().as_mhz_f64(),
+                min_max_freq.end().as_mhz_f64()
+            )));
         }
 
         let min_max_span = active_model.min_span()..=active_model.max_span();
@@ -800,9 +801,10 @@ impl SpectrumAnalyzer {
 #[derive(Default)]
 struct MessageContainer {
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
-    pub(crate) config_callback: Mutex<Option<Box<dyn FnMut(Config) + Send>>>,
+    pub(crate) config_callback: Mutex<ConfigCallback<Config>>,
     pub(crate) sweep: (Mutex<Option<Sweep>>, Condvar),
-    pub(crate) sweep_callback: Mutex<Option<Box<dyn FnMut(&[f32], Frequency, Frequency) + Send>>>,
+    pub(crate) sweep_callback:
+        Mutex<Option<Arc<Box<dyn Fn(&[f32], Frequency, Frequency) + Send + Sync + 'static>>>>,
     pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
     pub(crate) dsp_mode: (Mutex<Option<DspMode>>, Condvar),
     pub(crate) tracking_status: (Mutex<Option<TrackingStatus>>, Condvar),
@@ -819,16 +821,20 @@ impl crate::common::MessageContainer for MessageContainer {
             Self::Message::Config(config) => {
                 *self.config.0.lock().unwrap() = Some(config);
                 self.config.1.notify_one();
-                if let Some(ref mut cb) = *self.config_callback.lock().unwrap() {
+                if let Some(cb) = self.config_callback.lock().unwrap().clone() {
                     if let Some(config) = self.config.0.lock().unwrap().clone() {
-                        cb(config);
+                        // Run the user-provided callback on a new thread so that it can't
+                        // block reading from the RF Explorer
+                        thread::spawn(move || {
+                            cb(config);
+                        });
                     }
                 }
             }
             Self::Message::Sweep(sweep) => {
                 *self.sweep.0.lock().unwrap() = Some(sweep);
                 self.sweep.1.notify_one();
-                if let Some(ref mut cb) = *self.sweep_callback.lock().unwrap() {
+                if let Some(cb) = self.sweep_callback.lock().unwrap().clone() {
                     let (start_freq, stop_freq) = {
                         let config = self.config.0.lock().unwrap();
                         (
@@ -842,8 +848,12 @@ impl crate::common::MessageContainer for MessageContainer {
                                 .unwrap_or_default(),
                         )
                     };
-                    if let Some(ref sweep) = self.sweep.0.lock().unwrap().as_ref() {
-                        cb(sweep.amplitudes_dbm.as_slice(), start_freq, stop_freq);
+                    if let Some(sweep) = self.sweep.0.lock().unwrap().clone() {
+                        // Run the user-provided callback on a new thread so that it can't
+                        // block reading from the RF Explorer
+                        thread::spawn(move || {
+                            cb(sweep.amplitudes_dbm.as_slice(), start_freq, stop_freq);
+                        });
                     }
                 }
             }

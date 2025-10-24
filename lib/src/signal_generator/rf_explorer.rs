@@ -1,7 +1,8 @@
 use std::{
     fmt::Debug,
     io,
-    sync::{Condvar, Mutex},
+    sync::{Arc, Condvar, Mutex},
+    thread,
     time::Duration,
 };
 
@@ -10,8 +11,8 @@ use super::{
     ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, Temperature,
 };
 use crate::rf_explorer::{
-    impl_rf_explorer, Callback, ScreenData, SerialNumber, SetupInfo, NEXT_SCREEN_DATA_TIMEOUT,
-    RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+    ConfigCallback, NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT, ScreenData,
+    SerialNumber, SetupInfo, impl_rf_explorer,
 };
 use crate::{ConnectionError, ConnectionResult, Device, Frequency, Result};
 
@@ -309,8 +310,8 @@ impl SignalGenerator {
     }
 
     /// Sets the callback that is executed when the signal generator receives a `Config`.
-    pub fn set_config_callback(&self, cb: impl FnMut(Config) + Send + 'static) {
-        *self.messages().config_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_callback(&self, cb: impl Fn(Config) + Send + Sync + 'static) {
+        *self.messages().config_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `Config`.
@@ -319,8 +320,8 @@ impl SignalGenerator {
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigExp`.
-    pub fn set_config_exp_callback(&self, cb: impl FnMut(ConfigExp) + Send + 'static) {
-        *self.messages().config_exp_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_exp_callback(&self, cb: impl Fn(ConfigExp) + Send + Sync + 'static) {
+        *self.messages().config_exp_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigExp`.
@@ -329,8 +330,11 @@ impl SignalGenerator {
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweep`.
-    pub fn set_config_amp_sweep_callback(&self, cb: impl FnMut(ConfigAmpSweep) + Send + 'static) {
-        *self.messages().config_amp_sweep_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_amp_sweep_callback(
+        &self,
+        cb: impl Fn(ConfigAmpSweep) + Send + Sync + 'static,
+    ) {
+        *self.messages().config_amp_sweep_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigAmpSweep`.
@@ -341,13 +345,13 @@ impl SignalGenerator {
     /// Sets the callback that is executed when the signal generator receives a `ConfigAmpSweepExp`.
     pub fn set_config_amp_sweep_exp_callback(
         &self,
-        cb: impl FnMut(ConfigAmpSweepExp) + Send + 'static,
+        cb: impl Fn(ConfigAmpSweepExp) + Send + Sync + 'static,
     ) {
         *self
             .messages()
             .config_amp_sweep_exp_callback
             .lock()
-            .unwrap() = Some(Box::new(cb));
+            .unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigAmpSweepExp`.
@@ -360,8 +364,8 @@ impl SignalGenerator {
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigCw`.
-    pub fn set_config_cw_callback(&self, cb: impl FnMut(ConfigCw) + Send + 'static) {
-        *self.messages().config_cw_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_cw_callback(&self, cb: impl Fn(ConfigCw) + Send + Sync + 'static) {
+        *self.messages().config_cw_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigCw`.
@@ -370,8 +374,8 @@ impl SignalGenerator {
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigCwExp`.
-    pub fn set_config_cw_exp_callback(&self, cb: impl FnMut(ConfigCwExp) + Send + 'static) {
-        *self.messages().config_cw_exp_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_cw_exp_callback(&self, cb: impl Fn(ConfigCwExp) + Send + Sync + 'static) {
+        *self.messages().config_cw_exp_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigCwExp`.
@@ -380,8 +384,11 @@ impl SignalGenerator {
     }
 
     /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweep`.
-    pub fn set_config_freq_sweep_callback(&self, cb: impl FnMut(ConfigFreqSweep) + Send + 'static) {
-        *self.messages().config_freq_sweep_callback.lock().unwrap() = Some(Box::new(cb));
+    pub fn set_config_freq_sweep_callback(
+        &self,
+        cb: impl Fn(ConfigFreqSweep) + Send + Sync + 'static,
+    ) {
+        *self.messages().config_freq_sweep_callback.lock().unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigFreqSweep`.
@@ -392,13 +399,13 @@ impl SignalGenerator {
     /// Sets the callback that is executed when the signal generator receives a `ConfigFreqSweepExp`.
     pub fn set_config_freq_sweep_exp_callback(
         &self,
-        cb: impl FnMut(ConfigFreqSweepExp) + Send + 'static,
+        cb: impl Fn(ConfigFreqSweepExp) + Send + Sync + 'static,
     ) {
         *self
             .messages()
             .config_freq_sweep_exp_callback
             .lock()
-            .unwrap() = Some(Box::new(cb));
+            .unwrap() = Some(Arc::new(Box::new(cb)));
     }
 
     /// Removes the callback that is executed when the signal generator receives a `ConfigFreqSweepExp`.
@@ -424,21 +431,21 @@ impl SignalGenerator {
 #[derive(Default)]
 struct MessageContainer {
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
-    pub(crate) config_callback: Mutex<Callback<Config>>,
+    pub(crate) config_callback: Mutex<ConfigCallback<Config>>,
     pub(crate) config_exp: (Mutex<Option<ConfigExp>>, Condvar),
-    pub(crate) config_exp_callback: Mutex<Callback<ConfigExp>>,
+    pub(crate) config_exp_callback: Mutex<ConfigCallback<ConfigExp>>,
     pub(crate) config_amp_sweep: (Mutex<Option<ConfigAmpSweep>>, Condvar),
-    pub(crate) config_amp_sweep_callback: Mutex<Callback<ConfigAmpSweep>>,
+    pub(crate) config_amp_sweep_callback: Mutex<ConfigCallback<ConfigAmpSweep>>,
     pub(crate) config_amp_sweep_exp: (Mutex<Option<ConfigAmpSweepExp>>, Condvar),
-    pub(crate) config_amp_sweep_exp_callback: Mutex<Callback<ConfigAmpSweepExp>>,
+    pub(crate) config_amp_sweep_exp_callback: Mutex<ConfigCallback<ConfigAmpSweepExp>>,
     pub(crate) config_cw: (Mutex<Option<ConfigCw>>, Condvar),
-    pub(crate) config_cw_callback: Mutex<Callback<ConfigCw>>,
+    pub(crate) config_cw_callback: Mutex<ConfigCallback<ConfigCw>>,
     pub(crate) config_cw_exp: (Mutex<Option<ConfigCwExp>>, Condvar),
-    pub(crate) config_cw_exp_callback: Mutex<Callback<ConfigCwExp>>,
+    pub(crate) config_cw_exp_callback: Mutex<ConfigCallback<ConfigCwExp>>,
     pub(crate) config_freq_sweep: (Mutex<Option<ConfigFreqSweep>>, Condvar),
-    pub(crate) config_freq_sweep_callback: Mutex<Callback<ConfigFreqSweep>>,
+    pub(crate) config_freq_sweep_callback: Mutex<ConfigCallback<ConfigFreqSweep>>,
     pub(crate) config_freq_sweep_exp: (Mutex<Option<ConfigFreqSweepExp>>, Condvar),
-    pub(crate) config_freq_sweep_exp_callback: Mutex<Callback<ConfigFreqSweepExp>>,
+    pub(crate) config_freq_sweep_exp_callback: Mutex<ConfigCallback<ConfigFreqSweepExp>>,
     pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
     pub(crate) temperature: (Mutex<Option<Temperature>>, Condvar),
     pub(crate) setup_info: (Mutex<Option<SetupInfo<Model>>>, Condvar),
@@ -453,57 +460,73 @@ impl crate::common::MessageContainer for MessageContainer {
             Self::Message::Config(config) => {
                 *self.config.0.lock().unwrap() = Some(config);
                 self.config.1.notify_one();
-                if let Some(ref mut cb) = *self.config_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ConfigAmpSweep(config) => {
                 *self.config_amp_sweep.0.lock().unwrap() = Some(config);
                 self.config_amp_sweep.1.notify_one();
-                if let Some(ref mut cb) = *self.config_amp_sweep_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_amp_sweep_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ConfigCw(config) => {
                 *self.config_cw.0.lock().unwrap() = Some(config);
                 self.config_cw.1.notify_one();
-                if let Some(ref mut cb) = *self.config_cw_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_cw_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ConfigFreqSweep(config) => {
                 *self.config_freq_sweep.0.lock().unwrap() = Some(config);
                 self.config_freq_sweep.1.notify_one();
-                if let Some(ref mut cb) = *self.config_freq_sweep_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_freq_sweep_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ConfigExp(config) => {
                 *self.config_exp.0.lock().unwrap() = Some(config);
                 self.config_exp.1.notify_one();
-                if let Some(ref mut cb) = *self.config_exp_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_exp_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ConfigAmpSweepExp(config) => {
                 *self.config_amp_sweep_exp.0.lock().unwrap() = Some(config);
                 self.config_amp_sweep.1.notify_one();
-                if let Some(ref mut cb) = *self.config_amp_sweep_exp_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_amp_sweep_exp_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ConfigCwExp(config) => {
                 *self.config_cw_exp.0.lock().unwrap() = Some(config);
                 self.config_cw_exp.1.notify_one();
-                if let Some(ref mut cb) = *self.config_cw_exp_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_cw_exp_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ConfigFreqSweepExp(config) => {
                 *self.config_freq_sweep_exp.0.lock().unwrap() = Some(config);
                 self.config_freq_sweep_exp.1.notify_one();
-                if let Some(ref mut cb) = *self.config_freq_sweep_exp_callback.lock().unwrap() {
-                    cb(config);
+                if let Some(cb) = self.config_freq_sweep_exp_callback.lock().unwrap().clone() {
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::ScreenData(screen_data) => {

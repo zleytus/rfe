@@ -588,6 +588,27 @@ pub extern "C" fn rfe_signal_generator_tracking_step(
     }
 }
 
+/// # Safety
+///
+/// This function is unsafe because:
+///
+/// ## Callback Function Requirements
+/// * The `callback` function pointer must be valid for the entire lifetime of the
+///   `SpectrumAnalyzer` instance or until a new callback is registered
+/// * The `callback` function must be thread-safe and may be invoked from any thread
+/// * Multiple callback invocations may occur concurrently if previous callbacks have
+///   not yet completed
+///
+/// ## User Data Requirements
+/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
+///   of the `SpectrumAnalyzer` instance or until a new callback is registered
+/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
+/// * If your callback **reads** from `user_data`: ensure the data is not being modified
+///   by other threads during callback execution
+/// * If your callback **writes** to `user_data`: you must provide your own synchronization
+///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
+///   or between callbacks and other parts of your program
+/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_callback(
     rfe: Option<&SignalGenerator>,
@@ -617,6 +638,27 @@ pub extern "C" fn rfe_signal_generator_remove_config_callback(rfe: Option<&Signa
     }
 }
 
+/// # Safety
+///
+/// This function is unsafe because:
+///
+/// ## Callback Function Requirements
+/// * The `callback` function pointer must be valid for the entire lifetime of the
+///   `SpectrumAnalyzer` instance or until a new callback is registered
+/// * The `callback` function must be thread-safe and may be invoked from any thread
+/// * Multiple callback invocations may occur concurrently if previous callbacks have
+///   not yet completed
+///
+/// ## User Data Requirements
+/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
+///   of the `SpectrumAnalyzer` instance or until a new callback is registered
+/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
+/// * If your callback **reads** from `user_data`: ensure the data is not being modified
+///   by other threads during callback execution
+/// * If your callback **writes** to `user_data`: you must provide your own synchronization
+///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
+///   or between callbacks and other parts of your program
+/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
@@ -651,6 +693,27 @@ pub extern "C" fn rfe_signal_generator_remove_config_amp_sweep_callback(
     }
 }
 
+/// # Safety
+///
+/// This function is unsafe because:
+///
+/// ## Callback Function Requirements
+/// * The `callback` function pointer must be valid for the entire lifetime of the
+///   `SpectrumAnalyzer` instance or until a new callback is registered
+/// * The `callback` function must be thread-safe and may be invoked from any thread
+/// * Multiple callback invocations may occur concurrently if previous callbacks have
+///   not yet completed
+///
+/// ## User Data Requirements
+/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
+///   of the `SpectrumAnalyzer` instance or until a new callback is registered
+/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
+/// * If your callback **reads** from `user_data`: ensure the data is not being modified
+///   by other threads during callback execution
+/// * If your callback **writes** to `user_data`: you must provide your own synchronization
+///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
+///   or between callbacks and other parts of your program
+/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
     rfe: Option<&SignalGenerator>,
@@ -680,6 +743,27 @@ pub extern "C" fn rfe_signal_generator_remove_config_cw_callback(rfe: Option<&Si
     }
 }
 
+/// # Safety
+///
+/// This function is unsafe because:
+///
+/// ## Callback Function Requirements
+/// * The `callback` function pointer must be valid for the entire lifetime of the
+///   `SpectrumAnalyzer` instance or until a new callback is registered
+/// * The `callback` function must be thread-safe and may be invoked from any thread
+/// * Multiple callback invocations may occur concurrently if previous callbacks have
+///   not yet completed
+///
+/// ## User Data Requirements
+/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
+///   of the `SpectrumAnalyzer` instance or until a new callback is registered
+/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
+/// * If your callback **reads** from `user_data`: ensure the data is not being modified
+///   by other threads during callback execution
+/// * If your callback **writes** to `user_data`: you must provide your own synchronization
+///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
+///   or between callbacks and other parts of your program
+/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
     rfe: Option<&SignalGenerator>,

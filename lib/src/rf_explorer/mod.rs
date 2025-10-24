@@ -9,9 +9,10 @@ pub use screen_data::ScreenData;
 pub(crate) use serial_number::SerialNumber;
 pub(crate) use setup_info::SetupInfo;
 
+use std::sync::Arc;
 use std::time::Duration;
 
-pub(crate) type Callback<T> = Option<Box<dyn FnMut(T) + Send + 'static>>;
+pub(crate) type ConfigCallback<T> = Option<Arc<Box<dyn Fn(T) + Send + Sync + 'static>>>;
 pub(crate) const NEXT_SCREEN_DATA_TIMEOUT: Duration = Duration::from_secs(2);
 pub(crate) const COMMAND_RESPONSE_TIMEOUT: Duration = Duration::from_secs(2);
 pub(crate) const RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT: Duration = Duration::from_secs(2);
