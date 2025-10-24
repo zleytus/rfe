@@ -11,11 +11,9 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    uint16_t sweep_buf_len = rfe_spectrum_analyzer_sweep_len(rfe);
-    float *sweep_buf = malloc(sizeof(float) * sweep_buf_len);
-    uintptr_t sweep_len;
-    Result rc =
-        rfe_spectrum_analyzer_wait_for_next_sweep(rfe, sweep_buf, sweep_buf_len, &sweep_len);
+    uint16_t sweep_len = rfe_spectrum_analyzer_sweep_len(rfe);
+    float *sweep_buf = malloc(sizeof(float) * sweep_len);
+    Result rc = rfe_spectrum_analyzer_wait_for_next_sweep(rfe, sweep_buf, sweep_len, NULL);
     if (rc == RESULT_SUCCESS) {
         uint64_t start_hz = rfe_spectrum_analyzer_start_freq_hz(rfe);
         uint64_t stop_hz = rfe_spectrum_analyzer_stop_freq_hz(rfe);

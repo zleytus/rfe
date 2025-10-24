@@ -324,13 +324,15 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
     buf_len: usize,
     sweep_len: Option<&mut usize>,
 ) -> Result {
-    let (Some(rfe), Some(sweep_buf), Some(sweep_len)) = (rfe, sweep_buf, sweep_len) else {
+    let (Some(rfe), Some(sweep_buf)) = (rfe, sweep_buf) else {
         return Result::NullPtrError;
     };
 
     match rfe.fill_buf_with_sweep(unsafe { std::slice::from_raw_parts_mut(sweep_buf, buf_len) }) {
         Ok(sweep_length) => {
-            *sweep_len = sweep_length;
+            if let Some(sweep_len) = sweep_len {
+                *sweep_len = sweep_length;
+            }
             Result::Success
         }
         Err(error) => error.into(),
@@ -344,7 +346,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
     buf_len: usize,
     sweep_len: Option<&mut usize>,
 ) -> Result {
-    let (Some(rfe), Some(sweep_buf), Some(sweep_len)) = (rfe, sweep_buf, sweep_len) else {
+    let (Some(rfe), Some(sweep_buf)) = (rfe, sweep_buf) else {
         return Result::NullPtrError;
     };
 
@@ -352,7 +354,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
         std::slice::from_raw_parts_mut(sweep_buf, buf_len)
     }) {
         Ok(sweep_length) => {
-            *sweep_len = sweep_length;
+            if let Some(sweep_len) = sweep_len {
+                *sweep_len = sweep_length;
+            }
             Result::Success
         }
         Err(error) => error.into(),
@@ -367,7 +371,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
     buf_len: usize,
     sweep_len: Option<&mut usize>,
 ) -> Result {
-    let (Some(rfe), Some(sweep_buf), Some(sweep_len)) = (rfe, sweep_buf, sweep_len) else {
+    let (Some(rfe), Some(sweep_buf)) = (rfe, sweep_buf) else {
         return Result::NullPtrError;
     };
 
@@ -376,7 +380,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
             std::slice::from_raw_parts_mut(sweep_buf, buf_len)
         }) {
         Ok(sweep_length) => {
-            *sweep_len = sweep_length;
+            if let Some(sweep_len) = sweep_len {
+                *sweep_len = sweep_length;
+            }
             Result::Success
         }
         Err(error) => error.into(),
