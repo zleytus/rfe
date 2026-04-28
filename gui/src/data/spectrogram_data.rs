@@ -60,7 +60,7 @@ impl SpectrogramData {
         }
 
         // Save the sweep in case we need to recreate the image later
-        self.sweep_history.push(sweep_amps.to_vec());
+        self.sweep_history.enqueue(sweep_amps.to_vec());
 
         // Set the updated image to the spectrogram texture
         self.texture.set(
