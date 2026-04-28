@@ -2,12 +2,13 @@ use std::{
     default::Default,
     num::ParseFloatError,
     str::FromStr,
-    sync::{atomic::Ordering, Arc, Mutex},
+    sync::{Arc, Mutex, atomic::Ordering},
 };
 
 use csv::Writer;
+use egui::Ui;
 use rfd::FileDialog;
-use rfe::{spectrum_analyzer::Config, Frequency, SpectrumAnalyzer};
+use rfe::{Frequency, SpectrumAnalyzer, spectrum_analyzer::Config};
 
 use crate::{
     data::{RfeInfo, SpectrogramData, TraceData},
@@ -198,8 +199,8 @@ impl App {
 
 impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let panel_response = AppSettingsBottomPanel::new().show(ctx, &mut self.app_settings);
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        let panel_response = AppSettingsBottomPanel::new().show(ui, &mut self.app_settings);
         if let Some(panel_response) = panel_response {
             self.on_app_settings_changed(panel_response);
         }
@@ -212,7 +213,7 @@ impl eframe::App for App {
                 .active_radio_model
                 .is_plus_model();
             let panel_response = RfeSettingsSidePanel::new().show(
-                ctx,
+                ui,
                 can_change_sweep_len,
                 &mut self.sweep_settings.lock().unwrap(),
                 &mut self.rfe_info.lock().unwrap(),
@@ -225,7 +226,7 @@ impl eframe::App for App {
 
         if self.app_settings.show_plot_settings_panel {
             let panel_response = PlotSettingsSidePanel::new().show(
-                ctx,
+                ui,
                 &mut self.trace_settings,
                 &mut self.spectrogram_settings.lock().unwrap(),
             );
@@ -236,7 +237,7 @@ impl eframe::App for App {
 
         if self.rfe.is_some() {
             PlotCentralPanel::new().show(
-                ctx,
+                ui,
                 &self.trace_data.lock().unwrap(),
                 &self.trace_settings,
                 &mut self.spectrogram_data.lock().unwrap(),
@@ -244,10 +245,10 @@ impl eframe::App for App {
                 self.app_settings.frequency_units,
             );
         } else {
-            RfeNotConnectedCentralPanel::new().show(ctx, &mut self.rfe);
+            RfeNotConnectedCentralPanel::new().show(ui, &mut self.rfe);
             // If an RF Explorer is now connected, set the required callbacks
             if self.rfe.is_some() {
-                self.init_callbacks(ctx);
+                self.init_callbacks(ui.ctx());
                 *self.sweep_settings.lock().unwrap() = self
                     .rfe
                     .as_ref()

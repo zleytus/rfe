@@ -1,6 +1,6 @@
 use egui::{
+    Image, Panel, ScrollArea, Slider, Ui,
     color_picker::{self, Alpha},
-    Context, Image, ScrollArea, SidePanel, Slider, Ui,
 };
 
 use super::{Setting, SettingsCategory};
@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct PlotSettingsSidePanel {
-    side_panel: SidePanel,
+    side_panel: Panel,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,13 +22,13 @@ pub enum PlotSettingsPanelResponse {
 impl PlotSettingsSidePanel {
     pub fn new() -> Self {
         Self {
-            side_panel: SidePanel::right("plot-settings-panel").resizable(false),
+            side_panel: Panel::right("plot-settings-panel").resizable(false),
         }
     }
 
     pub fn show(
         self,
-        ctx: &Context,
+        ui: &mut Ui,
         trace_settings: &mut TraceSettings,
         spectrogram_settings: &mut SpectrogramSettings,
     ) -> Option<PlotSettingsPanelResponse> {
@@ -36,7 +36,7 @@ impl PlotSettingsSidePanel {
         let old_trace_settings = trace_settings.clone();
         let old_spectrogram_settings = spectrogram_settings.clone();
 
-        self.side_panel.show(ctx, |ui| {
+        self.side_panel.show_inside(ui, |ui| {
             ScrollArea::vertical()
                 .show(ui, |ui| {
                     ui.add_space(5.0);

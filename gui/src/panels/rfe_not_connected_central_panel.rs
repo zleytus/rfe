@@ -1,8 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use egui::{
-    include_image, Button, CentralPanel, Color32, Context, CornerRadius, Image, RichText, Vec2,
-};
+use egui::{Button, CentralPanel, Color32, CornerRadius, Image, RichText, Ui, Vec2, include_image};
 use rfe::SpectrumAnalyzer;
 
 #[derive(Default)]
@@ -17,8 +15,8 @@ impl RfeNotConnectedCentralPanel {
         }
     }
 
-    pub fn show(self, ctx: &Context, rfe: &mut Option<Arc<Mutex<SpectrumAnalyzer>>>) {
-        self.central_panel.show(ctx, |ui| {
+    pub fn show(self, ui: &mut Ui, rfe: &mut Option<Arc<Mutex<SpectrumAnalyzer>>>) {
+        self.central_panel.show_inside(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add_space((ui.available_height() / 2.0) - 120.0);
                 ui.add(

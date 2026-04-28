@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use egui::{Align, Context, Layout, TopBottomPanel, Ui, UiKind};
+use egui::{Align, Layout, Panel, Ui};
 
 use crate::{
     settings::AppSettings,
@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub struct AppSettingsBottomPanel {
-    panel: TopBottomPanel,
+    panel: Panel,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,17 +25,17 @@ pub enum AppSettingsPanelResponse {
 impl AppSettingsBottomPanel {
     pub fn new() -> Self {
         Self {
-            panel: TopBottomPanel::bottom("bottom-panel").default_height(30.0),
+            panel: Panel::bottom("bottom-panel").default_size(30.0),
         }
     }
 
     pub fn show(
         self,
-        ctx: &Context,
+        ui: &mut Ui,
         app_settings: &mut AppSettings,
     ) -> Option<AppSettingsPanelResponse> {
         self.panel
-            .show(ctx, |ui| {
+            .show_inside(ui, |ui| {
                 ui.columns(2, |columns| {
                     columns[0].with_layout(Layout::left_to_right(Align::Center), |ui| {
                         show_bottom_left(ui, app_settings);
@@ -90,15 +90,15 @@ fn show_bottom_right(
     ui.menu_button("Export Trace as CSV...", |ui| {
         if ui.button("Average").clicked() {
             response = Some(AppSettingsPanelResponse::ExportAverageTraceClicked);
-            ui.close_kind(UiKind::Menu);
+            ui.close();
         }
         if ui.button("Current").clicked() {
             response = Some(AppSettingsPanelResponse::ExportCurrentTraceClicked);
-            ui.close_kind(UiKind::Menu);
+            ui.close();
         }
         if ui.button("Max").clicked() {
             response = Some(AppSettingsPanelResponse::ExportMaxTraceClicked);
-            ui.close_kind(UiKind::Menu);
+            ui.close();
         }
     });
     response

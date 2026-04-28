@@ -1,4 +1,4 @@
-use egui::{Align, Context, Key, ScrollArea, SidePanel, TextEdit, Ui, Vec2};
+use egui::{Align, Key, Panel, ScrollArea, TextEdit, Ui, Vec2};
 
 use super::{InfoCategory, InfoItem, Setting, SettingsCategory};
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub struct RfeSettingsSidePanel {
-    side_panel: SidePanel,
+    side_panel: Panel,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,20 +21,20 @@ pub enum RfeSettingsPanelResponse {
 impl RfeSettingsSidePanel {
     pub fn new() -> Self {
         Self {
-            side_panel: SidePanel::left("rfe-settings-panel").resizable(false),
+            side_panel: Panel::left("rfe-settings-panel").resizable(false),
         }
     }
 
     pub fn show(
         self,
-        ctx: &Context,
+        ui: &mut Ui,
         can_change_sweep_len: bool,
         sweep_settings: &mut SweepSettings,
         rfe_info: &RfeInfo,
         units: FrequencyUnits,
     ) -> Option<RfeSettingsPanelResponse> {
         self.side_panel
-            .show(ctx, |ui| {
+            .show_inside(ui, |ui| {
                 ScrollArea::vertical()
                     .show(ui, |ui| {
                         ui.add_space(5.0);

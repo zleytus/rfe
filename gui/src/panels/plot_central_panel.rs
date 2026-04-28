@@ -1,4 +1,4 @@
-use egui::{CentralPanel, Context, TopBottomPanel};
+use egui::{CentralPanel, Panel, Ui};
 
 use crate::{
     data::{SpectrogramData, TraceData},
@@ -8,22 +8,22 @@ use crate::{
 
 pub struct PlotCentralPanel {
     central_panel: CentralPanel,
-    bottom_panel: TopBottomPanel,
+    bottom_panel: Panel,
 }
 
 impl PlotCentralPanel {
     pub fn new() -> Self {
         Self {
             central_panel: CentralPanel::default(),
-            bottom_panel: TopBottomPanel::bottom("spectrogram-plot-panel")
+            bottom_panel: Panel::bottom("spectrogram-plot-panel")
                 .resizable(true)
-                .default_height(250.0),
+                .default_size(250.0),
         }
     }
 
     pub fn show(
         self,
-        ctx: &Context,
+        ui: &mut Ui,
         trace_data: &TraceData,
         trace_settings: &TraceSettings,
         spectrogram_data: &mut SpectrogramData,
@@ -32,12 +32,12 @@ impl PlotCentralPanel {
     ) {
         // Only put the spectrogram in the bottom panel if the trace is being shown in the central panel
         if !spectrogram_settings.hide_spectrogram && !trace_settings.hide_trace {
-            self.bottom_panel.show(ctx, |ui| {
+            self.bottom_panel.show_inside(ui, |ui| {
                 Spectrogram::show(ui, spectrogram_data, units);
             });
         }
 
-        self.central_panel.show(ctx, |ui| {
+        self.central_panel.show_inside(ui, |ui| {
             if !trace_settings.hide_trace {
                 Trace::show(ui, trace_data, trace_settings, units);
             }
