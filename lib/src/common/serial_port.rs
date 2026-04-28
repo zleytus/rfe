@@ -3,8 +3,8 @@ use std::{
     fmt::Debug,
     io::{self, BufRead, BufReader, Read, Take},
     sync::{
-        atomic::{AtomicU64, Ordering},
         Mutex,
+        atomic::{AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -13,7 +13,7 @@ use serialport::{
     DataBits, FlowControl, Parity, SerialPortInfo, SerialPortType, StopBits, UsbPortInfo,
 };
 use thiserror::Error;
-use tracing::{debug, error};
+use tracing::debug;
 
 pub(crate) const SLOW_BAUD_RATE: u32 = 2_400;
 pub(crate) const FAST_BAUD_RATE: u32 = 500_000;
@@ -222,8 +222,9 @@ pub fn is_driver_installed() -> bool {
         apple_dext_path.exists = apple_dext_path.exists()
     );
 
-    let silabs_dext_path =
-        Path::new("/Applications/CP210xVCPDriver.app/Contents/Library/SystemExtensions/com.silabs.cp210x.dext");
+    let silabs_dext_path = Path::new(
+        "/Applications/CP210xVCPDriver.app/Contents/Library/SystemExtensions/com.silabs.cp210x.dext",
+    );
     debug!(
         silabs_dext_path = ?silabs_dext_path,
         silabs_dext_path.exists = silabs_dext_path.exists()
