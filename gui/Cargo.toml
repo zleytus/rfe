@@ -19,8 +19,8 @@ rfd = "0.17.2"
 rfe = { path = "../lib" }
 ringbuffer = "0.15.0"
 strum = { version = "0.28.0", features = ["derive"] }
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 wgpu = "27" # enables the wgpu default features so we get the default backends
 
 [target.'cfg(target_os = "linux")'.dependencies.winit]
