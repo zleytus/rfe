@@ -423,7 +423,7 @@ impl SpectrumAnalyzer {
             .wait_timeout_while(
                 lock.lock().unwrap(),
                 COMMAND_RESPONSE_TIMEOUT,
-                |tracking_status| tracking_status.is_some(),
+                |tracking_status| tracking_status.is_none(),
             )
             .unwrap();
 
