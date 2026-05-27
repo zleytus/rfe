@@ -11,8 +11,8 @@ use super::{
     ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, Temperature,
 };
 use crate::rf_explorer::{
-    ConfigCallback, NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT, ScreenData,
-    SerialNumber, SetupInfo, impl_rf_explorer,
+    impl_rf_explorer, ConfigCallback, ScreenData, SerialNumber, SetupInfo,
+    NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
 };
 use crate::{ConnectionError, ConnectionResult, Device, Frequency, Result};
 
@@ -51,6 +51,7 @@ impl SignalGenerator {
             .map(|sn| sn.to_string())
     }
 
+    /// Returns the firmware version reported by the RF Explorer.
     pub fn firmware_version(&self) -> String {
         self.messages()
             .setup_info
@@ -62,34 +63,42 @@ impl SignalGenerator {
             .unwrap_or_default()
     }
 
+    /// Returns the most recent main-module configuration reported by the signal generator.
     pub fn config(&self) -> Option<Config> {
         *self.messages().config.0.lock().unwrap()
     }
 
+    /// Returns the most recent expansion-module configuration reported by the signal generator.
     pub fn config_expansion(&self) -> Option<ConfigExp> {
         *self.messages().config_exp.0.lock().unwrap()
     }
 
+    /// Returns the most recent main-module amplitude sweep configuration.
     pub fn config_amp_sweep(&self) -> Option<ConfigAmpSweep> {
         *self.messages().config_amp_sweep.0.lock().unwrap()
     }
 
+    /// Returns the most recent expansion-module amplitude sweep configuration.
     pub fn config_amp_sweep_expansion(&self) -> Option<ConfigAmpSweepExp> {
         *self.messages().config_amp_sweep_exp.0.lock().unwrap()
     }
 
+    /// Returns the most recent main-module CW configuration.
     pub fn config_cw(&self) -> Option<ConfigCw> {
         *self.messages().config_cw.0.lock().unwrap()
     }
 
+    /// Returns the most recent expansion-module CW configuration.
     pub fn config_cw_expansion(&self) -> Option<ConfigCwExp> {
         *self.messages().config_cw_exp.0.lock().unwrap()
     }
 
+    /// Returns the most recent main-module frequency sweep configuration.
     pub fn config_freq_sweep(&self) -> Option<ConfigFreqSweep> {
         *self.messages().config_freq_sweep.0.lock().unwrap()
     }
 
+    /// Returns the most recent expansion-module frequency sweep configuration.
     pub fn config_freq_sweep_expansion(&self) -> Option<ConfigFreqSweepExp> {
         *self.messages().config_freq_sweep_exp.0.lock().unwrap()
     }
@@ -99,10 +108,12 @@ impl SignalGenerator {
         self.messages().screen_data.0.lock().unwrap().clone()
     }
 
+    /// Waits for the RF Explorer to capture its next `ScreenData`.
     pub fn wait_for_next_screen_data(&self) -> Result<ScreenData> {
         self.wait_for_next_screen_data_with_timeout(NEXT_SCREEN_DATA_TIMEOUT)
     }
 
+    /// Waits for the RF Explorer to capture its next `ScreenData` or for the timeout duration to elapse.
     pub fn wait_for_next_screen_data_with_timeout(&self, timeout: Duration) -> Result<ScreenData> {
         let previous_screen_data = self.screen_data();
         let (screen_data, condvar) = &self.messages().screen_data;
@@ -118,6 +129,7 @@ impl SignalGenerator {
         }
     }
 
+    /// Returns the most recent temperature range reported by the signal generator.
     pub fn temperature(&self) -> Option<Temperature> {
         *self.messages().temperature.0.lock().unwrap()
     }

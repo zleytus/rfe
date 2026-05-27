@@ -4,15 +4,19 @@ use num_enum::TryFromPrimitive;
 
 use crate::Frequency;
 
+/// Signal generator model reported by the RF Explorer.
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
 pub enum Model {
+    /// Main 6 GHz signal generator module.
     #[default]
     Rfe6Gen = 60,
+    /// Expansion 6 GHz signal generator module.
     Rfe6GenExpansion = 61,
 }
 
 impl Model {
+    /// Returns the model's minimum supported output frequency.
     pub fn min_freq(&self) -> Frequency {
         match self {
             Self::Rfe6Gen => 23_400_000,
@@ -21,6 +25,7 @@ impl Model {
         .into()
     }
 
+    /// Returns the model's maximum supported output frequency.
     pub fn max_freq(&self) -> Frequency {
         match self {
             Self::Rfe6Gen => 6_000_000_000,

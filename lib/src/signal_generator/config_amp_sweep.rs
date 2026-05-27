@@ -1,24 +1,34 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use nom::{Parser, bytes::complete::tag};
+use nom::{bytes::complete::tag, Parser};
 
 use crate::{
     common::{Frequency, MessageParseError},
     rf_explorer::parsers::*,
-    signal_generator::{Attenuation, PowerLevel, RfPower, parsers::*},
+    signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 
+/// Main-module amplitude sweep configuration.
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct ConfigAmpSweep {
+    /// CW frequency used during the amplitude sweep.
     pub cw: Frequency,
+    /// Number of power steps in the sweep.
     pub sweep_power_steps: u16,
+    /// Starting attenuation setting.
     pub start_attenuation: Attenuation,
+    /// Starting output power level.
     pub start_power_level: PowerLevel,
+    /// Stopping attenuation setting.
     pub stop_attenuation: Attenuation,
+    /// Stopping output power level.
     pub stop_power_level: PowerLevel,
+    /// RF output power state.
     pub rf_power: RfPower,
+    /// Delay between amplitude sweep steps.
     pub sweep_delay: Duration,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 
@@ -88,13 +98,20 @@ impl<'a> TryFrom<&'a [u8]> for ConfigAmpSweep {
     }
 }
 
+/// Expansion-module amplitude sweep configuration.
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct ConfigAmpSweepExp {
+    /// CW frequency used during the amplitude sweep.
     pub cw: Frequency,
+    /// Starting output power in dBm.
     pub start_power_dbm: f32,
+    /// Power increment per step in dB.
     pub step_power_dbm: f32,
+    /// Stopping output power in dBm.
     pub stop_power_dbm: f32,
+    /// Delay between amplitude sweep steps.
     pub sweep_delay: Duration,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 

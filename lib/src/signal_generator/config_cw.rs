@@ -7,14 +7,22 @@ use crate::{
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 
+/// Main-module CW configuration.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct ConfigCw {
+    /// CW frequency.
     pub cw: Frequency,
+    /// Total number of configured steps.
     pub total_steps: u32,
+    /// Frequency increment per step.
     pub step_freq: Frequency,
+    /// RF output attenuation setting.
     pub attenuation: Attenuation,
+    /// RF output power level.
     pub power_level: PowerLevel,
+    /// RF output power state.
     pub rf_power: RfPower,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 
@@ -77,11 +85,16 @@ impl<'a> TryFrom<&'a [u8]> for ConfigCw {
     }
 }
 
+/// Expansion-module CW configuration.
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct ConfigCwExp {
+    /// CW frequency.
     pub cw: Frequency,
+    /// Output power in dBm.
     pub power_dbm: f32,
+    /// RF output power state.
     pub rf_power: RfPower,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 

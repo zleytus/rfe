@@ -13,47 +13,73 @@ use crate::{
     signal_generator::parsers::*,
 };
 
+/// RF output attenuation state.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
 pub enum Attenuation {
+    /// Attenuation is enabled.
     #[default]
     On = 0,
+    /// Attenuation is disabled.
     Off,
 }
 
+/// Discrete RF output power level.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
 pub enum PowerLevel {
+    /// Lowest output power.
     #[default]
     Lowest = 0,
+    /// Low output power.
     Low,
+    /// High output power.
     High,
+    /// Highest output power.
     Highest,
 }
 
+/// RF output power state.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
 pub enum RfPower {
+    /// RF output is enabled.
     On = 0,
+    /// RF output is disabled.
     #[default]
     Off,
 }
 
+/// Main-module signal generator configuration.
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct Config {
+    /// Start frequency for frequency sweep and tracking modes.
     pub start: Frequency,
+    /// CW frequency.
     pub cw: Frequency,
+    /// Total number of sweep or tracking steps.
     pub total_steps: u32,
+    /// Frequency increment per step.
     pub step: Frequency,
+    /// CW and frequency sweep attenuation setting.
     pub attenuation: Attenuation,
+    /// CW and frequency sweep power level.
     pub power_level: PowerLevel,
+    /// Number of amplitude sweep power steps.
     pub sweep_power_steps: u16,
+    /// Amplitude sweep start attenuation setting.
     pub start_attenuation: Attenuation,
+    /// Amplitude sweep start power level.
     pub start_power_level: PowerLevel,
+    /// Amplitude sweep stop attenuation setting.
     pub stop_attenuation: Attenuation,
+    /// Amplitude sweep stop power level.
     pub stop_power_level: PowerLevel,
+    /// RF output power state.
     pub rf_power: RfPower,
+    /// Delay between sweep steps.
     pub sweep_delay: Duration,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 
@@ -153,18 +179,30 @@ impl<'a> TryFrom<&'a [u8]> for Config {
     }
 }
 
+/// Expansion-module signal generator configuration.
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct ConfigExp {
+    /// Start frequency for frequency sweep and tracking modes.
     pub start: Frequency,
+    /// CW frequency.
     pub cw: Frequency,
+    /// Total number of sweep or tracking steps.
     pub total_steps: u32,
+    /// Frequency increment per step.
     pub step: Frequency,
+    /// Current output power in dBm.
     pub power_dbm: f32,
+    /// Power increment per amplitude sweep step in dB.
     pub step_power_dbm: f32,
+    /// Amplitude sweep start power in dBm.
     pub start_power_dbm: f32,
+    /// Amplitude sweep stop power in dBm.
     pub stop_power_dbm: f32,
+    /// Whether RF output power is enabled.
     pub rf_power_on: bool,
+    /// Delay between sweep steps.
     pub sweep_delay: Duration,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 

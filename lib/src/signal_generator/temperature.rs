@@ -7,21 +7,30 @@ use num_enum::TryFromPrimitive;
 use crate::common::MessageParseError;
 use crate::rf_explorer::parsers::*;
 
+/// Temperature range reported by the signal generator.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Temperature {
+    /// Temperature is between -10 C and 0 C.
     MinusTenToZero = b'0',
+    /// Temperature is between 0 C and 10 C.
     ZeroToTen = b'1',
+    /// Temperature is between 10 C and 20 C.
     TenToTwenty = b'2',
+    /// Temperature is between 20 C and 30 C.
     TwentyToThirty = b'3',
+    /// Temperature is between 30 C and 40 C.
     ThirtyToForty = b'4',
+    /// Temperature is between 40 C and 50 C.
     FortyToFifty = b'5',
+    /// Temperature is between 50 C and 60 C.
     FiftyToSixty = b'6',
 }
 
 impl Temperature {
     pub(crate) const PREFIX: &'static [u8] = b"#T:";
 
+    /// Returns the inclusive temperature range in degrees Celsius.
     pub fn range(&self) -> RangeInclusive<i8> {
         match self {
             Temperature::MinusTenToZero => -10..=0,

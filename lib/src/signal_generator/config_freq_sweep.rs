@@ -9,15 +9,24 @@ use crate::{
     signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
 
+/// Main-module frequency sweep configuration.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct ConfigFreqSweep {
+    /// Start frequency.
     pub start: Frequency,
+    /// Total number of sweep steps.
     pub total_steps: u32,
+    /// Frequency increment per step.
     pub step: Frequency,
+    /// RF output attenuation setting.
     pub attenuation: Attenuation,
+    /// RF output power level.
     pub power_level: PowerLevel,
+    /// RF output power state.
     pub rf_power: RfPower,
+    /// Delay between sweep steps.
     pub sweep_delay: Duration,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 impl ConfigFreqSweep {
@@ -80,14 +89,22 @@ impl<'a> TryFrom<&'a [u8]> for ConfigFreqSweep {
     }
 }
 
+/// Expansion-module frequency sweep configuration.
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct ConfigFreqSweepExp {
+    /// Start frequency.
     pub start: Frequency,
+    /// Total number of sweep steps.
     pub total_steps: u32,
+    /// Frequency increment per step.
     pub step: Frequency,
+    /// Output power in dBm.
     pub power_dbm: f32,
+    /// RF output power state.
     pub rf_power: RfPower,
+    /// Delay between sweep steps.
     pub sweep_delay: Duration,
+    /// Time when this configuration was received.
     pub timestamp: DateTime<Utc>,
 }
 
