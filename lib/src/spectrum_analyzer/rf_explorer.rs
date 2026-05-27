@@ -527,8 +527,8 @@ impl SpectrumAnalyzer {
         center: impl Into<Frequency>,
         span: impl Into<Frequency>,
     ) -> Result<()> {
-        let (center, span) = (center.into(), span.into());
-        self.set_start_stop(center - span / 2, center + span / 2)
+        let (start, stop) = self.start_stop_from_center_span(center.into(), span.into())?;
+        self.set_start_stop(start, stop)
     }
 
     /// Sets the center frequency, span, and number of points of sweeps measured by the spectrum analyzer.
@@ -538,8 +538,8 @@ impl SpectrumAnalyzer {
         span: impl Into<Frequency>,
         sweep_len: u16,
     ) -> Result<()> {
-        let (center, span) = (center.into(), span.into());
-        self.set_start_stop_sweep_len(center - span / 2, center + span / 2, sweep_len)
+        let (start, stop) = self.start_stop_from_center_span(center.into(), span.into())?;
+        self.set_start_stop_sweep_len(start, stop, sweep_len)
     }
 
     /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
@@ -725,6 +725,31 @@ impl SpectrumAnalyzer {
         condvar
             .wait_timeout_while(lock.lock().unwrap(), COMMAND_RESPONSE_TIMEOUT, condition)
             .unwrap()
+    }
+
+    fn start_stop_from_center_span(
+        &self,
+        center: Frequency,
+        span: Frequency,
+    ) -> Result<(Frequency, Frequency)> {
+        let half_span_hz = span.as_hz() / 2;
+        if center.as_hz() < half_span_hz {
+            return Err(Error::InvalidInput(
+                "The span is too large for the center frequency".to_string(),
+            ));
+        }
+
+        let Some(stop_hz) = center.as_hz().checked_add(half_span_hz) else {
+            return Err(Error::InvalidInput(
+                "The center frequency and span exceed the maximum representable frequency"
+                    .to_string(),
+            ));
+        };
+
+        let start = Frequency::from_hz(center.as_hz() - half_span_hz);
+        let stop = Frequency::from_hz(stop_hz);
+        self.validate_start_stop(start, stop)?;
+        Ok((start, stop))
     }
 
     #[tracing::instrument(skip(self), ret, err)]
