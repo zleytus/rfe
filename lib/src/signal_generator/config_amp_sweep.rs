@@ -1,12 +1,12 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use nom::{bytes::complete::tag, Parser};
+use nom::{Parser, bytes::complete::tag};
 
 use crate::{
     common::{Frequency, MessageParseError},
     rf_explorer::parsers::*,
-    signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
+    signal_generator::{Attenuation, PowerLevel, RfPower, parsers::*},
 };
 
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq)]
@@ -90,11 +90,11 @@ impl<'a> TryFrom<&'a [u8]> for ConfigAmpSweep {
 
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct ConfigAmpSweepExp {
-    cw: Frequency,
-    start_power_dbm: f32,
-    step_power_dbm: f32,
-    stop_power_dbm: f32,
-    sweep_delay: Duration,
+    pub cw: Frequency,
+    pub start_power_dbm: f32,
+    pub step_power_dbm: f32,
+    pub stop_power_dbm: f32,
+    pub sweep_delay: Duration,
     pub timestamp: DateTime<Utc>,
 }
 
