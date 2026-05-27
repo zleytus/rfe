@@ -13,8 +13,8 @@ use super::{
     CalcMode, Command, Config, DspMode, InputStage, Mode, Model, Sweep, TrackingStatus, WifiBand,
 };
 use crate::rf_explorer::{
-    COMMAND_RESPONSE_TIMEOUT, ConfigCallback, NEXT_SCREEN_DATA_TIMEOUT,
-    RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT, ScreenData, SerialNumber, SetupInfo, impl_rf_explorer,
+    impl_rf_explorer, ConfigCallback, ScreenData, SerialNumber, SetupInfo,
+    COMMAND_RESPONSE_TIMEOUT, NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
 };
 use crate::{ConnectionError, ConnectionResult, Device, Error, Frequency, Result};
 
