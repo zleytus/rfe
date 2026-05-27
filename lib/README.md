@@ -11,7 +11,7 @@ Add the following to your `Cargo.toml`:
 
 ``` toml
 [dependencies]
-rfe = { git = "https://github.com/zleytus/rfe.git" }
+rfe = "0.1.0"
 ```
 
 ### Connecting to an RF Explorer
@@ -71,7 +71,7 @@ use rfe::SpectrumAnalyzer;
 let rfe = SpectrumAnalyzer::connect()?;
 rfe.set_sweep_callback(|sweep, start_freq, stop_freq| {
     println!("Received sweep from {}-{} MHz", start_freq.as_mhz(), stop_freq.as_mhz());
-    println!("{:?}", amps);
+    println!("{sweep:?}");
 });
 ```
 
