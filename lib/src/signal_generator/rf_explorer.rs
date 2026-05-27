@@ -504,7 +504,7 @@ impl crate::common::MessageContainer for MessageContainer {
             }
             Self::Message::ConfigAmpSweepExp(config) => {
                 *self.config_amp_sweep_exp.0.lock().unwrap() = Some(config);
-                self.config_amp_sweep.1.notify_one();
+                self.config_amp_sweep_exp.1.notify_one();
                 if let Some(cb) = self.config_amp_sweep_exp_callback.lock().unwrap().clone() {
                     thread::spawn(move || {
                         cb(config);
