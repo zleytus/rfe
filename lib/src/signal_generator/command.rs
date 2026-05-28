@@ -74,7 +74,7 @@ impl From<Command> for Cow<'static, [u8]> {
                 stop_power_level,
                 step_delay,
             } => {
-                let mut command = vec![b'#', 30];
+                let mut command = vec![b'#', 28];
                 command.extend(
                     format!(
                         "C3-A:{:07.0},{},{},{},{},{:05}",
@@ -240,7 +240,6 @@ mod tests {
         };
     }
 
-    #[ignore]
     #[test]
     fn correct_command_size_fields() {
         assert_correct_size!(Command::RfPowerOn);
@@ -277,5 +276,26 @@ mod tests {
             step: Frequency::from_mhz(1),
             step_delay: Duration::from_secs(2)
         });
+        assert_correct_size!(Command::StartFreqSweepExp {
+            start: Frequency::from_ghz(1),
+            power_dbm: -10.,
+            sweep_steps: 10,
+            step: Frequency::from_mhz(1),
+            step_delay: Duration::from_secs(2)
+        });
+        assert_correct_size!(Command::StartTracking {
+            start: Frequency::from_ghz(1),
+            attenuation: Attenuation::Off,
+            power_level: PowerLevel::High,
+            sweep_steps: 10,
+            step: Frequency::from_mhz(1),
+        });
+        assert_correct_size!(Command::StartTrackingExp {
+            start: Frequency::from_ghz(1),
+            power_dbm: -10.,
+            sweep_steps: 10,
+            step: Frequency::from_mhz(1),
+        });
+        assert_correct_size!(Command::TrackingStep(10));
     }
 }
