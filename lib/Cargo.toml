@@ -1,10 +1,15 @@
 [package]
 name = "rfe"
 version = "0.1.0"
-authors = ["Zach Leytus <zach.leytus@pm.me>"]
+authors = ["Zach Leytus <zach.leytus@gmail.com>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+description = "A library for communicating with RF Explorer spectrum analyzers and signal generators"
+repository = "https://github.com/zleytus/rfe"
+documentation = "https://docs.rs/rfe"
+keywords = ["rf-explorer", "spectrum-analyzer", "signal-generator", "serial"]
+categories = ["hardware-support"]
 
 [dependencies]
 chrono = "0.4"
