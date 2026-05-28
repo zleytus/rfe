@@ -828,8 +828,7 @@ struct MessageContainer {
     pub(crate) config: (Mutex<Option<Config>>, Condvar),
     pub(crate) config_callback: Mutex<ConfigCallback<Config>>,
     pub(crate) sweep: (Mutex<Option<Sweep>>, Condvar),
-    pub(crate) sweep_callback:
-        Mutex<Option<Arc<Box<dyn Fn(&[f32], Frequency, Frequency) + Send + Sync + 'static>>>>,
+    pub(crate) sweep_callback: Mutex<Option<SweepCallback>>,
     pub(crate) screen_data: (Mutex<Option<ScreenData>>, Condvar),
     pub(crate) dsp_mode: (Mutex<Option<DspMode>>, Condvar),
     pub(crate) tracking_status: (Mutex<Option<TrackingStatus>>, Condvar),
@@ -837,6 +836,8 @@ struct MessageContainer {
     pub(crate) setup_info: (Mutex<Option<SetupInfo>>, Condvar),
     pub(crate) serial_number: (Mutex<Option<SerialNumber>>, Condvar),
 }
+
+type SweepCallback = Arc<Box<dyn Fn(&[f32], Frequency, Frequency) + Send + Sync + 'static>>;
 
 impl crate::common::MessageContainer for MessageContainer {
     type Message = super::Message;
