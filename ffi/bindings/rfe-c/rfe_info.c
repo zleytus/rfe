@@ -61,7 +61,7 @@ void print_signal_generator_info(const SignalGenerator *rfe) {
     printf("\tSerial number: %s\n", serial_number);
 
     SignalGeneratorConfig config;
-    if (rfe_signal_generator_config(rfe, &config) != RESULT_SUCCESS) {
+    if (rfe_signal_generator_config(rfe, &config) == RESULT_SUCCESS) {
         printf("\tStart: %" PRIu64 " Hz\n", config.start_hz);
         printf("\tCW: %" PRIu64 " Hz\n", config.cw_hz);
         printf("\tTotal steps: %" PRIu32 " Hz\n", config.total_steps);
