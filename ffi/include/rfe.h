@@ -283,7 +283,7 @@ extern "C" {
 bool rfe_is_driver_installed(void);
 #endif
 
-char *const *rfe_port_names(uintptr_t *len);
+char **rfe_port_names(uintptr_t *len);
 
 void rfe_free_port_names(char **port_names_ptr, uintptr_t len);
 
