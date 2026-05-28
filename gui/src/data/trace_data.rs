@@ -44,7 +44,11 @@ impl TraceData {
     }
 
     fn reset_data(&mut self, start_freq: Frequency, stop_freq: Frequency, len: usize) {
-        let step_size = (stop_freq - start_freq) / u64::try_from(len - 1).unwrap_or(1);
+        let step_size = if len > 1 {
+            (stop_freq - start_freq) / u64::try_from(len - 1).unwrap_or(1)
+        } else {
+            Frequency::default()
+        };
         let mut points = Vec::new();
         for i in 0..u64::try_from(len).unwrap_or_default() {
             points.push((start_freq + step_size * i, f64::MIN));
