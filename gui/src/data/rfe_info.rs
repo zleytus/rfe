@@ -1,6 +1,6 @@
 use rfe::{
-    spectrum_analyzer::{CalcMode, Config, DspMode, InputStage, Model},
     Frequency, SpectrumAnalyzer,
+    spectrum_analyzer::{CalcMode, Config, DspMode, InputStage, Model},
 };
 
 /// Information about an RF Explorer device.
@@ -53,11 +53,11 @@ impl RfeInfo {
         self.calc_mode = config.calc_mode;
 
         // Swap the active and inactive radio models if the status of the expansion radio module has changed
-        let Some(inactive_radio_model) = self.inactive_radio_model.clone() else {
+        let Some(inactive_radio_model) = self.inactive_radio_model else {
             return;
         };
         if self.is_expansion_radio_active != config.is_expansion_radio_module_active {
-            self.inactive_radio_model = Some(self.active_radio_model.clone());
+            self.inactive_radio_model = Some(self.active_radio_model);
             self.active_radio_model = inactive_radio_model;
         }
     }

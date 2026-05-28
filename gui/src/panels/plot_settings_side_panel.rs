@@ -33,8 +33,8 @@ impl PlotSettingsSidePanel {
         spectrogram_settings: &mut SpectrogramSettings,
     ) -> Option<PlotSettingsPanelResponse> {
         // Save copies of the settings before they can be changed
-        let old_trace_settings = trace_settings.clone();
-        let old_spectrogram_settings = spectrogram_settings.clone();
+        let old_trace_settings = *trace_settings;
+        let old_spectrogram_settings = *spectrogram_settings;
 
         self.side_panel.show_inside(ui, |ui| {
             ScrollArea::vertical()
