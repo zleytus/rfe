@@ -216,7 +216,7 @@ impl eframe::App for App {
                 ui,
                 can_change_sweep_len,
                 &mut self.sweep_settings.lock().unwrap(),
-                &mut self.rfe_info.lock().unwrap(),
+                &self.rfe_info.lock().unwrap(),
                 self.app_settings.frequency_units,
             );
             if let Some(panel_response) = panel_response {
