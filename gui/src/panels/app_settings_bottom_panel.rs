@@ -61,11 +61,11 @@ fn show_bottom_left(ui: &mut Ui, app_settings: &mut AppSettings) {
         app_settings.show_rfe_settings_panel = !app_settings.show_rfe_settings_panel;
     }
     if app_settings.pause_sweeps.load(Ordering::Relaxed) {
-        if ui.add(ResumeScanningButton::default()).clicked() {
+        if ui.add(ResumeScanningButton).clicked() {
             app_settings.pause_sweeps.store(false, Ordering::Relaxed);
         }
     } else {
-        if ui.add(PauseScanningButton::default()).clicked() {
+        if ui.add(PauseScanningButton).clicked() {
             app_settings.pause_sweeps.store(true, Ordering::Relaxed);
         }
     }
