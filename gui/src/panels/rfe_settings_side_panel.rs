@@ -171,7 +171,7 @@ fn show_sweep_settings(
         }
         _ => {}
     });
-    return rfe_settings_changed;
+    rfe_settings_changed
 }
 
 fn show_rfe_info(ui: &mut Ui, rfe_info: &RfeInfo, units: FrequencyUnits) {
