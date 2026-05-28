@@ -13,8 +13,8 @@ use super::{
     CalcMode, Command, Config, DspMode, InputStage, Mode, Model, Sweep, TrackingStatus, WifiBand,
 };
 use crate::rf_explorer::{
-    impl_rf_explorer, ConfigCallback, ScreenData, SerialNumber, SetupInfo,
-    COMMAND_RESPONSE_TIMEOUT, NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+    COMMAND_RESPONSE_TIMEOUT, ConfigCallback, NEXT_SCREEN_DATA_TIMEOUT,
+    RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT, ScreenData, SerialNumber, SetupInfo, impl_rf_explorer,
 };
 use crate::{ConnectionError, ConnectionResult, Device, Error, Frequency, Result};
 
@@ -846,14 +846,14 @@ impl crate::common::MessageContainer for MessageContainer {
             Self::Message::Config(config) => {
                 *self.config.0.lock().unwrap() = Some(config);
                 self.config.1.notify_one();
-                if let Some(cb) = self.config_callback.lock().unwrap().clone() {
-                    if let Some(config) = self.config.0.lock().unwrap().clone() {
-                        // Run the user-provided callback on a new thread so that it can't
-                        // block reading from the RF Explorer
-                        thread::spawn(move || {
-                            cb(config);
-                        });
-                    }
+                if let Some(cb) = self.config_callback.lock().unwrap().clone()
+                    && let Some(config) = self.config.0.lock().unwrap().clone()
+                {
+                    // Run the user-provided callback on a new thread so that it can't
+                    // block reading from the RF Explorer
+                    thread::spawn(move || {
+                        cb(config);
+                    });
                 }
             }
             Self::Message::Sweep(sweep) => {
