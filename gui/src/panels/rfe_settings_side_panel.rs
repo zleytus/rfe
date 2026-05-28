@@ -175,14 +175,12 @@ fn show_sweep_settings(
 }
 
 fn show_rfe_info(ui: &mut Ui, rfe_info: &RfeInfo, units: FrequencyUnits) {
-    let mut info_items = Vec::new();
-    info_items.push(InfoItem::new_freq("Min Freq", rfe_info.min_freq, units));
-    info_items.push(InfoItem::new_freq("Max Freq", rfe_info.max_freq, units));
-    info_items.push(InfoItem::new_freq("Max Span", rfe_info.max_freq, units));
-    info_items.push(InfoItem::new(
-        "Active Radio",
-        rfe_info.active_radio_model.to_string(),
-    ));
+    let mut info_items = vec![
+        InfoItem::new_freq("Min Freq", rfe_info.min_freq, units),
+        InfoItem::new_freq("Max Freq", rfe_info.max_freq, units),
+        InfoItem::new_freq("Max Span", rfe_info.max_freq, units),
+        InfoItem::new("Active Radio", rfe_info.active_radio_model.to_string()),
+    ];
     if let Some(inactive_radio_model) = &rfe_info.inactive_radio_model {
         info_items.push(InfoItem::new(
             "Inactive Radio",
