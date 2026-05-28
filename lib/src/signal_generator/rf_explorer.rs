@@ -11,8 +11,8 @@ use super::{
     ConfigFreqSweep, ConfigFreqSweepExp, Model, PowerLevel, Temperature,
 };
 use crate::rf_explorer::{
-    impl_rf_explorer, ConfigCallback, ScreenData, SerialNumber, SetupInfo,
-    NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT,
+    ConfigCallback, NEXT_SCREEN_DATA_TIMEOUT, RECEIVE_INITIAL_DEVICE_INFO_TIMEOUT, ScreenData,
+    SerialNumber, SetupInfo, impl_rf_explorer,
 };
 use crate::{ConnectionError, ConnectionResult, Device, Frequency, Result};
 
@@ -173,9 +173,7 @@ impl SignalGenerator {
 
     /// The inactive radio's model.
     pub fn inactive_radio_model(&self) -> Option<Model> {
-        let Some(exp_model) = self.expansion_radio_model() else {
-            return None;
-        };
+        let exp_model = self.expansion_radio_model()?;
 
         if self.config_expansion().is_some() {
             self.main_radio_model()
