@@ -34,6 +34,9 @@ impl SweepSettings {
         self.stop_freq = freq_to_string(config.stop_freq, self.units);
         self.center_freq = freq_to_string(config.center_freq, self.units);
         self.span = freq_to_string(config.span, self.units);
+        self.rbw = config.rbw;
+        self.step_size = config.step_size;
+        self.len = config.sweep_len;
     }
 }
 
