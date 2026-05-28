@@ -9,9 +9,12 @@ use crate::rf_explorer::parsers::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, Default)]
 #[repr(u8)]
+/// Status of analyzer tracking mode.
 pub enum TrackingStatus {
+    /// Tracking mode is disabled.
     #[default]
     Disabled = 0,
+    /// Tracking mode is enabled.
     Enabled,
 }
 

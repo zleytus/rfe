@@ -17,6 +17,7 @@ use crate::rf_explorer::{
 use crate::{ConnectionError, ConnectionResult, Device, Frequency, Result};
 
 #[derive(Debug)]
+/// RF Explorer signal generator device.
 pub struct SignalGenerator {
     rfe: Device<MessageContainer>,
 }

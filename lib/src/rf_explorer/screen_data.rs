@@ -11,13 +11,16 @@ use super::parsers::*;
 use crate::common::MessageParseError;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
+/// Monochrome LCD screen capture from an RF Explorer device.
 pub struct ScreenData {
     screen_data_matrix: Box<[[u8; ScreenData::COLUMNS]; ScreenData::ROWS]>,
     timestamp: DateTime<Utc>,
 }
 
 impl ScreenData {
+    /// Screen width in pixels.
     pub const WIDTH_PX: u8 = 128;
+    /// Screen height in pixels.
     pub const HEIGHT_PX: u8 = 64;
     pub(crate) const PREFIX: &'static [u8] = b"$D";
     const ROWS: usize = 8;

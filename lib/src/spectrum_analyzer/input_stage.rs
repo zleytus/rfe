@@ -12,11 +12,17 @@ use crate::rf_explorer::parsers::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
+/// RF input stage selected on supported spectrum analyzer models.
 pub enum InputStage {
+    /// Direct input path.
     Direct = b'0',
+    /// 30 dB attenuator input path.
     Attenuator30dB = b'1',
+    /// 25 dB low-noise amplifier input path.
     Lna25dB = b'2',
+    /// 60 dB attenuator input path.
     Attenuator60dB = b'3',
+    /// 12 dB low-noise amplifier input path.
     Lna12dB = b'4',
 }
 

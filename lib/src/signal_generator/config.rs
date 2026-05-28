@@ -207,6 +207,7 @@ pub struct ConfigExp {
 }
 
 impl ConfigExp {
+    /// Message prefix used by expansion-module configuration messages.
     pub const PREFIX: &'static [u8] = b"#C5-*:";
 }
 

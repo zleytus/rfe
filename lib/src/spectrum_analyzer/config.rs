@@ -17,17 +17,28 @@ use crate::{
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
+/// Operating mode reported by an RF Explorer device.
 pub enum Mode {
+    /// Spectrum analyzer mode.
     #[default]
     SpectrumAnalyzer = 0,
+    /// RF generator mode.
     RfGenerator = 1,
+    /// Wi-Fi analyzer mode.
     WifiAnalyzer = 2,
+    /// Analyzer tracking mode.
     AnalyzerTracking = 5,
+    /// RF sniffer mode.
     RfSniffer = 6,
+    /// CW transmitter mode.
     CwTransmitter = 60,
+    /// Frequency sweep mode.
     SweepFrequency = 61,
+    /// Amplitude sweep mode.
     SweepAmplitude = 62,
+    /// Generator tracking mode.
     GeneratorTracking = 63,
+    /// Unknown or unsupported mode.
     Unknown = 255,
 }
 
@@ -51,14 +62,22 @@ impl Display for Mode {
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
+/// Sweep calculator mode used by the spectrum analyzer.
 pub enum CalcMode {
+    /// Normal sweep display.
     #[default]
     Normal = 0,
+    /// Maximum value mode.
     Max,
+    /// Average value mode.
     Avg,
+    /// Overwrite mode.
     Overwrite,
+    /// Maximum hold mode.
     MaxHold,
+    /// Historical maximum mode.
     MaxHistorical,
+    /// Unknown or unsupported calculator mode.
     Unknown = 255,
 }
 
@@ -78,22 +97,39 @@ impl Display for CalcMode {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+/// Spectrum analyzer configuration reported by an RF Explorer.
 pub struct Config {
+    /// Sweep start frequency.
     pub start_freq: Frequency,
+    /// Frequency step between sweep points.
     pub step_size: Frequency,
+    /// Sweep stop frequency.
     pub stop_freq: Frequency,
+    /// Sweep center frequency.
     pub center_freq: Frequency,
+    /// Sweep span.
     pub span: Frequency,
+    /// Top displayed amplitude in dBm.
     pub max_amp_dbm: i16,
+    /// Bottom displayed amplitude in dBm.
     pub min_amp_dbm: i16,
+    /// Number of points in each sweep.
     pub sweep_len: u16,
+    /// Whether the expansion radio module is active.
     pub is_expansion_radio_module_active: bool,
+    /// Current operating mode.
     pub mode: Mode,
+    /// Minimum supported frequency.
     pub min_freq: Frequency,
+    /// Maximum supported frequency.
     pub max_freq: Frequency,
+    /// Maximum supported span.
     pub max_span: Frequency,
+    /// Resolution bandwidth, if reported by the device.
     pub rbw: Option<Frequency>,
+    /// Amplitude offset in dB, if reported by the device.
     pub amp_offset_db: Option<i8>,
+    /// Calculator mode, if reported by the device.
     pub calc_mode: Option<CalcMode>,
     pub(crate) timestamp: DateTime<Utc>,
 }

@@ -128,20 +128,26 @@ impl Debug for SerialPort {
 }
 
 #[derive(Error, Debug)]
+/// Error returned while opening or initializing a device connection.
 pub enum ConnectionError {
+    /// Initial device information was not received before the timeout elapsed.
     #[error("RF Explorer device info was not received")]
     DeviceInfoNotReceived,
 
+    /// The initialization command could not be sent.
     #[error(transparent)]
     InitCommandFailedToSend(#[from] io::Error),
 
+    /// The serial port could not be opened.
     #[error(transparent)]
     SerialPortFailedToOpen(#[from] serialport::Error),
 
+    /// No USB serial device with the requested name was found.
     #[error("A USB serial device with the name '{0}' could not be found")]
     UsbSerialDeviceNotFound(String),
 }
 
+/// Result type returned while opening or initializing a device connection.
 pub type ConnectionResult<T> = Result<T, ConnectionError>;
 
 pub(crate) fn silabs_cp210x_ports() -> impl Iterator<Item = SerialPortInfo> {

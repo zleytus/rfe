@@ -99,6 +99,7 @@ pub struct ConfigCwExp {
 }
 
 impl ConfigCwExp {
+    /// Message prefix used by expansion-module CW configuration messages.
     pub const PREFIX: &'static [u8] = b"#C5-G:";
 }
 

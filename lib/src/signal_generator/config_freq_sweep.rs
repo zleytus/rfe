@@ -109,6 +109,7 @@ pub struct ConfigFreqSweepExp {
 }
 
 impl ConfigFreqSweepExp {
+    /// Message prefix used by expansion-module frequency sweep configuration messages.
     pub const PREFIX: &'static [u8] = b"#C5-F:";
 }
 

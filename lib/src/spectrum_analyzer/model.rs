@@ -6,28 +6,46 @@ use crate::Frequency;
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq, Default)]
 #[repr(u8)]
+/// RF Explorer spectrum analyzer model.
 pub enum Model {
+    /// 433M model.
     Rfe433M = 0,
+    /// 868M model.
     Rfe868M = 1,
+    /// 915M model.
     Rfe915M = 2,
+    /// WSUB1G model.
     RfeWSub1G = 3,
+    /// 2.4G model.
     Rfe24G = 4,
+    /// WSUB3G model.
     RfeWSub3G = 5,
+    /// 6G model.
     Rfe6G = 6,
+    /// WSUB1G+ model.
     RfeWSub1GPlus = 10,
+    /// Pro Audio model.
     RfeProAudio = 11,
+    /// 2.4G+ model.
     Rfe24GPlus = 12,
+    /// 4G+ model.
     Rfe4GPlus = 13,
+    /// 6G+ model.
     Rfe6GPlus = 14,
+    /// MW5G 3 GHz model.
     RfeMW5G3G = 16,
+    /// MW5G 4 GHz model.
     RfeMW5G4G = 17,
+    /// MW5G 5 GHz model.
     RfeMW5G5G = 18,
+    /// Unknown or unsupported model.
     #[default]
     #[num_enum(alternatives = [20..=254])]
     Unknown = 19,
 }
 
 impl Model {
+    /// Returns whether the model supports Plus-model features.
     pub const fn is_plus_model(&self) -> bool {
         matches!(
             self,
@@ -42,6 +60,7 @@ impl Model {
         )
     }
 
+    /// Returns whether the model supports Wi-Fi analyzer mode.
     pub const fn has_wifi_analyzer(&self) -> bool {
         matches!(
             self,
@@ -56,6 +75,7 @@ impl Model {
         )
     }
 
+    /// Returns the model's minimum supported input frequency.
     pub fn min_freq(&self) -> Frequency {
         match self {
             Model::Rfe433M => 430_000_000,
@@ -76,6 +96,7 @@ impl Model {
         .into()
     }
 
+    /// Returns the model's maximum supported input frequency.
     pub fn max_freq(&self) -> Frequency {
         match self {
             Model::Rfe433M => 440_000_000,
@@ -94,6 +115,7 @@ impl Model {
         .into()
     }
 
+    /// Returns the model's minimum supported sweep span.
     pub fn min_span(&self) -> Frequency {
         match self {
             Model::Rfe433M
@@ -117,6 +139,7 @@ impl Model {
         .into()
     }
 
+    /// Returns the model's maximum supported sweep span.
     pub fn max_span(&self) -> Frequency {
         match self {
             Model::Rfe433M | Model::Rfe868M | Model::Rfe915M => 10_000_000,

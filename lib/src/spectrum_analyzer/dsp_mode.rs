@@ -9,11 +9,16 @@ use crate::rf_explorer::parsers::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Default)]
 #[repr(u8)]
+/// Digital signal processing mode used by the spectrum analyzer.
 pub enum DspMode {
+    /// Automatically select the DSP mode.
     #[default]
     Auto = 0,
+    /// Filtered DSP mode.
     Filter,
+    /// Fast DSP mode.
     Fast,
+    /// No image rejection DSP mode.
     NoImg,
 }
 

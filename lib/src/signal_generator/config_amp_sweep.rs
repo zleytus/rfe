@@ -116,6 +116,7 @@ pub struct ConfigAmpSweepExp {
 }
 
 impl ConfigAmpSweepExp {
+    /// Message prefix used by expansion-module amplitude sweep configuration messages.
     pub const PREFIX: &'static [u8] = b"#C5-A:";
 }
 

@@ -7,23 +7,27 @@ use uom::si::{
 };
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// Frequency value stored internally in hertz.
 pub struct Frequency {
     freq: u64::Frequency,
 }
 
 impl Frequency {
+    /// Creates a frequency from hertz.
     pub fn from_hz(hz: u64) -> Frequency {
         Frequency {
             freq: u64::Frequency::new::<hertz>(hz),
         }
     }
 
+    /// Creates a frequency from kilohertz.
     pub fn from_khz(khz: u64) -> Frequency {
         Frequency {
             freq: u64::Frequency::new::<kilohertz>(khz),
         }
     }
 
+    /// Creates a frequency from kilohertz, returning zero for negative or overflowing values.
     pub fn from_khz_f32(khz: f32) -> Frequency {
         if khz.is_sign_negative() || (u64::MAX as f32) < khz {
             return Frequency::default();
@@ -36,6 +40,7 @@ impl Frequency {
         }
     }
 
+    /// Creates a frequency from kilohertz, returning zero for negative or overflowing values.
     pub fn from_khz_f64(khz: f64) -> Frequency {
         if khz.is_sign_negative() || (u64::MAX as f64) < khz {
             return Frequency::default();
@@ -48,12 +53,14 @@ impl Frequency {
         }
     }
 
+    /// Creates a frequency from megahertz.
     pub fn from_mhz(mhz: u64) -> Frequency {
         Frequency {
             freq: u64::Frequency::new::<megahertz>(mhz),
         }
     }
 
+    /// Creates a frequency from megahertz, returning zero for negative or overflowing values.
     pub fn from_mhz_f32(mhz: f32) -> Frequency {
         if mhz.is_sign_negative() || (u64::MAX as f32) < mhz {
             return Frequency::default();
@@ -66,6 +73,7 @@ impl Frequency {
         }
     }
 
+    /// Creates a frequency from megahertz, returning zero for negative or overflowing values.
     pub fn from_mhz_f64(mhz: f64) -> Frequency {
         if mhz.is_sign_negative() || (u64::MAX as f64) < mhz {
             return Frequency::default();
@@ -78,12 +86,14 @@ impl Frequency {
         }
     }
 
+    /// Creates a frequency from gigahertz.
     pub fn from_ghz(ghz: u64) -> Frequency {
         Frequency {
             freq: u64::Frequency::new::<gigahertz>(ghz),
         }
     }
 
+    /// Creates a frequency from gigahertz, returning zero for negative or overflowing values.
     pub fn from_ghz_f32(ghz: f32) -> Frequency {
         if ghz.is_sign_negative() || (u64::MAX as f32) < ghz {
             return Frequency::default();
@@ -96,6 +106,7 @@ impl Frequency {
         }
     }
 
+    /// Creates a frequency from gigahertz, returning zero for negative or overflowing values.
     pub fn from_ghz_f64(ghz: f64) -> Frequency {
         if ghz.is_sign_negative() || (u64::MAX as f64) < ghz {
             return Frequency::default();
@@ -108,54 +119,67 @@ impl Frequency {
         }
     }
 
+    /// Returns the frequency in hertz.
     pub fn as_hz(&self) -> u64 {
         self.freq.get::<hertz>()
     }
 
+    /// Returns the frequency in hertz as an `f32`.
     pub fn as_hz_f32(&self) -> f32 {
         self.freq.get::<hertz>() as f32
     }
 
+    /// Returns the frequency in hertz as an `f64`.
     pub fn as_hz_f64(&self) -> f64 {
         self.freq.get::<hertz>() as f64
     }
 
+    /// Returns the frequency in kilohertz.
     pub fn as_khz(&self) -> u64 {
         self.freq.get::<kilohertz>()
     }
 
+    /// Returns the frequency in kilohertz as an `f32`.
     pub fn as_khz_f32(&self) -> f32 {
         f32::Frequency::new::<hertz>(self.freq.get::<hertz>() as f32).get::<kilohertz>()
     }
 
+    /// Returns the frequency in kilohertz as an `f64`.
     pub fn as_khz_f64(&self) -> f64 {
         f64::Frequency::new::<hertz>(self.freq.get::<hertz>() as f64).get::<kilohertz>()
     }
 
+    /// Returns the frequency in megahertz.
     pub fn as_mhz(&self) -> u64 {
         self.freq.get::<megahertz>()
     }
 
+    /// Returns the frequency in megahertz as an `f32`.
     pub fn as_mhz_f32(&self) -> f32 {
         f32::Frequency::new::<hertz>(self.freq.get::<hertz>() as f32).get::<megahertz>()
     }
 
+    /// Returns the frequency in megahertz as an `f64`.
     pub fn as_mhz_f64(&self) -> f64 {
         f64::Frequency::new::<hertz>(self.freq.get::<hertz>() as f64).get::<megahertz>()
     }
 
+    /// Returns the frequency in gigahertz.
     pub fn as_ghz(&self) -> u64 {
         self.freq.get::<gigahertz>()
     }
 
+    /// Returns the frequency in gigahertz as an `f32`.
     pub fn as_ghz_f32(&self) -> f32 {
         f32::Frequency::new::<hertz>(self.freq.get::<hertz>() as f32).get::<gigahertz>()
     }
 
+    /// Returns the frequency in gigahertz as an `f64`.
     pub fn as_ghz_f64(&self) -> f64 {
         f64::Frequency::new::<hertz>(self.freq.get::<hertz>() as f64).get::<gigahertz>()
     }
 
+    /// Returns the absolute difference between two frequencies.
     pub fn abs_diff(self, other: Frequency) -> Frequency {
         Frequency::from_hz(self.as_hz().abs_diff(other.as_hz()))
     }

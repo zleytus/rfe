@@ -15,6 +15,10 @@ use tracing::debug;
 use super::{ConnectionResult, MessageContainer, MessageParseError, SerialPort, serial_port};
 
 #[derive(Debug)]
+/// Low-level serial device wrapper for RF Explorer-like devices.
+///
+/// `Device` owns the serial connection, starts a background reader thread, and
+/// stores parsed messages in the supplied [`MessageContainer`].
 pub struct Device<M: MessageContainer + 'static> {
     serial_port: Arc<SerialPort>,
     is_reading: Arc<AtomicBool>,
@@ -58,6 +62,7 @@ impl<M: MessageContainer> Device<M> {
         Ok(device)
     }
 
+    /// Connects to the first Silicon Labs CP210x serial port that responds to the initialization command.
     pub fn connect(device_init_command: impl AsRef<[u8]>) -> Option<Self> {
         // For every Silabs CP210X port, we first try to connect using the RF Explorer's fast
         // default baud rate (500 kbps) and then try to connect using its slow default baud rate
@@ -75,6 +80,7 @@ impl<M: MessageContainer> Device<M> {
             })
     }
 
+    /// Connects to the first Silicon Labs CP210x serial port using the given baud rate.
     pub fn connect_with_baud_rate(
         baud_rate: u32,
         device_init_command: impl AsRef<[u8]>,
@@ -85,6 +91,9 @@ impl<M: MessageContainer> Device<M> {
         })
     }
 
+    /// Connects to a named serial port using the given baud rate.
+    ///
+    /// The initialization command is sent immediately after opening the port.
     pub fn connect_with_name_and_baud_rate(
         name: &str,
         baud_rate: u32,
@@ -124,6 +133,7 @@ impl<M: MessageContainer> Device<M> {
         debug!("Stopped reading messages from device");
     }
 
+    /// Returns the message container populated by the background reader thread.
     pub fn messages(&self) -> &M {
         &self.messages
     }
@@ -132,18 +142,22 @@ impl<M: MessageContainer> Device<M> {
         &self.serial_port
     }
 
+    /// Sends raw bytes to the device.
     pub fn send_bytes(&self, bytes: impl AsRef<[u8]>) -> io::Result<()> {
         self.serial_port.send_bytes(bytes.as_ref())
     }
 
+    /// Sends a command to the device.
     pub fn send_command(&self, command: impl Into<Cow<'static, [u8]>>) -> io::Result<()> {
         self.serial_port.send_command(command.into())
     }
 
+    /// Returns the connected serial port name.
     pub fn port_name(&self) -> &str {
         &self.serial_port.port_info().port_name
     }
 
+    /// Returns the serial connection's current baud rate.
     pub fn baud_rate(&self) -> io::Result<u32> {
         self.serial_port.baud_rate()
     }

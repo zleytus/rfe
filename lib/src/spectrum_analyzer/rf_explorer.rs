@@ -19,6 +19,7 @@ use crate::rf_explorer::{
 use crate::{ConnectionError, ConnectionResult, Device, Error, Frequency, Result};
 
 #[derive(Debug)]
+/// RF Explorer spectrum analyzer device.
 pub struct SpectrumAnalyzer {
     rfe: Device<MessageContainer>,
 }
@@ -340,6 +341,7 @@ impl SpectrumAnalyzer {
         *self.messages().tracking_status.0.lock().unwrap()
     }
 
+    /// Returns the spectrum analyzer's input stage, if reported by the device.
     pub fn input_stage(&self) -> Option<InputStage> {
         *self.messages().input_stage.0.lock().unwrap()
     }
