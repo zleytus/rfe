@@ -67,7 +67,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name(
     };
 
     let name = CString::new(rfe.port_name()).unwrap_or_default();
-    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes().len()) };
+    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes_with_nul().len()) };
 
     if buf_len < name.len() {
         return Result::InvalidInputError;
@@ -83,7 +83,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name(
 pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name_len(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> usize {
-    rfe.map(|rfe| rfe.port_name().len()).unwrap_or_default()
+    rfe.map(|rfe| rfe.port_name().len() + 1).unwrap_or_default()
 }
 
 #[unsafe(no_mangle)]
@@ -98,7 +98,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
 
     let firmware_version = CString::new(rfe.firmware_version()).unwrap_or_default();
     let firmware_version = unsafe {
-        slice::from_raw_parts(firmware_version.as_ptr(), firmware_version.as_bytes().len())
+        slice::from_raw_parts(
+            firmware_version.as_ptr(),
+            firmware_version.as_bytes_with_nul().len(),
+        )
     };
 
     if buf_len < firmware_version.len() {
@@ -115,7 +118,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
 pub extern "C" fn rfe_spectrum_analyzer_firmware_version_len(
     rfe: Option<&SpectrumAnalyzer>,
 ) -> usize {
-    rfe.map(|rfe| rfe.firmware_version().len())
+    rfe.map(|rfe| rfe.firmware_version().len() + 1)
         .unwrap_or_default()
 }
 
@@ -134,8 +137,12 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
     };
 
     let serial_number = CString::new(serial_number).unwrap_or_default();
-    let serial_number =
-        unsafe { slice::from_raw_parts(serial_number.as_ptr(), serial_number.as_bytes().len()) };
+    let serial_number = unsafe {
+        slice::from_raw_parts(
+            serial_number.as_ptr(),
+            serial_number.as_bytes_with_nul().len(),
+        )
+    };
 
     if buf_len < serial_number.len() {
         return Result::InvalidInputError;
@@ -149,7 +156,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_serial_number_len(rfe: Option<&SpectrumAnalyzer>) -> usize {
     rfe.and_then(SpectrumAnalyzer::serial_number)
-        .map(|sn| sn.len())
+        .map(|sn| sn.len() + 1)
         .unwrap_or_default()
 }
 

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 void print_spectrum_analyzer_info(const SpectrumAnalyzer *rfe) {
-    uintptr_t port_name_len = rfe_spectrum_analyzer_port_name_len(rfe) + 1;
+    uintptr_t port_name_len = rfe_spectrum_analyzer_port_name_len(rfe);
     char *port_name = malloc(sizeof(char) * port_name_len);
     rfe_spectrum_analyzer_port_name(rfe, port_name, port_name_len);
     printf("Spectrum Analyzer (%s):\n", port_name);
