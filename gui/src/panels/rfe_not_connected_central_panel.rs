@@ -38,10 +38,9 @@ impl RfeNotConnectedCentralPanel {
                             .corner_radius(CornerRadius::default().at_least(5)),
                     )
                     .clicked()
+                    && let Some(spectrum_analyzer) = SpectrumAnalyzer::connect()
                 {
-                    if let Some(spectrum_analyzer) = SpectrumAnalyzer::connect() {
-                        *rfe = Some(Arc::new(Mutex::new(spectrum_analyzer)));
-                    }
+                    *rfe = Some(Arc::new(Mutex::new(spectrum_analyzer)));
                 }
             });
         });
