@@ -1,10 +1,10 @@
 use std::{fmt::Display, str};
 
 use nom::{
+    AsChar, Parser,
     bytes::complete::{tag, take_while_m_n},
     combinator::{map, map_res},
     sequence::preceded,
-    AsChar, Parser,
 };
 
 use super::parsers::*;

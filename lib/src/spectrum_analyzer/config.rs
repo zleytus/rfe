@@ -2,10 +2,10 @@ use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
 use nom::{
+    Parser,
     branch::alt,
     bytes::complete::tag,
     combinator::{map, map_res, opt},
-    Parser,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 

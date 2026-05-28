@@ -2,17 +2,17 @@ use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
 use nom::{
+    Parser,
     branch::alt,
     bytes::complete::tag,
     combinator::map,
     multi::length_data,
     number::complete::{be_u16, u8 as nom_u8},
-    Parser,
 };
 
 use super::{Config, Model};
 use crate::common::MessageParseError;
-use crate::rf_explorer::{parsers::*, SetupInfo};
+use crate::rf_explorer::{SetupInfo, parsers::*};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub(crate) struct Sweep {

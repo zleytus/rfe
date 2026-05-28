@@ -1,10 +1,10 @@
 use chrono::{DateTime, Utc};
-use nom::{bytes::complete::tag, Parser};
+use nom::{Parser, bytes::complete::tag};
 
 use crate::{
     common::{Frequency, MessageParseError},
     rf_explorer::parsers::*,
-    signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
+    signal_generator::{Attenuation, PowerLevel, RfPower, parsers::*},
 };
 
 /// Main-module CW configuration.

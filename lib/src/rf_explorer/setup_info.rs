@@ -1,10 +1,10 @@
 use std::{fmt::Debug, str};
 
 use nom::{
+    Parser,
     bytes::complete::tag,
     character::complete::not_line_ending,
     combinator::{map, map_res},
-    Parser,
 };
 
 use super::parsers::*;

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use nom::{error::Error, Err};
+use nom::{Err, error::Error};
 use thiserror::Error;
 
 use super::ConnectionResult;

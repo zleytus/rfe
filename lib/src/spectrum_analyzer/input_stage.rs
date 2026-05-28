@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
 use nom::{
+    Parser,
     bytes::complete::{tag, take},
     combinator::map_res,
-    Parser,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 

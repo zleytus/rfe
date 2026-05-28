@@ -1,6 +1,6 @@
 use std::{convert::TryFrom, str::FromStr};
 
-use nom::{combinator::map_res, IResult, Parser};
+use nom::{IResult, Parser, combinator::map_res};
 
 use super::{CalcMode, Mode};
 use crate::rf_explorer::parsers::*;

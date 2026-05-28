@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use nom::{
-    bytes::complete::{tag, take},
     Parser,
+    bytes::complete::{tag, take},
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 

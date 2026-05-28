@@ -2,9 +2,9 @@ use std::convert::TryInto;
 
 use chrono::{DateTime, Utc};
 use nom::{
+    Parser,
     bytes::{complete::tag, streaming::take},
     combinator::map_res,
-    Parser,
 };
 
 use super::parsers::*;

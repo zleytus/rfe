@@ -1,9 +1,9 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take},
     character::complete::line_ending,
     combinator::{all_consuming, map_res, opt},
     error::Error,
-    IResult, Parser,
 };
 use std::str::{self, FromStr};
 

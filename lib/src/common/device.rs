@@ -3,8 +3,8 @@ use std::{
     fmt::Debug,
     io::{self, ErrorKind},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     thread::{self, JoinHandle},
     time::Duration,
@@ -12,7 +12,7 @@ use std::{
 
 use tracing::debug;
 
-use super::{serial_port, ConnectionResult, MessageContainer, MessageParseError, SerialPort};
+use super::{ConnectionResult, MessageContainer, MessageParseError, SerialPort, serial_port};
 
 #[derive(Debug)]
 pub struct Device<M: MessageContainer + 'static> {
