@@ -9,12 +9,7 @@ pub extern "C" fn rfe_screen_data_get_pixel(
     y: u8,
     pixel: Option<&mut bool>,
 ) -> Result {
-    if let (Some(screen_data), Some(pixel)) = (screen_data, pixel) {
-        *pixel = screen_data.get_pixel(x, y);
-        Result::Success
-    } else {
-        Result::NullPtrError
-    }
+    rfe_screen_data_get_pixel_checked(screen_data, x, y, pixel)
 }
 
 #[unsafe(no_mangle)]
