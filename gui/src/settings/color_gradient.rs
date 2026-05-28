@@ -1,4 +1,4 @@
-use egui::{include_image, ImageSource};
+use egui::{ImageSource, include_image};
 use strum::{Display, EnumIter};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Default, EnumIter, Display)]

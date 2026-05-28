@@ -12,10 +12,10 @@ pub struct RfeSettingsSidePanel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RfeSettingsPanelResponse {
-    CenterSpanChanged,
-    StartStopChanged,
-    SweepLenChanged,
+pub enum RfeSettingsChange {
+    CenterSpan,
+    StartStop,
+    SweepLen,
 }
 
 impl RfeSettingsSidePanel {
@@ -32,7 +32,7 @@ impl RfeSettingsSidePanel {
         sweep_settings: &mut SweepSettings,
         rfe_info: &RfeInfo,
         units: FrequencyUnits,
-    ) -> Option<RfeSettingsPanelResponse> {
+    ) -> Option<RfeSettingsChange> {
         self.side_panel
             .show_inside(ui, |ui| {
                 ScrollArea::vertical()
@@ -55,7 +55,7 @@ fn show_sweep_settings(
     can_change_sweep_len: bool,
     sweep_settings: &mut SweepSettings,
     units: FrequencyUnits,
-) -> Option<RfeSettingsPanelResponse> {
+) -> Option<RfeSettingsChange> {
     let mut rfe_settings_changed = None;
     let rows = if sweep_settings.rbw.is_some() { 7 } else { 6 };
     SettingsCategory::new("Sweep").show(ui, rows, |row| match row.index() {
@@ -71,7 +71,7 @@ fn show_sweep_settings(
                     .lost_focus()
                     && ui.input(|i| i.key_pressed(Key::Enter))
                 {
-                    rfe_settings_changed = Some(RfeSettingsPanelResponse::CenterSpanChanged);
+                    rfe_settings_changed = Some(RfeSettingsChange::CenterSpan);
                 }
             })
             .add_to_row(row);
@@ -87,7 +87,7 @@ fn show_sweep_settings(
                     .lost_focus()
                     && ui.input(|i| i.key_pressed(Key::Enter))
                 {
-                    rfe_settings_changed = Some(RfeSettingsPanelResponse::CenterSpanChanged);
+                    rfe_settings_changed = Some(RfeSettingsChange::CenterSpan);
                 }
             })
             .add_to_row(row);
@@ -103,7 +103,7 @@ fn show_sweep_settings(
                     .lost_focus()
                     && ui.input(|i| i.key_pressed(Key::Enter))
                 {
-                    rfe_settings_changed = Some(RfeSettingsPanelResponse::StartStopChanged);
+                    rfe_settings_changed = Some(RfeSettingsChange::StartStop);
                 }
             })
             .add_to_row(row);
@@ -119,7 +119,7 @@ fn show_sweep_settings(
                     .lost_focus()
                     && ui.input(|i| i.key_pressed(Key::Enter))
                 {
-                    rfe_settings_changed = Some(RfeSettingsPanelResponse::StartStopChanged);
+                    rfe_settings_changed = Some(RfeSettingsChange::StartStop);
                 }
             })
             .add_to_row(row);
@@ -141,7 +141,7 @@ fn show_sweep_settings(
                         if SweepLengthComboBox::show_ui(ui, &mut sweep_settings.len)
                             .is_some_and(|r| r.changed())
                         {
-                            rfe_settings_changed = Some(RfeSettingsPanelResponse::SweepLenChanged);
+                            rfe_settings_changed = Some(RfeSettingsChange::SweepLen);
                         }
                     })
                     .add_to_row(row);
@@ -160,7 +160,7 @@ fn show_sweep_settings(
                     if SweepLengthComboBox::show_ui(ui, &mut sweep_settings.len)
                         .is_some_and(|r| r.changed())
                     {
-                        rfe_settings_changed = Some(RfeSettingsPanelResponse::SweepLenChanged);
+                        rfe_settings_changed = Some(RfeSettingsChange::SweepLen);
                     }
                 })
                 .add_to_row(row);

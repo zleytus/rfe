@@ -9,5 +9,5 @@ pub use app_settings_bottom_panel::{AppSettingsBottomPanel, AppSettingsPanelResp
 pub use plot_central_panel::PlotCentralPanel;
 pub use plot_settings_side_panel::{PlotSettingsPanelResponse, PlotSettingsSidePanel};
 pub use rfe_not_connected_central_panel::RfeNotConnectedCentralPanel;
-pub use rfe_settings_side_panel::{RfeSettingsPanelResponse, RfeSettingsSidePanel};
+pub use rfe_settings_side_panel::{RfeSettingsChange, RfeSettingsSidePanel};
 pub use settings_side_panel::{InfoCategory, InfoItem, Setting, SettingsCategory};

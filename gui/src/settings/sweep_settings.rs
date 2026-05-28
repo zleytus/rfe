@@ -1,4 +1,4 @@
-use rfe::{spectrum_analyzer::Config, Frequency, SpectrumAnalyzer};
+use rfe::{Frequency, SpectrumAnalyzer, spectrum_analyzer::Config};
 
 use super::FrequencyUnits;
 

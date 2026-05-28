@@ -15,7 +15,7 @@ use crate::{
     panels::{
         AppSettingsBottomPanel, AppSettingsPanelResponse, PlotCentralPanel,
         PlotSettingsPanelResponse, PlotSettingsSidePanel, RfeNotConnectedCentralPanel,
-        RfeSettingsPanelResponse, RfeSettingsSidePanel,
+        RfeSettingsChange, RfeSettingsSidePanel,
     },
     settings::{AppSettings, FrequencyUnits, SpectrogramSettings, SweepSettings, TraceSettings},
 };
@@ -101,7 +101,7 @@ impl App {
             });
     }
 
-    fn on_rfe_settings_changed(&self, panel_response: RfeSettingsPanelResponse) {
+    fn on_rfe_settings_changed(&self, panel_response: RfeSettingsChange) {
         let Some(ref rfe) = self.rfe else {
             return;
         };
@@ -111,7 +111,7 @@ impl App {
         let sweep_settings = self.sweep_settings.lock().unwrap().clone();
         let units = self.app_settings.frequency_units;
         match panel_response {
-            RfeSettingsPanelResponse::CenterSpanChanged => {
+            RfeSettingsChange::CenterSpan => {
                 let center_freq = str_to_freq(&sweep_settings.center_freq, units);
                 let span = str_to_freq(&sweep_settings.span, units);
                 let (Ok(center), Ok(span)) = (center_freq, span) else {
@@ -124,7 +124,7 @@ impl App {
                     _ = rfe_clone.lock().unwrap().set_center_span(center, span);
                 });
             }
-            RfeSettingsPanelResponse::StartStopChanged => {
+            RfeSettingsChange::StartStop => {
                 let start_freq = str_to_freq(&sweep_settings.start_freq, units);
                 let stop_freq = str_to_freq(&sweep_settings.stop_freq, units);
                 let (Ok(start), Ok(stop)) = (start_freq, stop_freq) else {
@@ -137,7 +137,7 @@ impl App {
                     _ = rfe_clone.lock().unwrap().set_start_stop(start, stop);
                 });
             }
-            RfeSettingsPanelResponse::SweepLenChanged => {
+            RfeSettingsChange::SweepLen => {
                 let center_freq = str_to_freq(&sweep_settings.center_freq, units);
                 let span = str_to_freq(&sweep_settings.span, units);
                 let sweep_len = sweep_settings.len;
