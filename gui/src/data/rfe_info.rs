@@ -59,6 +59,7 @@ impl RfeInfo {
         if self.is_expansion_radio_active != config.is_expansion_radio_module_active {
             self.inactive_radio_model = Some(self.active_radio_model);
             self.active_radio_model = inactive_radio_model;
+            self.is_expansion_radio_active = config.is_expansion_radio_module_active;
         }
     }
 }
