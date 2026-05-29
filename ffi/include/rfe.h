@@ -324,6 +324,8 @@ enum Result rfe_signal_generator_port_name(const struct SignalGenerator *rfe,
                                            char *port_name_buf,
                                            uintptr_t buf_len);
 
+uintptr_t rfe_signal_generator_port_name_len(const struct SignalGenerator *rfe);
+
 enum Result rfe_signal_generator_firmware_version(const struct SignalGenerator *rfe,
                                                   char *firmware_version_buf,
                                                   uintptr_t buf_len);

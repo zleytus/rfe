@@ -84,6 +84,13 @@ pub unsafe extern "C" fn rfe_signal_generator_port_name(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn rfe_signal_generator_port_name_len(
+    rfe: Option<&SignalGenerator>,
+) -> usize {
+    rfe.map(|rfe| rfe.port_name().len() + 1).unwrap_or_default()
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_firmware_version(
     rfe: Option<&SignalGenerator>,
     firmware_version_buf: Option<&mut c_char>,
