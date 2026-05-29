@@ -3,13 +3,13 @@
 [![Build and Test](https://github.com/zleytus/rfe/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/zleytus/rfe/actions/workflows/build_and_test.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 
-`rfe` is a Rust library and GUI for [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers and signal generators.
+`rfe` is a Rust project for communicating with [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers and signal generators over a USB virtual serial port. It includes a Rust library, a C-compatible API, and a GUI for viewing spectrum analyzer sweeps.
 
 ## Crates
 
 ### [`rfe`](lib/)
 
-Rust library for RF Explorer communication
+Rust library for communicating with RF Explorer spectrum analyzers and signal generators.
 
 ```rust
 use rfe::SpectrumAnalyzer;
@@ -20,17 +20,21 @@ let sweep = rfe.wait_for_next_sweep()?;
 
 ### [`rfe-ffi`](ffi/)
 
-C-compatible FFI for use with other languages
+C-compatible API and generated `rfe.h` header for C and other languages that can load C libraries.
+
+C examples are available in [`ffi/bindings/rfe-c`](ffi/bindings/rfe-c/).
 
 ```c
 #include "rfe.h"
+#include <stdint.h>
+#include <stdlib.h>
 
 SpectrumAnalyzer *rfe = rfe_spectrum_analyzer_connect();
 if (rfe) {
     uint16_t sweep_len = rfe_spectrum_analyzer_sweep_len(rfe);
     float *sweep = malloc(sizeof(float) * sweep_len);
     rfe_spectrum_analyzer_wait_for_next_sweep(rfe, sweep, sweep_len, NULL);
-    
+
     // Use sweep
 
     free(sweep);
@@ -40,7 +44,7 @@ if (rfe) {
 
 ### [`rfe-gui`](gui/)
 
-GUI for visualizing spectrum analyzer data
+GUI for visualizing spectrum analyzer data.
 
 ![rfe-gui screenshot](./gui/assets/rfe-gui.jpg)
 
@@ -53,6 +57,18 @@ cargo build --release
 ```
 
 Outputs will be in `target/release/`.
+
+Run the test suite with:
+
+```bash
+cargo test --workspace
+```
+
+Run the GUI with:
+
+```bash
+cargo run -p rfe-gui
+```
 
 ## Requirements
 
@@ -72,7 +88,7 @@ The kernel includes the CP210x driver, but additional setup is required:
 
 #### 1. Install dependencies
 
-`rfe` uses `pkg-config` and `udev` header files to provide serial port enumeration and USB device information
+`rfe` uses `pkg-config` and `udev` header files to provide serial port enumeration and USB device information.
 
 | Distro             | Command                                           |
 | ------------------ | ------------------------------------------------- |
@@ -83,7 +99,7 @@ The kernel includes the CP210x driver, but additional setup is required:
 
 #### 2. Grant serial port access
 
-The current user must belong to the `dialout` or `uucp` group to get permission to access serial ports
+The current user must belong to the `dialout` or `uucp` group to access serial ports.
 
 | Distro             | Command                         |
 | ------------------ | ------------------------------- |

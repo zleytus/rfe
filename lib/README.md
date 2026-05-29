@@ -3,20 +3,22 @@
 [![Build and Test](https://github.com/zleytus/rfe/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/zleytus/rfe/actions/workflows/build_and_test.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 
-`rfe` is a library for communicating with [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers and signal generators.
+`rfe` is a Rust library for communicating with [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers and signal generators over a USB virtual serial port.
+
+It provides high-level device types for RF Explorer hardware and lower-level building blocks for similar serial devices that use the same message container pattern.
 
 ## Usage
 
 Add the following to your `Cargo.toml`:
 
-``` toml
+```toml
 [dependencies]
 rfe = "0.1.0"
 ```
 
-### Connecting to an RF Explorer
+### Connecting
 
-`rfe` can search for and connect to an attached RF Explorer device, without knowing its port name or baud rate ahead of time, by attempting to connect to all USB serial ports with a VID and PID matching RF Explorer's Silicon Labs CP210x USB to UART Bridge.
+`rfe` can search for an attached RF Explorer without knowing its port name or baud rate. It tries USB serial ports with the VID and PID used by the RF Explorer's Silicon Labs CP210x USB-to-UART bridge.
 
 ```rust
 use rfe::{SignalGenerator, SpectrumAnalyzer};
@@ -25,7 +27,7 @@ let spectrum_analyzer = SpectrumAnalyzer::connect()?;
 let signal_generator = SignalGenerator::connect()?;
 ```
 
-`rfe` can also connect to an attached RF Explorer device with a known port name and baud rate.
+You can also connect to a known serial port and baud rate.
 
 ```rust
 use rfe::{SignalGenerator, SpectrumAnalyzer};
@@ -34,25 +36,25 @@ let spectrum_analyzer = SpectrumAnalyzer::connect_with_name_and_baud_rate("COM2"
 let signal_generator = SignalGenerator::connect_with_name_and_baud_rate("COM1", 500_000)?;
 ```
 
-### Getting a sweep from an RF Explorer Spectrum Analyzer
+### Spectrum analyzer sweeps
 
-`rfe` provides three different APIs for getting a sweep from an RF Explorer spectrum analyzer.
+`rfe` provides three APIs for reading spectrum analyzer sweeps.
 
-#### `SpectrumAnalyzer::wait_for_next_sweep()`
+#### Wait for the next sweep
 
-Synchronously wait for the RF Explorer to measure the next sweep
+`SpectrumAnalyzer::wait_for_next_sweep()` blocks until the device reports a new sweep or the timeout elapses.
 
 ```rust
 use rfe::SpectrumAnalyzer;
 
 let rfe = SpectrumAnalyzer::connect()?;
-let sweep = rfe.wait_for_next_sweep();
+let sweep = rfe.wait_for_next_sweep()?;
 println!("{:?}", sweep);
 ```
 
-#### `SpectrumAnalyzer::sweep()`
+#### Read the latest cached sweep
 
-Return the most recently measured sweep (could be `None` if a sweep hasn't been measured yet)
+`SpectrumAnalyzer::sweep()` returns the most recently measured sweep, or `None` if no sweep has been received yet.
 
 ```rust
 use rfe::SpectrumAnalyzer;
@@ -61,9 +63,9 @@ let rfe = SpectrumAnalyzer::connect()?;
 let sweep = rfe.sweep();
 ```
 
-#### `SpectrumAnalyzer::set_sweep_callback()`
+#### Receive sweeps with a callback
 
-Set a callback function that gets called, from a separate thread, whenever the RF Explorer measures a sweep
+`SpectrumAnalyzer::set_sweep_callback()` registers a callback that runs on a separate thread whenever a sweep is received.
 
 ```rust
 use rfe::SpectrumAnalyzer;
@@ -78,15 +80,30 @@ rfe.set_sweep_callback(|sweep, start_freq, stop_freq| {
 ### Generating a signal with an RF Explorer Signal Generator
 
 ```rust
-use rfe::{Frequency, signal_generator::{Attenuation, PowerLevel, SignalGenerator}};
+use rfe::{
+    signal_generator::{Attenuation, PowerLevel, SignalGenerator},
+    Frequency,
+};
 
 let rfe = SignalGenerator::connect()?;
-let result = rfe.start_cw(Frequency::from_mhz(2412), Attenuation::Off, PowerLevel::Low);
+rfe.start_cw(Frequency::from_mhz(2412), Attenuation::Off, PowerLevel::Low)?;
+```
+
+## Examples
+
+Run the included examples with:
+
+```bash
+cargo run -p rfe --example rfe_info
+cargo run -p rfe --example rfe_sweep
+cargo run -p rfe --example rfe_sweep_with_callback
 ```
 
 ## Troubleshooting
 
 `rfe` uses the [`tracing`](https://github.com/tokio-rs/tracing) crate to emit structured, event-based diagnostic information that can be collected by executables using the `rfe` library.
+
+On Linux, the current user usually needs serial port access through the `dialout` or `uucp` group. See the top-level README for platform setup details.
 
 ## License
 

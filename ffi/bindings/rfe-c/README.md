@@ -1,24 +1,25 @@
 # `rfe-c`
 
-C programs using the Rust `rfe` library.
+C example programs that use the `rfe-ffi` C API.
 
 ## Requirements
 
-* CMake
-* C and Rust compiler
+- CMake
+- C compiler
+- Rust compiler
 
 ## Build
 
-### Statically link to `librfe.a` / `rfe.lib`
+Build the examples against the dynamic library:
 
-```
-cmake -S . -B build
+```bash
+cmake -S . -B build -DBUILD_SHARED_LIBS=ON
 cmake --build build
 ```
 
-### Dynamically link to `librfe.so` / `librfe.dylib` / `rfe.dll`
+Build the examples against the static library:
 
-```
-cmake -S . -B build -DBUILD_SHARED_LIBS=ON
+```bash
+cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
 cmake --build build
 ```
