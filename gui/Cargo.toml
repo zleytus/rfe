@@ -24,5 +24,5 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 wgpu = "29" # enables the wgpu default features so we get the default backends
 
 [target.'cfg(target_os = "linux")'.dependencies.winit]
-version = "*"
+version = "0.30.13"
 features = ["wayland-csd-adwaita"]
