@@ -7,8 +7,8 @@
 #include <stdlib.h>
 
 void sweep_callback(const float *sweep, uintptr_t sweep_len, uint64_t start_hz, uint64_t stop_hz, void *received_sweep) {
-    atomic_store_explicit((atomic_bool *)received_sweep, true, memory_order_relaxed);
     print_sweep(sweep, sweep_len, start_hz, stop_hz);
+    atomic_store_explicit((atomic_bool *)received_sweep, true, memory_order_relaxed);
 }
 
 int main() {
