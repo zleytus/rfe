@@ -12,3 +12,4 @@ rfe = { path = "../lib" }
 [lib]
 name = "rfe"
 crate-type = ["cdylib", "staticlib"]
+doc = false
