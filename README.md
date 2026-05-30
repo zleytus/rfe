@@ -3,7 +3,7 @@
 [![Build and Test](https://github.com/zleytus/rfe/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/zleytus/rfe/actions/workflows/build_and_test.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 
-`rfe` is a Rust project for communicating with [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers and signal generators over a USB virtual serial port. It includes a Rust library, a C-compatible API, and a GUI for viewing spectrum analyzer sweeps.
+`rfe` is a cross-platform SDK for communicating with [RF Explorer](https://www.j3.rf-explorer.com/) spectrum analyzers and signal generators over a USB virtual serial port. It includes a core Rust library, wrapper libraries for C and C#, and a GUI for viewing spectrum analyzer data.
 
 ## Crates
 
