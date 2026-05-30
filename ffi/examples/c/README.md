@@ -1,4 +1,4 @@
-# `rfe-c`
+# C examples
 
 C example programs that use the `rfe-ffi` C API.
 

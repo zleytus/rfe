@@ -70,12 +70,12 @@ Common outputs:
 
 ## C Examples
 
-C examples are available in [`bindings/rfe-c`](bindings/rfe-c/).
+C examples are available in [`examples/c`](examples/c/).
 
 Build them against the dynamic library:
 
 ```bash
-cd ffi/bindings/rfe-c
+cd ffi/examples/c
 cmake -S . -B build -DBUILD_SHARED_LIBS=ON
 cmake --build build
 ```
@@ -83,7 +83,7 @@ cmake --build build
 Build them against the static library:
 
 ```bash
-cd ffi/bindings/rfe-c
+cd ffi/examples/c
 cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
 cmake --build build
 ```

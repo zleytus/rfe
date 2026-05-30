@@ -22,7 +22,7 @@ let sweep = rfe.wait_for_next_sweep()?;
 
 C-compatible API and generated `rfe.h` header for C and other languages that can load C libraries.
 
-C examples are available in [`ffi/bindings/rfe-c`](ffi/bindings/rfe-c/).
+C examples are available in [`ffi/examples/c`](ffi/examples/c/).
 
 ```c
 #include "rfe.h"

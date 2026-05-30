@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(rfe-c LANGUAGES C)
+project(rfe-examples LANGUAGES C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
