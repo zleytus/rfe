@@ -14,6 +14,11 @@ use rfe::{
 use super::{SpectrumAnalyzerConfig, SpectrumAnalyzerModel};
 use crate::common::{Result, UserDataWrapper};
 
+/// Connects to the first RF Explorer spectrum analyzer found on a CP210x USB serial port.
+///
+/// Returns `NULL` if no compatible device can be opened and initialized. The
+/// returned pointer is owned by the caller and must be freed with
+/// `rfe_spectrum_analyzer_free`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_connect() -> *mut SpectrumAnalyzer {
     SpectrumAnalyzer::connect()
@@ -21,6 +26,12 @@ pub extern "C" fn rfe_spectrum_analyzer_connect() -> *mut SpectrumAnalyzer {
         .unwrap_or(ptr::null_mut())
 }
 
+/// Connects to a named serial port using the given baud rate.
+///
+/// `name` must be a valid null-terminated UTF-8 string. Returns `NULL` if the
+/// pointer is null, the string is invalid, or the device cannot be opened and
+/// initialized. The returned pointer is owned by the caller and must be freed
+/// with `rfe_spectrum_analyzer_free`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
@@ -35,6 +46,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_connect_with_name_and_baud_rate(
         .unwrap_or(ptr::null_mut())
 }
 
+/// Frees a spectrum analyzer returned by `rfe_spectrum_analyzer_connect`.
+///
+/// Passing `NULL` is allowed and has no effect.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_free(rfe: Option<&mut SpectrumAnalyzer>) {
     if let Some(rfe) = rfe {
@@ -42,6 +56,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_free(rfe: Option<&mut SpectrumAna
     }
 }
 
+/// Sends raw bytes to the spectrum analyzer.
+///
+/// `bytes` must point to at least `len` bytes. This function is primarily for
+/// advanced users that need to send RF Explorer commands not wrapped by this API.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_send_bytes(
     rfe: Option<&SpectrumAnalyzer>,
@@ -56,6 +74,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_send_bytes(
     }
 }
 
+/// Writes the connected serial port name to a caller-provided buffer.
+///
+/// Use `rfe_spectrum_analyzer_port_name_len` to get the required buffer size,
+/// including the terminating null byte.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name(
     rfe: Option<&SpectrumAnalyzer>,
@@ -79,6 +101,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name(
     Result::Success
 }
 
+/// Returns the buffer size required for `rfe_spectrum_analyzer_port_name`.
+///
+/// The returned size includes the terminating null byte. Returns zero if `rfe`
+/// is `NULL`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name_len(
     rfe: Option<&SpectrumAnalyzer>,
@@ -86,6 +112,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_port_name_len(
     rfe.map(|rfe| rfe.port_name().len() + 1).unwrap_or_default()
 }
 
+/// Writes the firmware version to a caller-provided buffer.
+///
+/// Use `rfe_spectrum_analyzer_firmware_version_len` to get the required buffer
+/// size, including the terminating null byte.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
     rfe: Option<&SpectrumAnalyzer>,
@@ -114,6 +144,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_firmware_version(
     Result::Success
 }
 
+/// Returns the buffer size required for `rfe_spectrum_analyzer_firmware_version`.
+///
+/// The returned size includes the terminating null byte. Returns zero if `rfe`
+/// is `NULL`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_firmware_version_len(
     rfe: Option<&SpectrumAnalyzer>,
@@ -122,6 +156,11 @@ pub extern "C" fn rfe_spectrum_analyzer_firmware_version_len(
         .unwrap_or_default()
 }
 
+/// Writes the device serial number to a caller-provided buffer.
+///
+/// Use `rfe_spectrum_analyzer_serial_number_len` to get the required buffer
+/// size, including the terminating null byte. Returns `RESULT_NO_DATA` if the
+/// device does not report a serial number.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
     rfe: Option<&SpectrumAnalyzer>,
@@ -153,6 +192,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_serial_number(
     Result::Success
 }
 
+/// Returns the buffer size required for `rfe_spectrum_analyzer_serial_number`.
+///
+/// The returned size includes the terminating null byte. Returns zero if `rfe`
+/// is `NULL` or no serial number has been received.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_serial_number_len(rfe: Option<&SpectrumAnalyzer>) -> usize {
     rfe.and_then(SpectrumAnalyzer::serial_number)
@@ -160,6 +203,7 @@ pub extern "C" fn rfe_spectrum_analyzer_serial_number_len(rfe: Option<&SpectrumA
         .unwrap_or_default()
 }
 
+/// Turns the spectrum analyzer LCD on.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_on(rfe: Option<&SpectrumAnalyzer>) -> Result {
     if let Some(rfe) = rfe {
@@ -169,6 +213,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_on(rfe: Option<&SpectrumAnaly
     }
 }
 
+/// Turns the spectrum analyzer LCD off.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_off(rfe: Option<&SpectrumAnalyzer>) -> Result {
     if let Some(rfe) = rfe {
@@ -178,6 +223,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_lcd_off(rfe: Option<&SpectrumAnal
     }
 }
 
+/// Enables screen dump messages from the spectrum analyzer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_enable_dump_screen(
     rfe: Option<&SpectrumAnalyzer>,
@@ -189,6 +235,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_enable_dump_screen(
     }
 }
 
+/// Disables screen dump messages from the spectrum analyzer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_disable_dump_screen(
     rfe: Option<&SpectrumAnalyzer>,
@@ -200,6 +247,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_disable_dump_screen(
     }
 }
 
+/// Holds the current spectrum analyzer sweep.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_hold(rfe: Option<&SpectrumAnalyzer>) -> Result {
     if let Some(rfe) = rfe {
@@ -209,6 +257,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_hold(rfe: Option<&SpectrumAnalyze
     }
 }
 
+/// Reboots the spectrum analyzer.
+///
+/// The `rfe` pointer must not be used after a successful reboot unless the
+/// device is reconnected.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_reboot(
     rfe: Option<&mut SpectrumAnalyzer>,
@@ -220,6 +272,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_reboot(
     }
 }
 
+/// Powers off the spectrum analyzer.
+///
+/// The `rfe` pointer must not be used after a successful power-off unless the
+/// device is reconnected.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_power_off(
     rfe: Option<&mut SpectrumAnalyzer>,
@@ -231,6 +287,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_power_off(
     }
 }
 
+/// Returns the current sweep start frequency in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_start_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::start_freq)
@@ -238,6 +295,7 @@ pub extern "C" fn rfe_spectrum_analyzer_start_freq_hz(rfe: Option<&SpectrumAnaly
         .as_hz()
 }
 
+/// Returns the current sweep step size in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_step_size_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::step_size)
@@ -245,6 +303,7 @@ pub extern "C" fn rfe_spectrum_analyzer_step_size_hz(rfe: Option<&SpectrumAnalyz
         .as_hz()
 }
 
+/// Returns the current sweep stop frequency in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_stop_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::stop_freq)
@@ -252,6 +311,7 @@ pub extern "C" fn rfe_spectrum_analyzer_stop_freq_hz(rfe: Option<&SpectrumAnalyz
         .as_hz()
 }
 
+/// Returns the current sweep center frequency in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_center_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::center_freq)
@@ -259,11 +319,13 @@ pub extern "C" fn rfe_spectrum_analyzer_center_freq_hz(rfe: Option<&SpectrumAnal
         .as_hz()
 }
 
+/// Returns the current sweep span in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_span_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::span).unwrap_or_default().as_hz()
 }
 
+/// Returns the active radio module's minimum supported frequency in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_min_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::min_freq)
@@ -271,6 +333,7 @@ pub extern "C" fn rfe_spectrum_analyzer_min_freq_hz(rfe: Option<&SpectrumAnalyze
         .as_hz()
 }
 
+/// Returns the active radio module's maximum supported frequency in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_max_freq_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::max_freq)
@@ -278,6 +341,7 @@ pub extern "C" fn rfe_spectrum_analyzer_max_freq_hz(rfe: Option<&SpectrumAnalyze
         .as_hz()
 }
 
+/// Returns the active radio module's maximum supported span in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_max_span_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.map(SpectrumAnalyzer::max_span)
@@ -285,6 +349,9 @@ pub extern "C" fn rfe_spectrum_analyzer_max_span_hz(rfe: Option<&SpectrumAnalyze
         .as_hz()
 }
 
+/// Returns the resolution bandwidth in hertz.
+///
+/// Returns zero if the device has not reported a resolution bandwidth.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_rbw_hz(rfe: Option<&SpectrumAnalyzer>) -> u64 {
     rfe.and_then(SpectrumAnalyzer::rbw)
@@ -292,38 +359,54 @@ pub extern "C" fn rfe_spectrum_analyzer_rbw_hz(rfe: Option<&SpectrumAnalyzer>) -
         .as_hz()
 }
 
+/// Returns the bottom displayed amplitude in dBm.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_min_amp_dbm(rfe: Option<&SpectrumAnalyzer>) -> i16 {
     rfe.map(SpectrumAnalyzer::min_amp_dbm).unwrap_or_default()
 }
 
+/// Returns the top displayed amplitude in dBm.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_max_amp_dbm(rfe: Option<&SpectrumAnalyzer>) -> i16 {
     rfe.map(SpectrumAnalyzer::max_amp_dbm).unwrap_or_default()
 }
 
+/// Returns the amplitude offset in dB.
+///
+/// Returns zero if the device has not reported an amplitude offset.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_amp_offset_db(rfe: Option<&SpectrumAnalyzer>) -> i8 {
     rfe.and_then(SpectrumAnalyzer::amp_offset_db)
         .unwrap_or_default()
 }
 
+/// Returns the number of points in each sweep.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_sweep_len(rfe: Option<&SpectrumAnalyzer>) -> u16 {
     rfe.map(SpectrumAnalyzer::sweep_len).unwrap_or_default()
 }
 
+/// Returns the current operating mode.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_mode(rfe: Option<&SpectrumAnalyzer>) -> Mode {
     rfe.map(SpectrumAnalyzer::mode).unwrap_or_default()
 }
 
+/// Returns the current calculator mode.
+///
+/// Returns the enum default if the device has not reported a calculator mode.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_calc_mode(rfe: Option<&SpectrumAnalyzer>) -> CalcMode {
     rfe.and_then(SpectrumAnalyzer::calc_mode)
         .unwrap_or_default()
 }
 
+/// Copies the most recent sweep into a caller-provided buffer.
+///
+/// `sweep_buf` must point to at least `buf_len` `float` values. If `sweep_len`
+/// is non-NULL, it is set to the number of values written. Returns
+/// `RESULT_INVALID_INPUT_ERROR` if the buffer is too small, or `RESULT_NO_DATA`
+/// if no sweep has been received.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
     rfe: Option<&SpectrumAnalyzer>,
@@ -346,6 +429,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_sweep(
     }
 }
 
+/// Waits for the next sweep and copies it into a caller-provided buffer.
+///
+/// `sweep_buf` must point to at least `buf_len` `float` values. If `sweep_len`
+/// is non-NULL, it is set to the number of values written.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
     rfe: Option<&SpectrumAnalyzer>,
@@ -370,6 +457,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep(
     }
 }
 
+/// Waits up to `timeout_secs` seconds for the next sweep and copies it into a buffer.
+///
+/// `sweep_buf` must point to at least `buf_len` `float` values. If `sweep_len`
+/// is non-NULL, it is set to the number of values written.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
     rfe: Option<&SpectrumAnalyzer>,
@@ -396,6 +487,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_wait_for_next_sweep_with_timeout(
     }
 }
 
+/// Returns the most recent LCD screen capture.
+///
+/// On success, `screen_data` receives a heap-allocated `ScreenData` pointer
+/// owned by the caller. Free it with `rfe_screen_data_free`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_screen_data(
     rfe: Option<&SpectrumAnalyzer>,
@@ -413,6 +508,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_screen_data(
     }
 }
 
+/// Waits for the next LCD screen capture.
+///
+/// On success, `screen_data` receives a heap-allocated `ScreenData` pointer
+/// owned by the caller. Free it with `rfe_screen_data_free`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data(
     rfe: Option<&SpectrumAnalyzer>,
@@ -431,6 +530,10 @@ pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data(
     }
 }
 
+/// Waits up to `timeout_secs` seconds for the next LCD screen capture.
+///
+/// On success, `screen_data` receives a heap-allocated `ScreenData` pointer
+/// owned by the caller. Free it with `rfe_screen_data_free`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data_with_timeout(
     rfe: Option<&SpectrumAnalyzer>,
@@ -450,6 +553,9 @@ pub extern "C" fn rfe_spectrum_analyzer_wait_for_next_screen_data_with_timeout(
     }
 }
 
+/// Writes the current DSP mode to `dsp_mode`.
+///
+/// Returns `RESULT_NO_DATA` if the device has not reported a DSP mode.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_dsp_mode(
     rfe: Option<&SpectrumAnalyzer>,
@@ -467,6 +573,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_dsp_mode(
     }
 }
 
+/// Writes the current tracking status to `tracking_status`.
+///
+/// Returns `RESULT_NO_DATA` if the device has not reported a tracking status.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_tracking_status(
     rfe: Option<&SpectrumAnalyzer>,
@@ -484,6 +593,9 @@ pub extern "C" fn rfe_spectrum_analyzer_tracking_status(
     }
 }
 
+/// Writes the current input stage to `input_stage`.
+///
+/// Returns `RESULT_NO_DATA` if the device has not reported an input stage.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_input_stage(
     rfe: Option<&SpectrumAnalyzer>,
@@ -501,6 +613,9 @@ pub extern "C" fn rfe_spectrum_analyzer_input_stage(
     }
 }
 
+/// Returns the main radio module model.
+///
+/// Returns `SPECTRUM_ANALYZER_MODEL_UNKNOWN` if no model has been reported.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
@@ -510,6 +625,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_main_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
+/// Returns the expansion radio module model.
+///
+/// Returns `SPECTRUM_ANALYZER_MODEL_UNKNOWN` if no expansion model has been reported.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
@@ -519,6 +637,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_expansion_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
+/// Returns the currently active radio module model.
+///
+/// Returns `SPECTRUM_ANALYZER_MODEL_UNKNOWN` if no model has been reported.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_active_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
@@ -527,6 +648,9 @@ pub extern "C" fn rfe_spectrum_analyzer_active_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
+/// Returns the currently inactive radio module model.
+///
+/// Returns `SPECTRUM_ANALYZER_MODEL_UNKNOWN` if no inactive model exists.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_inactive_radio_model(
     rfe: Option<&SpectrumAnalyzer>,
@@ -536,6 +660,7 @@ pub extern "C" fn rfe_spectrum_analyzer_inactive_radio_model(
         .unwrap_or(SpectrumAnalyzerModel::Unknown)
 }
 
+/// Starts Wi-Fi analyzer mode for the requested Wi-Fi band.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_start_wifi_analyzer(
     rfe: Option<&SpectrumAnalyzer>,
@@ -548,6 +673,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_start_wifi_analyzer(
     }
 }
 
+/// Stops Wi-Fi analyzer mode.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_stop_wifi_analyzer(
     rfe: Option<&SpectrumAnalyzer>,
@@ -559,6 +685,10 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_stop_wifi_analyzer(
     }
 }
 
+/// Requests tracking mode and waits for a tracking status response.
+///
+/// `start_hz` is the tracking start frequency in hertz and `step_hz` is the
+/// tracking step frequency in hertz.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_request_tracking(
     rfe: Option<&SpectrumAnalyzer>,
@@ -572,6 +702,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_request_tracking(
     }
 }
 
+/// Steps over the tracking step frequency and makes a measurement.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_tracking_step(
     rfe: Option<&SpectrumAnalyzer>,
@@ -584,6 +715,7 @@ pub extern "C" fn rfe_spectrum_analyzer_tracking_step(
     }
 }
 
+/// Sets the sweep start and stop frequencies in hertz.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_start_stop(
     rfe: Option<&SpectrumAnalyzer>,
@@ -597,6 +729,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_start_stop(
     }
 }
 
+/// Sets the sweep start frequency, stop frequency, and number of sweep points.
+///
+/// Frequencies are represented in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
@@ -612,6 +747,7 @@ pub extern "C" fn rfe_spectrum_analyzer_set_start_stop_sweep_len(
     }
 }
 
+/// Sets the sweep center frequency and span in hertz.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span(
     rfe: Option<&SpectrumAnalyzer>,
@@ -625,6 +761,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span(
     }
 }
 
+/// Sets the sweep center frequency, span, and number of sweep points.
+///
+/// Frequencies are represented in hertz.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
@@ -640,6 +779,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_center_span_sweep_len(
     }
 }
 
+/// Sets the minimum and maximum amplitudes displayed on the RF Explorer screen.
+///
+/// Amplitudes are represented in dBm.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_min_max_amps(
     rfe: Option<&SpectrumAnalyzer>,
@@ -653,27 +795,12 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_min_max_amps(
     }
 }
 
-/// # Safety
+/// Sets the callback called when a sweep is received.
 ///
-/// This function is unsafe because:
-///
-/// ## Callback Function Requirements
-/// * The `callback` function pointer must be valid for the entire lifetime of the
-///   `SpectrumAnalyzer` instance or until a new callback is registered
-/// * The `callback` function must be thread-safe and may be invoked from any thread
-/// * Multiple callback invocations may occur concurrently if previous callbacks have
-///   not yet completed
-///
-/// ## User Data Requirements
-/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
-///   of the `SpectrumAnalyzer` instance or until a new callback is registered
-/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
-/// * If your callback **reads** from `user_data`: ensure the data is not being modified
-///   by other threads during callback execution
-/// * If your callback **writes** to `user_data`: you must provide your own synchronization
-///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
-///   or between callbacks and other parts of your program
-/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
+/// The callback may be invoked from a background thread, and multiple callback
+/// invocations may overlap. The `sweep` pointer passed to the callback is only
+/// valid for the duration of that callback call. `user_data`, if non-NULL, must
+/// remain valid until the callback is removed or the analyzer is freed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     rfe: Option<&SpectrumAnalyzer>,
@@ -710,6 +837,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_callback(
     rfe.set_sweep_callback(cb);
 }
 
+/// Removes the sweep callback.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_sweep_callback(
     rfe: Option<&SpectrumAnalyzer>,
@@ -719,27 +847,11 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_sweep_callback(
     }
 }
 
-/// # Safety
+/// Sets the callback called when a spectrum analyzer configuration is received.
 ///
-/// This function is unsafe because:
-///
-/// ## Callback Function Requirements
-/// * The `callback` function pointer must be valid for the entire lifetime of the
-///   `SpectrumAnalyzer` instance or until a new callback is registered
-/// * The `callback` function must be thread-safe and may be invoked from any thread
-/// * Multiple callback invocations may occur concurrently if previous callbacks have
-///   not yet completed
-///
-/// ## User Data Requirements
-/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
-///   of the `SpectrumAnalyzer` instance or until a new callback is registered
-/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
-/// * If your callback **reads** from `user_data`: ensure the data is not being modified
-///   by other threads during callback execution
-/// * If your callback **writes** to `user_data`: you must provide your own synchronization
-///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
-///   or between callbacks and other parts of your program
-/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
+/// The callback may be invoked from a background thread, and multiple callback
+/// invocations may overlap. `user_data`, if non-NULL, must remain valid until
+/// the callback is removed or the analyzer is freed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
@@ -762,6 +874,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_config_callback(
     rfe.set_config_callback(cb);
 }
 
+/// Removes the configuration callback.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_config_callback(
     rfe: Option<&SpectrumAnalyzer>,
@@ -771,6 +884,9 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_remove_config_callback(
     }
 }
 
+/// Sets the number of points in each sweep.
+///
+/// Only Plus models support changing the sweep length.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_len(
     rfe: Option<&SpectrumAnalyzer>,
@@ -783,6 +899,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_sweep_len(
     }
 }
 
+/// Sets the calculator mode.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_calc_mode(
     rfe: Option<&SpectrumAnalyzer>,
@@ -795,6 +912,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_calc_mode(
     }
 }
 
+/// Activates the main radio module.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_main_radio(
     rfe: Option<&SpectrumAnalyzer>,
@@ -806,6 +924,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_main_radio(
     }
 }
 
+/// Activates the expansion radio module.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_expansion_radio(
     rfe: Option<&SpectrumAnalyzer>,
@@ -817,6 +936,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_activate_expansion_radio(
     }
 }
 
+/// Sets the spectrum analyzer input stage.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_input_stage(
     rfe: Option<&SpectrumAnalyzer>,
@@ -829,6 +949,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_input_stage(
     }
 }
 
+/// Sets the amplitude offset in dB.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_offset_db(
     rfe: Option<&SpectrumAnalyzer>,
@@ -841,6 +962,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_set_offset_db(
     }
 }
 
+/// Sets the DSP mode.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_set_dsp_mode(
     rfe: Option<&SpectrumAnalyzer>,

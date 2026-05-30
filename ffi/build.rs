@@ -3,7 +3,7 @@ fn main() {
 
     let config = cbindgen::Config {
         language: cbindgen::Language::C,
-        documentation: false,
+        documentation: true,
         include_guard: Some("rfe_h".to_string()),
         enumeration: cbindgen::EnumConfig {
             rename_variants: cbindgen::RenameRule::ScreamingSnakeCase,

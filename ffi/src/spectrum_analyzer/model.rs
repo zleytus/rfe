@@ -5,24 +5,41 @@ use rfe::spectrum_analyzer::Model;
 
 use crate::common::Result;
 
+/// RF Explorer spectrum analyzer model.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum SpectrumAnalyzerModel {
+    /// 433M model.
     Rfe433M = 0,
+    /// 868M model.
     Rfe868M = 1,
+    /// 915M model.
     Rfe915M = 2,
+    /// WSUB1G model.
     RfeWSub1G = 3,
+    /// 2.4G model.
     Rfe24G = 4,
+    /// WSUB3G model.
     RfeWSub3G = 5,
+    /// 6G model.
     Rfe6G = 6,
+    /// WSUB1G+ model.
     RfeWSub1GPlus = 10,
+    /// Pro Audio model.
     RfeProAudio = 11,
+    /// 2.4G+ model.
     Rfe24GPlus = 12,
+    /// 4G+ model.
     Rfe4GPlus = 13,
+    /// 6G+ model.
     Rfe6GPlus = 14,
+    /// MW5G 3 GHz model.
     RfeMW5G3G = 16,
+    /// MW5G 4 GHz model.
     RfeMW5G4G = 17,
+    /// MW5G 5 GHz model.
     RfeMW5G5G = 18,
+    /// Unknown or unsupported model.
     Unknown = 19,
 }
 
@@ -72,6 +89,11 @@ impl From<SpectrumAnalyzerModel> for Model {
     }
 }
 
+/// Writes the display name of a spectrum analyzer model.
+///
+/// `name_buf` must point to a writable buffer of at least `len` bytes. The
+/// buffer receives a null-terminated C string. Returns
+/// `RESULT_INVALID_INPUT_ERROR` if `len` is too small or `model` is invalid.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_spectrum_analyzer_model_name(
     model: SpectrumAnalyzerModel,
@@ -86,7 +108,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_model_name(
         return Result::InvalidInputError;
     };
     let name = CString::new(model.to_string()).unwrap_or_default();
-    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes().len()) };
+    let name = unsafe { slice::from_raw_parts(name.as_ptr(), name.as_bytes_with_nul().len()) };
 
     if len < name.len() {
         return Result::InvalidInputError;
@@ -98,6 +120,7 @@ pub unsafe extern "C" fn rfe_spectrum_analyzer_model_name(
     Result::Success
 }
 
+/// Returns whether the model supports Plus-model features.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_is_plus_model(model: SpectrumAnalyzerModel) -> bool {
     if let Ok(model) = Model::try_from(model as u8) {
@@ -107,6 +130,7 @@ pub extern "C" fn rfe_spectrum_analyzer_model_is_plus_model(model: SpectrumAnaly
     }
 }
 
+/// Returns whether the model supports Wi-Fi analyzer mode.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_has_wifi_analyzer(
     model: SpectrumAnalyzerModel,
@@ -118,6 +142,9 @@ pub extern "C" fn rfe_spectrum_analyzer_model_has_wifi_analyzer(
     }
 }
 
+/// Returns the model's minimum supported input frequency in hertz.
+///
+/// Returns zero if `model` is invalid.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_min_freq_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {
@@ -127,6 +154,9 @@ pub extern "C" fn rfe_spectrum_analyzer_model_min_freq_hz(model: SpectrumAnalyze
     }
 }
 
+/// Returns the model's maximum supported input frequency in hertz.
+///
+/// Returns zero if `model` is invalid.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_max_freq_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {
@@ -136,6 +166,9 @@ pub extern "C" fn rfe_spectrum_analyzer_model_max_freq_hz(model: SpectrumAnalyze
     }
 }
 
+/// Returns the model's minimum supported sweep span in hertz.
+///
+/// Returns zero if `model` is invalid.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_min_span_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {
@@ -145,6 +178,9 @@ pub extern "C" fn rfe_spectrum_analyzer_model_min_span_hz(model: SpectrumAnalyze
     }
 }
 
+/// Returns the model's maximum supported sweep span in hertz.
+///
+/// Returns zero if `model` is invalid.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_spectrum_analyzer_model_max_span_hz(model: SpectrumAnalyzerModel) -> u64 {
     if let Ok(model) = Model::try_from(model as u8) {

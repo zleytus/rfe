@@ -18,6 +18,11 @@ use super::{
 };
 use crate::common::{Result, UserDataWrapper};
 
+/// Connects to the first RF Explorer signal generator found on a CP210x USB serial port.
+///
+/// Returns `NULL` if no compatible device can be opened and initialized. The
+/// returned pointer is owned by the caller and must be freed with
+/// `rfe_signal_generator_free`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_connect() -> *mut SignalGenerator {
     SignalGenerator::connect()
@@ -25,6 +30,12 @@ pub extern "C" fn rfe_signal_generator_connect() -> *mut SignalGenerator {
         .unwrap_or(ptr::null_mut())
 }
 
+/// Connects to a named serial port using the given baud rate.
+///
+/// `name` must be a valid null-terminated UTF-8 string. Returns `NULL` if the
+/// pointer is null, the string is invalid, or the device cannot be opened and
+/// initialized. The returned pointer is owned by the caller and must be freed
+/// with `rfe_signal_generator_free`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_connect_with_name_and_baud_rate(
     name: Option<&c_char>,
@@ -39,6 +50,9 @@ pub unsafe extern "C" fn rfe_signal_generator_connect_with_name_and_baud_rate(
         .unwrap_or(ptr::null_mut())
 }
 
+/// Frees a signal generator returned by `rfe_signal_generator_connect`.
+///
+/// Passing `NULL` is allowed and has no effect.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_free(rfe: Option<&mut SignalGenerator>) {
     if let Some(rfe) = rfe {
@@ -46,6 +60,10 @@ pub unsafe extern "C" fn rfe_signal_generator_free(rfe: Option<&mut SignalGenera
     }
 }
 
+/// Sends raw bytes to the signal generator.
+///
+/// `bytes` must point to at least `len` bytes. This function is primarily for
+/// advanced users that need to send RF Explorer commands not wrapped by this API.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_send_bytes(
     rfe: Option<&SignalGenerator>,
@@ -60,6 +78,10 @@ pub unsafe extern "C" fn rfe_signal_generator_send_bytes(
     }
 }
 
+/// Writes the connected serial port name to a caller-provided buffer.
+///
+/// Use `rfe_signal_generator_port_name_len` to get the required buffer size,
+/// including the terminating null byte.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_port_name(
     rfe: Option<&SignalGenerator>,
@@ -83,6 +105,10 @@ pub unsafe extern "C" fn rfe_signal_generator_port_name(
     Result::Success
 }
 
+/// Returns the buffer size required for `rfe_signal_generator_port_name`.
+///
+/// The returned size includes the terminating null byte. Returns zero if `rfe`
+/// is `NULL`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_port_name_len(
     rfe: Option<&SignalGenerator>,
@@ -90,6 +116,10 @@ pub unsafe extern "C" fn rfe_signal_generator_port_name_len(
     rfe.map(|rfe| rfe.port_name().len() + 1).unwrap_or_default()
 }
 
+/// Writes the firmware version to a caller-provided buffer.
+///
+/// Use `rfe_signal_generator_firmware_version_len` to get the required buffer
+/// size, including the terminating null byte.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_firmware_version(
     rfe: Option<&SignalGenerator>,
@@ -118,6 +148,10 @@ pub unsafe extern "C" fn rfe_signal_generator_firmware_version(
     Result::Success
 }
 
+/// Returns the buffer size required for `rfe_signal_generator_firmware_version`.
+///
+/// The returned size includes the terminating null byte. Returns zero if `rfe`
+/// is `NULL`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_firmware_version_len(
     rfe: Option<&SignalGenerator>,
@@ -126,6 +160,11 @@ pub extern "C" fn rfe_signal_generator_firmware_version_len(
         .unwrap_or_default()
 }
 
+/// Writes the device serial number to a caller-provided buffer.
+///
+/// Use `rfe_signal_generator_serial_number_len` to get the required buffer
+/// size, including the terminating null byte. Returns `RESULT_NO_DATA` if the
+/// device does not report a serial number.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_serial_number(
     rfe: Option<&SignalGenerator>,
@@ -157,6 +196,10 @@ pub unsafe extern "C" fn rfe_signal_generator_serial_number(
     Result::Success
 }
 
+/// Returns the buffer size required for `rfe_signal_generator_serial_number`.
+///
+/// The returned size includes the terminating null byte. Returns zero if `rfe`
+/// is `NULL` or no serial number has been received.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_serial_number_len(rfe: Option<&SignalGenerator>) -> usize {
     rfe.and_then(SignalGenerator::serial_number)
@@ -164,6 +207,7 @@ pub extern "C" fn rfe_signal_generator_serial_number_len(rfe: Option<&SignalGene
         .unwrap_or_default()
 }
 
+/// Turns the signal generator LCD on.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_lcd_on(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
@@ -173,6 +217,7 @@ pub extern "C" fn rfe_signal_generator_lcd_on(rfe: Option<&SignalGenerator>) -> 
     }
 }
 
+/// Turns the signal generator LCD off.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_lcd_off(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
@@ -182,6 +227,7 @@ pub extern "C" fn rfe_signal_generator_lcd_off(rfe: Option<&SignalGenerator>) ->
     }
 }
 
+/// Enables screen dump messages from the signal generator.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_enable_dump_screen(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
@@ -191,6 +237,7 @@ pub extern "C" fn rfe_signal_generator_enable_dump_screen(rfe: Option<&SignalGen
     }
 }
 
+/// Disables screen dump messages from the signal generator.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_disable_dump_screen(
     rfe: Option<&SignalGenerator>,
@@ -202,6 +249,7 @@ pub extern "C" fn rfe_signal_generator_disable_dump_screen(
     }
 }
 
+/// Holds the current signal generator operation.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_hold(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
@@ -211,6 +259,10 @@ pub extern "C" fn rfe_signal_generator_hold(rfe: Option<&SignalGenerator>) -> Re
     }
 }
 
+/// Reboots the signal generator.
+///
+/// The `rfe` pointer must not be used after a successful reboot unless the
+/// device is reconnected.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_reboot(rfe: Option<&mut SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
@@ -220,6 +272,10 @@ pub unsafe extern "C" fn rfe_signal_generator_reboot(rfe: Option<&mut SignalGene
     }
 }
 
+/// Powers off the signal generator.
+///
+/// The `rfe` pointer must not be used after a successful power-off unless the
+/// device is reconnected.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_power_off(
     rfe: Option<&mut SignalGenerator>,
@@ -231,6 +287,9 @@ pub unsafe extern "C" fn rfe_signal_generator_power_off(
     }
 }
 
+/// Writes the most recent main signal generator configuration to `config`.
+///
+/// Returns `RESULT_NO_DATA` if no matching configuration has been received.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config(
     rfe: Option<&SignalGenerator>,
@@ -248,6 +307,9 @@ pub extern "C" fn rfe_signal_generator_config(
     }
 }
 
+/// Writes the most recent amplitude sweep configuration to `config`.
+///
+/// Returns `RESULT_NO_DATA` if no matching configuration has been received.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config_amp_sweep(
     rfe: Option<&SignalGenerator>,
@@ -265,6 +327,9 @@ pub extern "C" fn rfe_signal_generator_config_amp_sweep(
     }
 }
 
+/// Writes the most recent CW configuration to `config`.
+///
+/// Returns `RESULT_NO_DATA` if no matching configuration has been received.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config_cw(
     rfe: Option<&SignalGenerator>,
@@ -282,6 +347,9 @@ pub extern "C" fn rfe_signal_generator_config_cw(
     }
 }
 
+/// Writes the most recent frequency sweep configuration to `config`.
+///
+/// Returns `RESULT_NO_DATA` if no matching configuration has been received.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_config_freq_sweep(
     rfe: Option<&SignalGenerator>,
@@ -299,6 +367,10 @@ pub extern "C" fn rfe_signal_generator_config_freq_sweep(
     }
 }
 
+/// Returns the most recent LCD screen capture.
+///
+/// On success, `screen_data` receives a heap-allocated `ScreenData` pointer
+/// owned by the caller. Free it with `rfe_screen_data_free`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rfe_signal_generator_screen_data(
     rfe: Option<&SignalGenerator>,
@@ -316,6 +388,10 @@ pub unsafe extern "C" fn rfe_signal_generator_screen_data(
     }
 }
 
+/// Waits for the next LCD screen capture.
+///
+/// On success, `screen_data` receives a heap-allocated `ScreenData` pointer
+/// owned by the caller. Free it with `rfe_screen_data_free`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data(
     rfe: Option<&SignalGenerator>,
@@ -334,6 +410,10 @@ pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data(
     }
 }
 
+/// Waits up to `timeout_secs` seconds for the next LCD screen capture.
+///
+/// On success, `screen_data` receives a heap-allocated `ScreenData` pointer
+/// owned by the caller. Free it with `rfe_screen_data_free`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data_with_timeout(
     rfe: Option<&SignalGenerator>,
@@ -353,6 +433,9 @@ pub extern "C" fn rfe_signal_generator_wait_for_next_screen_data_with_timeout(
     }
 }
 
+/// Writes the most recent temperature range to `temperature`.
+///
+/// Returns `RESULT_NO_DATA` if the device has not reported a temperature range.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_temperature(
     rfe: Option<&SignalGenerator>,
@@ -370,6 +453,9 @@ pub extern "C" fn rfe_signal_generator_temperature(
     }
 }
 
+/// Writes the main radio module model to `model`.
+///
+/// Returns `RESULT_NO_DATA` if no main model has been reported.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_main_radio_model(
     rfe: Option<&SignalGenerator>,
@@ -387,6 +473,9 @@ pub extern "C" fn rfe_signal_generator_main_radio_model(
     }
 }
 
+/// Writes the expansion radio module model to `model`.
+///
+/// Returns `RESULT_NO_DATA` if no expansion model has been reported.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_expansion_radio_model(
     rfe: Option<&SignalGenerator>,
@@ -404,6 +493,7 @@ pub extern "C" fn rfe_signal_generator_expansion_radio_model(
     }
 }
 
+/// Writes the currently active radio module model to `model`.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_active_radio_model(
     rfe: Option<&SignalGenerator>,
@@ -417,6 +507,9 @@ pub extern "C" fn rfe_signal_generator_active_radio_model(
     }
 }
 
+/// Writes the currently inactive radio module model to `model`.
+///
+/// Returns `RESULT_NO_DATA` if no inactive model exists.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_inactive_radio_model(
     rfe: Option<&SignalGenerator>,
@@ -434,6 +527,10 @@ pub extern "C" fn rfe_signal_generator_inactive_radio_model(
     }
 }
 
+/// Starts amplitude sweep mode.
+///
+/// `cw_hz` is the CW frequency in hertz and `step_delay_sec` is the delay
+/// between amplitude sweep steps in seconds.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_amp_sweep(
     rfe: Option<&SignalGenerator>,
@@ -459,6 +556,10 @@ pub extern "C" fn rfe_signal_generator_start_amp_sweep(
     }
 }
 
+/// Starts amplitude sweep mode using the expansion module.
+///
+/// `cw_hz` is the CW frequency in hertz and `step_delay_sec` is the delay
+/// between amplitude sweep steps in seconds.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_amp_sweep_exp(
     rfe: Option<&SignalGenerator>,
@@ -482,6 +583,9 @@ pub extern "C" fn rfe_signal_generator_start_amp_sweep_exp(
     }
 }
 
+/// Starts CW mode.
+///
+/// `cw_hz` is the CW frequency in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_cw(
     rfe: Option<&SignalGenerator>,
@@ -496,6 +600,9 @@ pub extern "C" fn rfe_signal_generator_start_cw(
     }
 }
 
+/// Starts CW mode using the expansion module.
+///
+/// `cw_hz` is the CW frequency in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_cw_exp(
     rfe: Option<&SignalGenerator>,
@@ -509,6 +616,10 @@ pub extern "C" fn rfe_signal_generator_start_cw_exp(
     }
 }
 
+/// Starts frequency sweep mode.
+///
+/// Frequencies are represented in hertz and `step_delay_sec` is the delay
+/// between frequency sweep steps in seconds.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_freq_sweep(
     rfe: Option<&SignalGenerator>,
@@ -534,6 +645,10 @@ pub extern "C" fn rfe_signal_generator_start_freq_sweep(
     }
 }
 
+/// Starts frequency sweep mode using the expansion module.
+///
+/// Frequencies are represented in hertz and `step_delay_sec` is the delay
+/// between frequency sweep steps in seconds.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_freq_sweep_exp(
     rfe: Option<&SignalGenerator>,
@@ -557,6 +672,9 @@ pub extern "C" fn rfe_signal_generator_start_freq_sweep_exp(
     }
 }
 
+/// Starts tracking mode.
+///
+/// `start_hz` and `step_hz` are represented in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_tracking(
     rfe: Option<&SignalGenerator>,
@@ -574,6 +692,9 @@ pub extern "C" fn rfe_signal_generator_start_tracking(
     }
 }
 
+/// Starts tracking mode using the expansion module.
+///
+/// `start_hz` and `step_hz` are represented in hertz.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_start_tracking_exp(
     rfe: Option<&SignalGenerator>,
@@ -590,6 +711,7 @@ pub extern "C" fn rfe_signal_generator_start_tracking_exp(
     }
 }
 
+/// Jumps to a new frequency using the tracking step frequency.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_tracking_step(
     rfe: Option<&SignalGenerator>,
@@ -602,27 +724,11 @@ pub extern "C" fn rfe_signal_generator_tracking_step(
     }
 }
 
-/// # Safety
+/// Sets the callback called when the main signal generator configuration is received.
 ///
-/// This function is unsafe because:
-///
-/// ## Callback Function Requirements
-/// * The `callback` function pointer must be valid for the entire lifetime of the
-///   `SpectrumAnalyzer` instance or until a new callback is registered
-/// * The `callback` function must be thread-safe and may be invoked from any thread
-/// * Multiple callback invocations may occur concurrently if previous callbacks have
-///   not yet completed
-///
-/// ## User Data Requirements
-/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
-///   of the `SpectrumAnalyzer` instance or until a new callback is registered
-/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
-/// * If your callback **reads** from `user_data`: ensure the data is not being modified
-///   by other threads during callback execution
-/// * If your callback **writes** to `user_data`: you must provide your own synchronization
-///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
-///   or between callbacks and other parts of your program
-/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
+/// The callback may be invoked from a background thread, and multiple callback
+/// invocations may overlap. `user_data`, if non-NULL, must remain valid until
+/// the callback is removed or the signal generator is freed.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_callback(
     rfe: Option<&SignalGenerator>,
@@ -645,6 +751,7 @@ pub extern "C" fn rfe_signal_generator_set_config_callback(
     rfe.set_config_callback(cb);
 }
 
+/// Removes the main configuration callback.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_callback(rfe: Option<&SignalGenerator>) {
     if let Some(rfe) = rfe {
@@ -652,27 +759,11 @@ pub extern "C" fn rfe_signal_generator_remove_config_callback(rfe: Option<&Signa
     }
 }
 
-/// # Safety
+/// Sets the callback called when an amplitude sweep configuration is received.
 ///
-/// This function is unsafe because:
-///
-/// ## Callback Function Requirements
-/// * The `callback` function pointer must be valid for the entire lifetime of the
-///   `SpectrumAnalyzer` instance or until a new callback is registered
-/// * The `callback` function must be thread-safe and may be invoked from any thread
-/// * Multiple callback invocations may occur concurrently if previous callbacks have
-///   not yet completed
-///
-/// ## User Data Requirements
-/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
-///   of the `SpectrumAnalyzer` instance or until a new callback is registered
-/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
-/// * If your callback **reads** from `user_data`: ensure the data is not being modified
-///   by other threads during callback execution
-/// * If your callback **writes** to `user_data`: you must provide your own synchronization
-///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
-///   or between callbacks and other parts of your program
-/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
+/// The callback may be invoked from a background thread, and multiple callback
+/// invocations may overlap. `user_data`, if non-NULL, must remain valid until
+/// the callback is removed or the signal generator is freed.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
@@ -698,6 +789,7 @@ pub extern "C" fn rfe_signal_generator_set_config_amp_sweep_callback(
     rfe.set_config_amp_sweep_callback(cb);
 }
 
+/// Removes the amplitude sweep configuration callback.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_amp_sweep_callback(
     rfe: Option<&SignalGenerator>,
@@ -707,27 +799,11 @@ pub extern "C" fn rfe_signal_generator_remove_config_amp_sweep_callback(
     }
 }
 
-/// # Safety
+/// Sets the callback called when a CW configuration is received.
 ///
-/// This function is unsafe because:
-///
-/// ## Callback Function Requirements
-/// * The `callback` function pointer must be valid for the entire lifetime of the
-///   `SpectrumAnalyzer` instance or until a new callback is registered
-/// * The `callback` function must be thread-safe and may be invoked from any thread
-/// * Multiple callback invocations may occur concurrently if previous callbacks have
-///   not yet completed
-///
-/// ## User Data Requirements
-/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
-///   of the `SpectrumAnalyzer` instance or until a new callback is registered
-/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
-/// * If your callback **reads** from `user_data`: ensure the data is not being modified
-///   by other threads during callback execution
-/// * If your callback **writes** to `user_data`: you must provide your own synchronization
-///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
-///   or between callbacks and other parts of your program
-/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
+/// The callback may be invoked from a background thread, and multiple callback
+/// invocations may overlap. `user_data`, if non-NULL, must remain valid until
+/// the callback is removed or the signal generator is freed.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
     rfe: Option<&SignalGenerator>,
@@ -750,6 +826,7 @@ pub extern "C" fn rfe_signal_generator_set_config_cw_callback(
     rfe.set_config_cw_callback(cb);
 }
 
+/// Removes the CW configuration callback.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_cw_callback(rfe: Option<&SignalGenerator>) {
     if let Some(rfe) = rfe {
@@ -757,27 +834,11 @@ pub extern "C" fn rfe_signal_generator_remove_config_cw_callback(rfe: Option<&Si
     }
 }
 
-/// # Safety
+/// Sets the callback called when a frequency sweep configuration is received.
 ///
-/// This function is unsafe because:
-///
-/// ## Callback Function Requirements
-/// * The `callback` function pointer must be valid for the entire lifetime of the
-///   `SpectrumAnalyzer` instance or until a new callback is registered
-/// * The `callback` function must be thread-safe and may be invoked from any thread
-/// * Multiple callback invocations may occur concurrently if previous callbacks have
-///   not yet completed
-///
-/// ## User Data Requirements
-/// * The `user_data` pointer (if non-NULL) must remain valid for the entire lifetime
-///   of the `SpectrumAnalyzer` instance or until a new callback is registered
-/// * Multiple callbacks may run concurrently, each receiving the same `user_data` pointer
-/// * If your callback **reads** from `user_data`: ensure the data is not being modified
-///   by other threads during callback execution
-/// * If your callback **writes** to `user_data`: you must provide your own synchronization
-///   (e.g., mutexes, atomic operations) to prevent data races between concurrent callbacks
-///   or between callbacks and other parts of your program
-/// * If `user_data` points to immutable/read-only data: no additional synchronization needed
+/// The callback may be invoked from a background thread, and multiple callback
+/// invocations may overlap. `user_data`, if non-NULL, must remain valid until
+/// the callback is removed or the signal generator is freed.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
     rfe: Option<&SignalGenerator>,
@@ -803,6 +864,7 @@ pub extern "C" fn rfe_signal_generator_set_config_freq_sweep_callback(
     rfe.set_config_freq_sweep_callback(cb);
 }
 
+/// Removes the frequency sweep configuration callback.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_remove_config_freq_sweep_callback(
     rfe: Option<&SignalGenerator>,
@@ -812,6 +874,7 @@ pub extern "C" fn rfe_signal_generator_remove_config_freq_sweep_callback(
     }
 }
 
+/// Turns RF output power on.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_rf_power_on(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
@@ -821,6 +884,7 @@ pub extern "C" fn rfe_signal_generator_rf_power_on(rfe: Option<&SignalGenerator>
     }
 }
 
+/// Turns RF output power off.
 #[unsafe(no_mangle)]
 pub extern "C" fn rfe_signal_generator_rf_power_off(rfe: Option<&SignalGenerator>) -> Result {
     if let Some(rfe) = rfe {
