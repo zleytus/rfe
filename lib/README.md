@@ -107,4 +107,4 @@ On Linux, the current user usually needs serial port access through the `dialout
 
 ## License
 
-This project is dual-licensed under the [MIT License](../LICENSE-MIT) or [Apache 2.0 License](../LICENSE-APACHE).
+This project is dual-licensed under the [MIT License](LICENSE-MIT) or [Apache 2.0 License](LICENSE-APACHE).
