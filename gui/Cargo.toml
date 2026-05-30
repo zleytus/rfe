@@ -1,8 +1,11 @@
 [package]
 name = "rfe-gui"
 version = "0.1.0"
-authors = ["Zach Leytus <zach.leytus@pm.me>"]
+authors = ["Zach Leytus <zach.leytus@gmail.com>"]
 edition = "2024"
+
+[lib]
+doc = false
 
 [dependencies]
 colorous = "1.0.16"
