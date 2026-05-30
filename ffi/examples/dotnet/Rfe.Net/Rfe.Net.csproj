@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Rfe.Net</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Zach Leytus</Authors>
+    <Description>A .NET wrapper for RF Explorer spectrum analyzers and signal generators.</Description>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/zleytus/rfe</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/zleytus/rfe</PackageProjectUrl>
+    <PackageTags>rf-explorer;spectrum-analyzer;signal-generator;radio-frequency</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="\" />
+    <None Include="../../../../LICENSE-MIT" Pack="true" PackagePath="\" />
+    <None Include="../../../../LICENSE-APACHE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../include/NativeMethods.g.cs" />
+    <Compile Include="../../../include/NativeTypes.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) And Exists('../../../../target/release/librfe.so')">
+    <Content Include="../../../../target/release/librfe.so">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>false</Pack>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('../../../../target/release/librfe.dylib')">
+    <Content Include="../../../../target/release/librfe.dylib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>false</Pack>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) And Exists('../../../../target/release/rfe.dll')">
+    <Content Include="../../../../target/release/rfe.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>false</Pack>
+    </Content>
+  </ItemGroup>
+
+</Project>

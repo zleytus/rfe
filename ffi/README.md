@@ -87,3 +87,7 @@ cd ffi/examples/c
 cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
 cmake --build build
 ```
+
+## .NET Examples
+
+A .NET wrapper library and example programs are available in [`examples/dotnet`](examples/dotnet/).

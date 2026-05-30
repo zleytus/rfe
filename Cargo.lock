@@ -846,6 +846,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
+name = "csbindgen"
+version = "1.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "950f59b281d7e20f050b4efd56d7c36c0deb853bf9ea1f20b985a75ae5b03b34"
+dependencies = [
+ "regex",
+ "syn",
+]
+
+[[package]]
 name = "csv"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3023,6 +3033,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex"
+version = "1.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e10754a14b9137dd7b1e3e5b0493cc9171fdd105e0ab477f51b72e7f3ac0e276"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
 name = "regex-automata"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3104,6 +3126,7 @@ name = "rfe-ffi"
 version = "0.1.0"
 dependencies = [
  "cbindgen",
+ "csbindgen",
  "rfe",
 ]
 
