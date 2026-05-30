@@ -96,8 +96,8 @@ impl Display for CalcMode {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// Spectrum analyzer configuration reported by an RF Explorer.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Config {
     /// Sweep start frequency.
     pub start_freq: Frequency,
